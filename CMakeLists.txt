@@ -27,6 +27,7 @@ cmake_dependent_option(INSTALL_PYTHON_INTERFACE_ONLY "Install *ONLY* the python 
 cmake_dependent_option(GENERATE_PYTHON_STUBS "Generate the Python stubs associated to the Python library" ON BUILD_PYTHON_INTERFACE ON)
 option(SUFFIX_SO_VERSION "Suffix library name with its version" ON)
 set(INSTALL_DOCUMENTATION OFF)
+option(BUILD_WITH_MQTT_SUPPORT "Add support for MQTT interface" OFF)
 
 # Project configuration
 if(NOT INSTALL_PYTHON_INTERFACE_ONLY)
@@ -116,10 +117,12 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC CONFIG_SOLO12_YAML="${PROJECT_
 target_compile_definitions(${PROJECT_NAME} PUBLIC WALK_PARAMETERS_YAML="${PROJECT_SOURCE_DIR}/config/walk_parameters.yaml")
 
 # MQTT Interface
-add_subdirectory (paho.mqtt.c)
-add_library(mqtt-interface SHARED include/qrw/mqtt-interface.hpp src/mqtt-interface.cpp)
-target_link_libraries(mqtt-interface PRIVATE paho-mqtt3c paho-mqtt3a)
-target_include_directories(mqtt-interface PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>)
+if(BUILD_WITH_MQTT_SUPPORT)
+  add_subdirectory (paho.mqtt.c)
+  add_library(mqtt-interface SHARED include/qrw/mqtt-interface.hpp src/mqtt-interface.cpp)
+  target_link_libraries(mqtt-interface PRIVATE paho-mqtt3c paho-mqtt3a)
+  target_include_directories(mqtt-interface PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>)
+endif()
 
 # Python Bindings
 if(BUILD_PYTHON_INTERFACE)
