@@ -13,6 +13,14 @@
 
 #include "qrw/Types.h"
 #include <yaml-cpp/yaml.h>
+#include "pinocchio/multibody/model.hpp"
+#include "pinocchio/multibody/data.hpp"
+#include "pinocchio/parsers/urdf.hpp"
+#include "pinocchio/algorithm/compute-all-terms.hpp"
+#include "pinocchio/algorithm/jacobian.hpp"
+#include "pinocchio/algorithm/frames.hpp"
+#include "pinocchio/algorithm/crba.hpp"
+#include "pinocchio/math/rpy.hpp"
 
 class Params {
  public:
@@ -32,12 +40,12 @@ class Params {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ///
-  /// \brief Initializer
+  /// \brief \brief Read the config yaml file to retrieve control parameters
   ///
   /// \param[in] file_path File path to the yaml file
   ///
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  void initialize(const std::string& file_path);
+  void read_yaml(const std::string& file_path);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ///
@@ -45,6 +53,13 @@ class Params {
   ///
   ////////////////////////////////////////////////////////////////////////////////////////////////
   void convert_gait_vec();
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  ///
+  /// \brief Initializer
+  ///
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  void initialize();
 
   MatrixN get_gait() { return gait; }
 
