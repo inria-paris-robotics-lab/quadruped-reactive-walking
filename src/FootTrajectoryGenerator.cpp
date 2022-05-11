@@ -194,7 +194,7 @@ void FootTrajectoryGenerator::update(int k, MatrixN const &targetFootstep) {
     for (int i = 0; i < 4; i++) {
       if (feet(0, i) == 0) {
         t_swing[i] = gait_->getPhaseDuration(0, i, 0.0);  // 0.0 for swing phase
-        double value = t_swing[i] - (gait_->getRemainingTime() * k_mpc - ((k + 1) % k_mpc)) * dt_wbc - dt_wbc;
+        double value = t_swing[i] - (gait_->getRemainingTime() * k_mpc - (k % k_mpc)) * dt_wbc - dt_wbc;
         t0s[i] = std::max(0.0, value);
       }
     }
