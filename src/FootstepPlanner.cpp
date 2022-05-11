@@ -3,7 +3,7 @@
 FootstepPlanner::FootstepPlanner()
     : gait_(NULL),
       g(9.81),
-      L(0.155),
+      L(0.25),
       nextFootstep_(Matrix34::Zero()),
       footsteps_(),
       Rz(MatrixN::Zero(3, 3)),
@@ -229,21 +229,21 @@ void FootstepPlanner::updateNewContact(Vector18 const& q) {
   q_FK_.tail(12) = q.tail(12);
 
   // Update model and data of the robot
-  pinocchio::forwardKinematics(model_, data_, q_FK_);
-  pinocchio::updateFramePlacements(model_, data_);
+  // pinocchio::forwardKinematics(model_, data_, q_FK_);
+  // pinocchio::updateFramePlacements(model_, data_);
 
   // Get data required by IK with Pinocchio
-  for (int i = 0; i < 4; i++) {
+  /*for (int i = 0; i < 4; i++) {
     pos_feet_.col(i) = data_.oMf[foot_ids_[i]].translation();
-  }
+  }*/
 
   // std::cout << "--- pos_feet_: " << std::endl << pos_feet_ << std::endl;
   // std::cout << "--- footsteps_:" << std::endl << footsteps_[1] << std::endl;
 
-  // Refresh position with estimated position if foot is in stance phase
+  // Refresh position with target position if foot is in stance phase
   for (int i = 0; i < 4; i++) {
     if (gait_->getCurrentGaitCoeff(0, i) == 1.0) {
-      currentFootstep_.block(0, i, 2, 1) = pos_feet_.block(0, i, 2, 1);  // Get only x and y to let z = 0 for contacts
+      currentFootstep_.block(0, i, 2, 1) = targetFootstep_.block(0, i, 2, 1);  // Get only x and y to let z = 0 for contacts
     }
   }
 }
