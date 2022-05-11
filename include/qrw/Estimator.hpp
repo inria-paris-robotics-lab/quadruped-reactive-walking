@@ -182,10 +182,9 @@ class Estimator {
   ///        Update transformation matrices between world and horizontal frames
   ///
   /// \param[in] joystick_v_ref Reference velocity from the joystick
-  /// \param[in] gait Gait object
   ///
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  void updateState(VectorN const& joystick_v_ref, Gait& gait);
+  void updateState(VectorN const& joystick_v_ref);
 
   VectorN getQFilt() { return q_filt_dyn_; }
   VectorN getVFilt() { return v_filt_dyn_; }
@@ -226,6 +225,7 @@ class Estimator {
   ComplementaryFilter filter_xyz_vel_;  // Complementary filter for base velocity
 
   double dt_wbc;           // Time step of the estimator
+  double dt_mpc;           // Time step of the mpc
   double alpha_secu_;      // Low pass coefficient for the outputted filtered velocity for security check
   double offset_yaw_IMU_;  // Yaw orientation of the IMU at startup
   bool perfect_estimator;  // Enable perfect estimator (directly from the PyBullet simulation)
@@ -267,7 +267,8 @@ class Estimator {
 
   pinocchio::SE3 _1Mi_;  // Transform between the base frame and the IMU frame
 
-  Vector12 q_security_;  // Position limits for the actuators above which safety controller is triggered
+  Vector12 q_sec_low_;  // Lower pos limits for the actuators above which safety controller is triggered
+  Vector12 q_sec_upp_;  // Upper pos limits for the actuators above which safety controller is triggered
 
   // For updateState function
   VectorN q_up_;      // Configuration vector in ideal world frame

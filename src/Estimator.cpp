@@ -42,6 +42,7 @@ Vector3 ComplementaryFilter::compute(Vector3 const& x, Vector3 const& dx, Vector
 
 Estimator::Estimator()
     : dt_wbc(0.0),
+      dt_mpc(0.0),
       alpha_secu_(0.0),
       offset_yaw_IMU_(0.0),
       perfect_estimator(false),
@@ -85,6 +86,7 @@ Estimator::Estimator()
 
 void Estimator::initialize(Params& params) {
   dt_wbc = params.dt_wbc;
+  dt_mpc = params.dt_mpc;
   N_SIMULATION = params.N_SIMULATION;
   perfect_estimator = params.perfect_estimator;
   solo3D = params.solo3D;
@@ -111,7 +113,8 @@ void Estimator::initialize(Params& params) {
 
   _1Mi_ = pinocchio::SE3(pinocchio::SE3::Quaternion(1.0, 0.0, 0.0, 0.0), Vector3(0.1163, 0.0, 0.02));
 
-  q_security_ = (Vector3(M_PI * 0.4, M_PI * 80 / 180, M_PI)).replicate<4, 1>();
+  q_sec_low_ = (Vector3(-1.0, -0.3, -2.3)).replicate<4, 1>();
+  q_sec_upp_ = (Vector3(1.0, 1.5, -0.7)).replicate<4, 1>();
 
   q_FK_(6, 0) = 1.0;        // Last term of the quaternion
   q_filt_(6, 0) = 1.0;      // Last term of the quaternion
@@ -190,7 +193,7 @@ void Estimator::get_data_FK(Eigen::Matrix<double, 1, 4> const& feet_status) {
   Vector3 xyz_est = Vector3::Zero();
   for (int j = 0; j < 4; j++) {
     // Consider only feet in contact + Security margin after the contact switch
-    if (feet_status(0, j) == 1.0 && k_since_contact_[j] >= 16) {
+    if (feet_status(0, j) == 1.0 && k_since_contact_[j] >= 40) {
       // Estimated velocity of the base using the considered foot
       Vector3 vel_estimated_baseframe = BaseVelocityFromKinAndIMU(feet_indexes_[j]);
 
@@ -208,11 +211,7 @@ void Estimator::get_data_FK(Eigen::Matrix<double, 1, 4> const& feet_status) {
       xyz_est += xyz_estimated;            // Position
 
       double r_foot = 0.0155;  // 31mm of diameter on meshlab
-      if (j <= 1) {
-        vel_est(0, 0) += r_foot * (actuators_vel_(1 + 3 * j, 0) - actuators_vel_(2 + 3 * j, 0));
-      } else {
-        vel_est(0, 0) += r_foot * (actuators_vel_(1 + 3 * j, 0) + actuators_vel_(2 + 3 * j, 0));
-      }
+      vel_est(0, 0) += r_foot * (actuators_vel_(1 + 3 * j, 0) + actuators_vel_(2 + 3 * j, 0));
     }
   }
 
@@ -229,7 +228,7 @@ void Estimator::get_xyz_feet(Eigen::Matrix<double, 1, 4> const& feet_status, Mat
 
   // Consider only feet in contact
   for (int j = 0; j < 4; j++) {
-    if (feet_status(0, j) == 1.0) {
+    if (feet_status(0, j) == 1.0 && k_since_contact_[j] >= 40) {
       cpt++;
       xyz_feet += goals.col(j);
     }
@@ -296,9 +295,9 @@ void Estimator::run_filter(MatrixN const& gait, MatrixN const& goals, VectorN co
   get_xyz_feet(feet_status_, goals);
 
   // Tune alpha depending on the state of the gait (close to contact switch or not)
-  double a = std::ceil(k_since_contact_.maxCoeff() * 0.1) - 1;
+  double a = std::ceil(k_since_contact_.maxCoeff() * (dt_wbc / dt_mpc)) - 1;
   double b = static_cast<double>(remaining_steps);
-  const double n = 1;  // Nb of steps of margin around contact switch
+  const double n = 2;  // Nb of steps of margin around contact switch
 
   const double v_max = 1.00;  // Maximum alpha value
   const double v_min = 0.97;  // Minimum alpha value
@@ -308,6 +307,10 @@ void Estimator::run_filter(MatrixN const& gait, MatrixN const& goals, VectorN co
     alpha = v_max;               // Only trust IMU data
   } else {
     alpha = v_min + (v_max - v_min) * std::abs(c - (a - n)) / c;
+    if (std::abs(c - (a - n)) <= 2)
+    {
+      alpha = v_max;
+    }
     // self.alpha = 0.997
   }
 
@@ -329,7 +332,7 @@ void Estimator::run_filter(MatrixN const& gait, MatrixN const& goals, VectorN co
   Vector3 oi_FK_lin_vel = oRb * i_FK_lin_vel;
 
   // Integration of IMU acc at IMU location (world frame)
-  Vector3 oi_filt_lin_vel = filter_xyz_vel_.compute(oi_FK_lin_vel, oRb * IMU_lin_acc_, alpha * Vector3::Ones());
+  Vector3 oi_filt_lin_vel = filter_xyz_vel_.compute(oi_FK_lin_vel, oRb * IMU_lin_acc_, Vector3(alpha, alpha, 0.75));
 
   // Filtered estimated velocity at IMU location (base frame)
   Vector3 i_filt_lin_vel = oRb.transpose() * oi_filt_lin_vel;
@@ -414,24 +417,24 @@ void Estimator::run_filter(MatrixN const& gait, MatrixN const& goals, VectorN co
 }
 
 int Estimator::security_check(VectorN const& tau_ff) {
-  if (((q_filt_.tail(12).cwiseAbs()).array() > q_security_.array()).any()) {  // Test position limits
+  if (((q_filt_.tail(12)).array() > q_sec_upp_.array()).any()) {  // Test upper position limits
     return 1;
-  } else if (((v_secu_.cwiseAbs()).array() > 50.0).any()) {  // Test velocity limits
+  } else if (((q_filt_.tail(12)).array() < q_sec_low_.array()).any()) {  // Test lower position limits
+    return 1;
+  } else if (((v_secu_.cwiseAbs()).array() > 35.0).any()) {  // Test velocity limits
     return 2;
-  } else if (((tau_ff.cwiseAbs()).array() > 8.0).any()) {  // Test feedforward torques limits
+  } else if (((tau_ff.cwiseAbs()).array() > 6.0).any()) {  // Test feedforward torques limits
     return 3;
   }
   return 0;
 }
 
-void Estimator::updateState(VectorN const& joystick_v_ref, Gait& gait) {
+void Estimator::updateState(VectorN const& joystick_v_ref) {
   // TODO: Joystick velocity given in base frame and not in horizontal frame (case of non flat ground)
 
   // Update reference acceleration vector
-  a_ref_.head(3) =
-      (joystick_v_ref.head(3) - pinocchio::rpy::rpyToMatrix(0.0, 0.0, -v_ref_[5] * dt_wbc) * v_ref_.head(3)) / dt_wbc;
-  a_ref_.tail(3) =
-      (joystick_v_ref.tail(3) - pinocchio::rpy::rpyToMatrix(0.0, 0.0, -v_ref_[5] * dt_wbc) * v_ref_.tail(3)) / dt_wbc;
+  a_ref_.head(3) = (joystick_v_ref.head(3) - pinocchio::rpy::rpyToMatrix(0.0, 0.0, -joystick_v_ref[5] * dt_wbc) * v_ref_.head(3) ) / dt_wbc;
+  a_ref_.tail(3) = (joystick_v_ref.tail(3) - pinocchio::rpy::rpyToMatrix(0.0, 0.0, -joystick_v_ref[5] * dt_wbc) * v_ref_.tail(3) ) / dt_wbc;
 
   // Update reference velocity vector
   v_ref_.head(3) = joystick_v_ref.head(3);
@@ -440,6 +443,7 @@ void Estimator::updateState(VectorN const& joystick_v_ref, Gait& gait) {
   // Update position and velocity state vectors
 
   // Integration to get evolution of perfect x, y and yaw
+  yaw_estim_ += v_ref_[5] * dt_wbc;
   Matrix2 Ryaw;
   Ryaw << cos(yaw_estim_), -sin(yaw_estim_), sin(yaw_estim_), cos(yaw_estim_);
   v_up_.head(2) = Ryaw * v_ref_.head(2);
@@ -450,7 +454,6 @@ void Estimator::updateState(VectorN const& joystick_v_ref, Gait& gait) {
 
   // Mix perfect yaw with pitch and roll measurements
   v_up_[5] = v_ref_[5];
-  yaw_estim_ += v_ref_[5] * dt_wbc;
   q_up_.block(3, 0, 3, 1) << IMU_RPY_[0], IMU_RPY_[1], yaw_estim_;
 
   // Transformation matrices between world and base frames

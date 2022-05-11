@@ -64,7 +64,7 @@ void Controller::compute(FakeRobot* robot) {
                        Vector3::Zero());
 
   // Update state vectors of the robot (q and v) + transformation matrices between world and horizontal frames
-  estimator.updateState(joystick.getVRef(), gait);
+  estimator.updateState(joystick.getVRef());
 
   // Update gait
   gait.updateGait(k, k_mpc, joystick.getJoystickCode());
