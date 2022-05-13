@@ -296,7 +296,7 @@ class Controller:
                                   b_baseVel)
 
         # Update state vectors of the robot (q and v) + transformation matrices between world and horizontal frames
-        self.estimator.updateState(self.joystick.getVRef(), self.gait)
+        self.estimator.updateState(self.joystick.getVRef())
         oRb = self.estimator.getoRb()
         oRh = self.estimator.getoRh()
         hRb = self.estimator.gethRb()
@@ -501,11 +501,11 @@ class Controller:
                     oRh_3d.transpose(), oTh_3d + np.array([[0.0], [0.0], [self.h_ref]]))
             else:  # Use ideal base frame
                 self.feet_a_cmd = self.footTrajectoryGenerator.getFootAccelerationBaseFrame(
-                    hRb @ oRh.transpose(), np.zeros((3, 1)), np.zeros((3, 1)))
+                    oRh.transpose(), np.zeros((3, 1)), np.zeros((3, 1)))
                 self.feet_v_cmd = self.footTrajectoryGenerator.getFootVelocityBaseFrame(
-                    hRb @ oRh.transpose(), np.zeros((3, 1)), np.zeros((3, 1)))
+                    oRh.transpose(), np.zeros((3, 1)), np.zeros((3, 1)))
                 self.feet_p_cmd = self.footTrajectoryGenerator.getFootPositionBaseFrame(
-                    hRb @ oRh.transpose(), oTh + np.array([[0.0], [0.0], [self.h_ref]]))
+                    oRh.transpose(), oTh + np.array([[0.0], [0.0], [self.h_ref]]))
 
             # Desired position, orientation and velocities of the base
             """self.xgoals[[0, 1, 2, 5], 0] = np.zeros((4,))
@@ -612,7 +612,7 @@ class Controller:
         if self.k > 10 and self.enable_pyb_GUI:
             # pyb.resetDebugVisualizerCamera(cameraDistance=0.8, cameraYaw=45, cameraPitch=-30,
             #                                cameraTargetPosition=[1.0, 0.3, 0.25])
-            pyb.resetDebugVisualizerCamera(cameraDistance=0.6, cameraYaw=45, cameraPitch=-39.9,
+            pyb.resetDebugVisualizerCamera(cameraDistance=0.6, cameraYaw=180, cameraPitch=-39.9,
                                            cameraTargetPosition=[device.dummyHeight[0], device.dummyHeight[1], 0.0])
 
     def pyb_debug(self, device, fsteps, cgait, xref):
