@@ -113,8 +113,8 @@ void Estimator::initialize(Params& params) {
 
   _1Mi_ = pinocchio::SE3(pinocchio::SE3::Quaternion(1.0, 0.0, 0.0, 0.0), Vector3(0.1163, 0.0, 0.02));
 
-  q_sec_low_ = (Vector3(-1.0, -0.3, -2.3)).replicate<4, 1>();
-  q_sec_upp_ = (Vector3(1.0, 1.5, -0.7)).replicate<4, 1>();
+  q_sec_low_ = (Vector3(-1.0, -0.3, -2.5)).replicate<4, 1>();
+  q_sec_upp_ = (Vector3(1.0, 2.0, -0.7)).replicate<4, 1>();
 
   q_FK_(6, 0) = 1.0;        // Last term of the quaternion
   q_filt_(6, 0) = 1.0;      // Last term of the quaternion
