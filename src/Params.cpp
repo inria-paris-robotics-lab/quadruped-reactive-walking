@@ -32,6 +32,9 @@ Params::Params()
       gp_alpha_vel(0.0),
       gp_alpha_pos(0.0),
 
+      t_switch_vec(1, 0.0),  // Fill with zeros, will be filled with values later
+      v_switch_vec(6, 0.0),  // Fill with zeros, will be filled with values later
+
       fc_v_esti(0.0),
 
       k_feedback(0.0),
@@ -157,6 +160,14 @@ void Params::read_yaml(const std::string& file_path) {
 
   assert_yaml_parsing(robot_node, "robot", "gp_alpha_pos");
   gp_alpha_pos = robot_node["gp_alpha_pos"].as<double>();
+
+  assert_yaml_parsing(robot_node, "robot", "t_switch");
+  t_switch_vec = robot_node["t_switch"].as<std::vector<double> >();
+  convert_t_switch();
+
+  assert_yaml_parsing(robot_node, "robot", "v_switch");
+  v_switch_vec = robot_node["v_switch"].as<std::vector<double> >();
+  convert_v_switch();
 
   assert_yaml_parsing(robot_node, "robot", "fc_v_esti");
   fc_v_esti = robot_node["fc_v_esti"].as<double>();
@@ -343,6 +354,41 @@ void Params::initialize() {
       shoulders[3 * i + j] = shoulders_init(j, i);
       footsteps_init[3 * i + j] = fsteps_init(j, i);
       footsteps_under_shoulders[3 * i + j] = fsteps_init(j, i);  // Use initial feet pos as reference
+    }
+  }
+}
+
+void Params::convert_t_switch() {
+  // Resize t_switch matrix
+  t_switch = VectorN::Zero(t_switch_vec.size());
+
+  // Fill t_switch matrix
+  for (uint i = 0; i < t_switch_vec.size(); i++) {
+    t_switch(i) = t_switch_vec[i];
+  }
+}
+
+void Params::convert_v_switch() {
+  if (v_switch_vec.size() % 6 != 0) {
+    throw std::runtime_error(
+        "v_switch matrix in yaml is not in the correct format. It should have six "
+        "lines, containing the values switch values for each coordinate of the velocity.");
+  }
+
+  if (v_switch_vec.size() / 6 != t_switch_vec.size()) {
+    throw std::runtime_error(
+        "v_switch matrix in yaml is not in the correct format. the same number of colums as t_switch.");
+  }
+
+  int n_col = v_switch_vec.size() / 6;
+
+  // Resize v_switch matrix
+  v_switch = MatrixN::Zero(6, n_col);
+
+  // Fill v_switch matrix
+  for (uint i = 0; i < 6; i++) {
+    for (uint j = 0; j < n_col; j++) {
+      v_switch(i, j) = v_switch_vec[n_col * i + j];
     }
   }
 }

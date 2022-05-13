@@ -257,7 +257,7 @@ void Joystick::update_v_ref_gamepad(int k, bool gait_is_static) {
 void Joystick::update_v_ref_predefined(int k, int velID) {
   // Initialization of velocity profile during first call
   if (k == 0) {
-    MatrixN t_switch;
+    /* MatrixN t_switch;
     switch (velID) {
       case 0:
         t_switch = MatrixN::Zero(1, 2);
@@ -293,14 +293,16 @@ void Joystick::update_v_ref_predefined(int k, int velID) {
         break;
       case 10:
         t_switch = MatrixN::Zero(1, 7);
-        t_switch << 0, 2, 4, 6, 8, 10, 15;
+        t_switch << 0, 5, 8, 10, 12, 14, 15;
         v_switch = MatrixN::Zero(6, 7);
-        v_switch.row(0) << 0.0, 0.4, 0.8, 1.0, 1.0, 1.0, 1.0;
+        v_switch.row(0) << 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
         break;
       default:
         throw std::runtime_error("Unknown velocity ID for the polynomial interpolation.");
     }
-    k_switch = (t_switch / dt_wbc).cast<int>();
+    k_switch = (t_switch / dt_wbc).cast<int>();*/
+    v_switch = params_->v_switch;
+    k_switch = (params_->t_switch / dt_wbc).cast<int>();
   }
   handle_v_switch(k);  // Polynomial interpolation to generate the velocity profile
 }

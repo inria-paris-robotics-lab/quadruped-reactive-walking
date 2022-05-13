@@ -56,12 +56,29 @@ class Params {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ///
+  /// \brief Convert the t_switch vector of the yaml into an Eigen vector
+  ///
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  void convert_t_switch();
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  ///
+  /// \brief Convert the v_switch vector of the yaml into an Eigen matrix
+  ///
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  void convert_v_switch();
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  ///
   /// \brief Initializer
   ///
   ////////////////////////////////////////////////////////////////////////////////////////////////
   void initialize();
 
   MatrixN get_gait() { return gait; }
+  VectorN get_t_switch() { return t_switch; }
+  MatrixN get_v_switch() { return v_switch; }
+  void set_v_switch(MatrixN v_switch_in) { v_switch = v_switch_in; }
 
   // See .yaml file for meaning of parameters
   // General parameters
@@ -98,6 +115,10 @@ class Params {
   // Parameters of Joystick
   double gp_alpha_vel;  // Coefficient of the low pass filter applied to gamepad velocity
   double gp_alpha_pos;  // Coefficient of the low pass filter applied to gamepad position
+  std::vector<double> t_switch_vec;  // Predefined velocity switch times vector
+  VectorN t_switch;                  // Predefined velocity switch times matrix
+  std::vector<double> v_switch_vec;  // Predefined velocity switch values vector
+  MatrixN v_switch;                  // Predefined velocity switch values matrix
 
   // Parameters of Estimator
   double fc_v_esti;  // Cut frequency for the low pass that filters the estimated base velocity
