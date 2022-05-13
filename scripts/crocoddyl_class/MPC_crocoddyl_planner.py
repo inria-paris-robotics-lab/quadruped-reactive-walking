@@ -72,7 +72,7 @@ class MPC_crocoddyl_planner():
         self.warm_start = True
 
         # Minimum/Maximal normal force(N) and relative_forces activation
-        self.min_fz = 0.
+        self.min_fz = 0.2
         self.max_fz = 25.
         self.relative_forces = True  # F_ref =  m*g/nb_contact
 
@@ -98,6 +98,7 @@ class MPC_crocoddyl_planner():
 
         # Offset CoM
         self.offset_com = np.array(params.CoM_offset).reshape((-1, 1))
+        self.offset_com[1, 0] = 0.0  # Force latteral offset to 0
         self.vert_time = params.vert_time
 
         # Gait matrix

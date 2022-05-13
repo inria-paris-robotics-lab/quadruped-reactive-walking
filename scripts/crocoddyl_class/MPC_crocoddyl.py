@@ -77,6 +77,7 @@ class MPC_crocoddyl:
 
         # Offset CoM
         self.offset_com = np.array(params.CoM_offset).reshape((-1, 1))
+        self.offset_com[1, 0] = 0.0  # Force latteral offset to 0
 
         # Action models
         self.ListAction = []
