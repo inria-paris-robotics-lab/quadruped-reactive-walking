@@ -193,7 +193,7 @@ void Estimator::get_data_FK(Eigen::Matrix<double, 1, 4> const& feet_status) {
   Vector3 xyz_est = Vector3::Zero();
   for (int j = 0; j < 4; j++) {
     // Consider only feet in contact + Security margin after the contact switch
-    if (feet_status(0, j) == 1.0 && k_since_contact_[j] >= 40) {
+    if (feet_status(0, j) == 1.0 && k_since_contact_[j] >= 20) {
       // Estimated velocity of the base using the considered foot
       Vector3 vel_estimated_baseframe = BaseVelocityFromKinAndIMU(feet_indexes_[j]);
 
@@ -228,7 +228,7 @@ void Estimator::get_xyz_feet(Eigen::Matrix<double, 1, 4> const& feet_status, Mat
 
   // Consider only feet in contact
   for (int j = 0; j < 4; j++) {
-    if (feet_status(0, j) == 1.0 && k_since_contact_[j] >= 40) {
+    if (feet_status(0, j) == 1.0 && k_since_contact_[j] >= 20) {
       cpt++;
       xyz_feet += goals.col(j);
     }
@@ -297,7 +297,7 @@ void Estimator::run_filter(MatrixN const& gait, MatrixN const& goals, VectorN co
   // Tune alpha depending on the state of the gait (close to contact switch or not)
   double a = std::ceil(k_since_contact_.maxCoeff() * (dt_wbc / dt_mpc)) - 1;
   double b = static_cast<double>(remaining_steps);
-  const double n = 2;  // Nb of steps of margin around contact switch
+  const double n = 1;  // Nb of steps of margin around contact switch
 
   const double v_max = 1.00;  // Maximum alpha value
   const double v_min = 0.97;  // Minimum alpha value
@@ -307,7 +307,7 @@ void Estimator::run_filter(MatrixN const& gait, MatrixN const& goals, VectorN co
     alpha = v_max;               // Only trust IMU data
   } else {
     alpha = v_min + (v_max - v_min) * std::abs(c - (a - n)) / c;
-    if (std::abs(c - (a - n)) <= 2)
+    if (std::abs(c - (a - n)) <= 1)
     {
       alpha = v_max;
     }
