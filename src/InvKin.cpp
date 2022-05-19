@@ -110,9 +110,9 @@ void InvKin::refreshAndCompute(Matrix14 const& contacts, Matrix43 const& pgoals,
   }
 
   // Jacobian for the feet position task
-  for (int i = 0; i < 4; i++) {
+  /*for (int i = 0; i < 4; i++) {
     J_.block(6 + 3 * i, 0, 3, 18) = Jf_.block(3 * i, 0, 3, 18); // - Jb_.block(0, 0, 3, 18);
-  }
+  }*/
 
   // Acceleration references for the base linear velocity task
   posb_err_ = Vector3::Zero(); // vb_ref_ * params_->dt_wbc;  // No tracking in x, y, z
@@ -121,7 +121,7 @@ void InvKin::refreshAndCompute(Matrix14 const& contacts, Matrix43 const& pgoals,
   //std::cout << "abasis" << std::endl << abasis.transpose() << std::endl;
 
   // Jacobian for the base linear velocity task
-  J_.block(0, 0, 3, 18) = Jb_.block(0, 0, 3, 18);
+  // J_.block(0, 0, 3, 18) = Jb_.block(0, 0, 3, 18);
 
   // Acceleration references for the base orientation task
   rotb_err_ = -rotb_ref_ * pinocchio::log3(rotb_ref_.transpose() * rotb_);
@@ -130,8 +130,19 @@ void InvKin::refreshAndCompute(Matrix14 const& contacts, Matrix43 const& pgoals,
             Kd_base_orientation.cwiseProduct(wb_ref_ - wb_);  // Roll, Pitch, Yaw
   awbasis -= ab_.tail(3);
 
+  std::chrono::time_point<std::chrono::steady_clock> t_s1_old = std::chrono::steady_clock::now();
+  
+  for (int i = 0; i < 4; i++) {
+    J_.block(6 + 3 * i, 0, 3, 18) = Jf_.block(3 * i, 0, 3, 18); // - Jb_.block(0, 0, 3, 18);
+  }
+
+  // Jacobian for the base linear velocity task
+  J_.block(0, 0, 3, 18) = Jb_.block(0, 0, 3, 18);
+
   // Jacobian for the base orientation task
   J_.block(3, 0, 3, 18) = Jb_.block(3, 0, 3, 18);
+
+  std::chrono::time_point<std::chrono::steady_clock> t_e1_old = std::chrono::steady_clock::now();
 
   // Acceleration references for the non-moving contact task
   /*int cpt = 0;
@@ -270,28 +281,37 @@ void InvKin::refreshAndCompute(Matrix14 const& contacts, Matrix43 const& pgoals,
   /////
 
   // Using damped pseudo inverse
-  invJ_ = pseudoInverse(J_);
+  std::chrono::time_point<std::chrono::steady_clock> t_s2_old = std::chrono::steady_clock::now();
+  // invJ_ = pseudoInverse(J_);
+  std::chrono::time_point<std::chrono::steady_clock> t_e2_old = std::chrono::steady_clock::now();
 
   MatrixN test = MatrixN::Zero(18, 18);
   Matrix3 invJi;
+  Matrix3 pskew;
+  std::chrono::time_point<std::chrono::steady_clock> t_s_new = std::chrono::steady_clock::now();
   test.block(0, 0, 3, 3) = J_.block(0, 0, 3, 3).transpose();
   test.block(3, 3, 3, 3) = J_.block(0, 0, 3, 3).transpose();
   for (int i = 0; i < 4; i++) {
     invJi = pseudoInverse(J_.block(6 + 3 * i, 6 + 3 * i, 3, 3));
     test.block(6 + 3 * i, 0, 3, 3) = -invJi;
-    Matrix3 pskew;
     pskew << 0.0, -posf_(i, 2), posf_(i, 1),
             posf_(i, 2), 0.0, -posf_(i, 0),
             -posf_(i, 1), posf_(i, 0), 0.0;
     test.block(6 + 3 * i, 3, 3, 3) = invJi * pskew;
     test.block(6 + 3 * i, 6 + 3 * i, 3, 3) = invJi;
   }
+  std::chrono::time_point<std::chrono::steady_clock> t_e_new = std::chrono::steady_clock::now();
 
-  std::cout << "==========" << std::endl;
+  invJ_ = test;
+
+  /*std::cout << "==========" << std::endl;
   std::cout << "Ref:" << std::endl << invJ_ << std::endl;
   std::cout << "New:" << std::endl << test << std::endl;
-  std::cout << "Dif:" << std::endl << invJ_ - test << std::endl;
+  std::cout << "Dif:" << std::endl << invJ_ - test << std::endl;*/
 
+  //std::cout << "Time old: " << std::chrono::duration_cast<std::chrono::microseconds>(t_e1_old - t_s1_old).count() + std::chrono::duration_cast<std::chrono::microseconds>(t_e2_old - t_s2_old).count()<< std::endl;
+  //std::cout << "Time new: " << std::chrono::duration_cast<std::chrono::microseconds>(t_e_new - t_s_new).count() << std::endl;
+  
   /////
   // Compute command accelerations, velocities and positions
   /////
