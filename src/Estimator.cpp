@@ -114,7 +114,7 @@ void Estimator::initialize(Params& params) {
   _1Mi_ = pinocchio::SE3(pinocchio::SE3::Quaternion(1.0, 0.0, 0.0, 0.0), Vector3(0.1163, 0.0, 0.02));
 
   q_sec_low_ = (Vector3(-1.0, -0.3, -2.5)).replicate<4, 1>();
-  q_sec_upp_ = (Vector3(1.0, 2.0, -0.7)).replicate<4, 1>();
+  q_sec_upp_ = (Vector3(1.0, 2.0, -0.05)).replicate<4, 1>();
 
   q_FK_(6, 0) = 1.0;        // Last term of the quaternion
   q_filt_(6, 0) = 1.0;      // Last term of the quaternion
@@ -421,9 +421,9 @@ int Estimator::security_check(VectorN const& tau_ff) {
     return 1;
   } else if (((q_filt_.tail(12)).array() < q_sec_low_.array()).any()) {  // Test lower position limits
     return 1;
-  } else if (((v_secu_.cwiseAbs()).array() > 35.0).any()) {  // Test velocity limits
+  } else if (((v_secu_.cwiseAbs()).array() > 55.0).any()) {  // Test velocity limits
     return 2;
-  } else if (((tau_ff.cwiseAbs()).array() > 6.0).any()) {  // Test feedforward torques limits
+  } else if (((tau_ff.cwiseAbs()).array() > 8.0).any()) {  // Test feedforward torques limits
     return 3;
   }
   return 0;
