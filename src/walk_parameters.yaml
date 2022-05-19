@@ -3,16 +3,16 @@ robot:
     config_file: config_solo12.yaml  #  Name of the yaml file containing hardware information
     interface: enp2s0  # Name of the communication interface (check with ifconfig)
     DEMONSTRATION: false  # Enable/disable demonstration functionalities
-    SIMULATION: false  # Enable/disable PyBullet simulation or running on real robot
+    SIMULATION: true  # Enable/disable PyBullet simulation or running on real robot
     LOGGING: false  # Enable/disable logging during the experiment
     PLOTTING: true  # Enable/disable automatic plotting at the end of the experiment
     envID: 0  # Identifier of the environment to choose in which one the simulation will happen
     use_flat_plane: true  # If True the ground is flat, otherwise it has bumps
-    predefined_vel: false  # If we are using a predefined reference velocity (True) or a joystick (False)
+    predefined_vel: true  # If we are using a predefined reference velocity (True) or a joystick (False)
     velID: 10  # Identifier of the reference velocity profile to choose which one will be sent to the robot
-    N_SIMULATION: 50000  # Number of simulated wbc time steps
-    enable_pyb_GUI: true  # Enable/disable PyBullet GUI
-    enable_corba_viewer: true  # Enable/disable Corba Viewer
+    N_SIMULATION: 11000  # Number of simulated wbc time steps
+    enable_pyb_GUI: false  # Enable/disable PyBullet GUI
+    enable_corba_viewer: false  # Enable/disable Corba Viewer
     enable_multiprocessing: true  # Enable/disable running the MPC in another process in parallel of the main loop
     perfect_estimator: false  # Enable/disable perfect estimator by using data directly from PyBullet
 
@@ -37,13 +37,20 @@ robot:
     # Parameters of Joystick
     gp_alpha_vel: 0.003  # Coefficient of the low pass filter applied to gamepad velocity
     gp_alpha_pos: 0.005  # Coefficient of the low pass filter applied to gamepad position
-    t_switch: [  0, 1, 3, 4, 6, 7, 9, 10, 11]
-    v_switch: [0.0, 0.51, 1.02, 1.02, 1.02, 1.02, 1.02, 0.51, 0.0,
-               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-               0.0, 0.85,-0.85,-0.85, 0.85, 0.85,-0.85, 0.0, 0.0]
+    t_switch: [0, 1, 4, 6, 9]
+    v_switch: [0.0, 0.0, 1.0, 1.0, 0.0,
+               0.0, 0.0, 0.0, 0.0, 0.0,
+               0.0, 0.0, 0.0, 0.0, 0.0,
+               0.0, 0.0, 0.0, 0.0, 0.0,
+               0.0, 0.0, 0.0, 0.0, 0.0,
+               0.0, 0.0, 0.0, 0.0, 0.0]
+    # t_switch: [  0, 1, 3, 4, 6, 7, 9, 10, 11]
+    # v_switch: [0.0, 0.51, 1.02, 1.02, 1.02, 1.02, 1.02, 0.51, 0.0,
+    #           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #           0.0, 0.85,-0.85,-0.85, 0.85, 0.85,-0.85, 0.0, 0.0]
 
     # Parameters of Estimator
     fc_v_esti: 50.0  # Cut frequency for the low pass that filters the estimated base velocity
@@ -54,7 +61,7 @@ robot:
     # Parameters of FootTrajectoryGenerator
     max_height: 0.05  # Apex height of the swinging trajectory [m]
     lock_time: 0.04  # Target lock before the touchdown [s]
-    vert_time: 0.01  # Duration during which feet move only along Z when taking off and landing
+    vert_time: 0.03  # Duration during which feet move only along Z when taking off and landing
 
     # Parameters of MPC with OSQP
     # [0.0, 0.0, 20.0, 0.25, 0.25, 10.0, 0.05, 0.05, 0.2, 0.0, 0.0, 0.3]
