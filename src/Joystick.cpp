@@ -23,10 +23,12 @@ void Joystick::initialize(Params& params) {
   lock_time_L1_ = std::chrono::system_clock::now();
 
   // Gamepad initialisation
-  device = "/dev/input/js0";
-  js = open(device, O_RDONLY | O_NONBLOCK);
-  if (js == -1) {
-    perror("Could not open joystick");
+  if (!predefined) {
+    device = "/dev/input/js0";
+    js = open(device, O_RDONLY | O_NONBLOCK);
+    if (js == -1) {
+      perror("Could not open joystick");
+    }
   }
 }
 
