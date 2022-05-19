@@ -23,7 +23,7 @@ class LoggerControl():
         if loading:
             if fileName is None:
                 import glob
-                fileName = np.sort(glob.glob('data_2021_*.npz'))[-1]  # Most recent file
+                fileName = np.sort(glob.glob('data_2022_*.npz'))[-1]  # Most recent file
 
             self.data = np.load(fileName, allow_pickle = True)
             N0_gait = self.data["planner_gait"].shape[1]
@@ -128,9 +128,9 @@ class LoggerControl():
         self.wbc_feet_vel = np.zeros([logSize, 3, 4])  # current feet velocities according to WBC
         self.wbc_feet_vel_target = np.zeros([logSize, 3, 4])  # current feet velocities targets for WBC
         self.wbc_feet_acc_target = np.zeros([logSize, 3, 4])  # current feet accelerations targets for WBC
-        self.wbc_tasks_acc = np.zeros([logSize, 30])  # acceleration of tasks in InvKin
-        self.wbc_tasks_vel = np.zeros([logSize, 30])  # velocities of tasks in InvKin
-        self.wbc_tasks_err = np.zeros([logSize, 30])  # position error of tasks in InvKin
+        self.wbc_tasks_acc = np.zeros([logSize, 18])  # acceleration of tasks in InvKin
+        self.wbc_tasks_vel = np.zeros([logSize, 18])  # velocities of tasks in InvKin
+        self.wbc_tasks_err = np.zeros([logSize, 18])  # position error of tasks in InvKin
 
         # Timestamps
         self.tstamps = np.zeros(logSize)
@@ -402,7 +402,7 @@ class LoggerControl():
                 plt.legend(["State", "Ground truth", "Ref state"], prop={'size': 8})
             plt.ylabel(lgd[i])
             if i == 0:
-                plt.ylim([-0.05, 1.25])
+                plt.ylim([-0.05, 1.35])
         self.custom_suptitle("Linear and angular velocities")
 
         print("RMSE: ", np.sqrt(((self.joy_v_ref[:-1000, 0] - self.mocap_h_v[:-1000, 0])**2).mean()))

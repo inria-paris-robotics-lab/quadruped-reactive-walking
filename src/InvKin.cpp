@@ -2,9 +2,9 @@
 
 InvKin::InvKin()
     : invJ(Matrix12::Zero()),
-      acc(Eigen::Matrix<double, 1, 30>::Zero()),
-      x_err(Eigen::Matrix<double, 1, 30>::Zero()),
-      dx_r(Eigen::Matrix<double, 1, 30>::Zero()),
+      acc(Eigen::Matrix<double, 1, 18>::Zero()),
+      x_err(Eigen::Matrix<double, 1, 18>::Zero()),
+      dx_r(Eigen::Matrix<double, 1, 18>::Zero()),
       pfeet_err(Matrix43::Zero()),
       vfeet_ref(Matrix43::Zero()),
       afeet(Matrix43::Zero()),
@@ -30,8 +30,8 @@ InvKin::InvKin()
       awbasis(Vector3::Zero()),
       afeet_contacts_(Matrix43::Zero()),
       Jb_(Eigen::Matrix<double, 6, 18>::Zero()),
-      J_(Eigen::Matrix<double, 30, 18>::Zero()),
-      invJ_(Eigen::Matrix<double, 18, 30>::Zero()),
+      J_(Eigen::Matrix<double, 18, 18>::Zero()),
+      invJ_(Eigen::Matrix<double, 18, 18>::Zero()),
       ddq_cmd_(Vector18::Zero()),
       dq_cmd_(Vector18::Zero()),
       q_cmd_(Vector19::Zero()),
@@ -92,39 +92,33 @@ void InvKin::refreshAndCompute(Matrix14 const& contacts, Matrix43 const& pgoals,
   // Compute tasks accelerations and Jacobians
   /////
 
-  // Accelerations references for the base / feet position task
+  // Accelerations references for the feet position task
   for (int i = 0; i < 4; i++) {
     // Feet acceleration
     pfeet_err.row(i) = pgoals.row(i) - posf_.row(i);
     vfeet_ref.row(i) = vgoals.row(i);
-    afeet.row(i) = +params_->Kp_flyingfeet * pfeet_err.row(i) +
-                   params_->Kd_flyingfeet * (vfeet_ref.row(i) - vf_.row(i)) + agoals.row(i);
-
-    // std::cout << "1: " << afeet.row(i) << std::endl;
+    //if (contacts(0, i) == 1.0) {
+    //afeet.row(i).setZero();
+    //} else {
+    afeet.row(i) = +params_->Kp_flyingfeet * pfeet_err.row(i);
+    //}
+    afeet.row(i) += params_->Kd_flyingfeet * (vfeet_ref.row(i) - vf_.row(i)) + agoals.row(i);
     afeet.row(i) -= af_.row(i) + (wf_.row(i)).cross(vf_.row(i));
-    // std::cout << "2: " << afeet.row(i) << std::endl;
 
     // Subtract base acceleration
-    afeet.row(i) -= (params_->Kd_flyingfeet * (vb_ref_ - vb_) - (ab_.head(3) + wb_.cross(vb_))).transpose();
-    // std::cout << "3: " << afeet.row(i) << std::endl;
-    /*std::cout << vb_ref_.transpose() << std::endl;
-    std::cout << vb_.transpose() << std::endl;
-    std::cout << wb_.transpose() << std::endl;
-    std::cout << ab_.head(3).transpose() << std::endl;
-    std::cout << (vb_ref_ - vb_).transpose() << std::endl;
-    std::cout << (wb_.cross(vb_)).transpose() << std::endl;*/
-    // std::cout << "---" << std::endl;
+    // afeet.row(i) -= (params_->Kd_flyingfeet * (vb_ref_ - vb_) - (ab_.head(3) + wb_.cross(vb_))).transpose();
   }
 
-  // Jacobian for the base / feet position task
+  // Jacobian for the feet position task
   for (int i = 0; i < 4; i++) {
-    J_.block(6 + 3 * i, 0, 3, 18) = Jf_.block(3 * i, 0, 3, 18) - Jb_.block(0, 0, 3, 18);
+    J_.block(6 + 3 * i, 0, 3, 18) = Jf_.block(3 * i, 0, 3, 18); // - Jb_.block(0, 0, 3, 18);
   }
 
   // Acceleration references for the base linear velocity task
-  posb_err_ = Vector3::Zero();  // No tracking in x, y, z
-  abasis = Kd_base_position.cwiseProduct(vb_ref_ - vb_);
+  posb_err_ = Vector3::Zero(); // vb_ref_ * params_->dt_wbc;  // No tracking in x, y, z
+  abasis = Kp_base_position.cwiseProduct(posb_err_) + Kd_base_position.cwiseProduct(vb_ref_ - vb_);
   abasis -= ab_.head(3) + wb_.cross(vb_);
+  //std::cout << "abasis" << std::endl << abasis.transpose() << std::endl;
 
   // Jacobian for the base linear velocity task
   J_.block(0, 0, 3, 18) = Jb_.block(0, 0, 3, 18);
@@ -153,7 +147,7 @@ void InvKin::refreshAndCompute(Matrix14 const& contacts, Matrix43 const& pgoals,
   for (int i = cpt; i < 4; i++) {  // Set to 0s the lines that are not used
     afeet_contacts_.row(i).setZero();
   }*/
-  for (int i = 0; i < 4; i++) {
+  /*for (int i = 0; i < 4; i++) {
     if (contacts(0, i) == 1.0) {
       afeet_contacts_.row(i) = +params_->Kp_flyingfeet * pfeet_err.row(i) +
                                params_->Kd_flyingfeet * (vfeet_ref.row(i) - vf_.row(i)) + agoals.row(i);
@@ -170,7 +164,7 @@ void InvKin::refreshAndCompute(Matrix14 const& contacts, Matrix43 const& pgoals,
     } else {
       J_.block(18 + 3 * i, 0, 3, 18).setZero();
     }
-  }
+  }*/
   /*cpt = 0;
   for (int i = 0; i < 4; i++) {
     if (contacts(0, i) == 1.0) {  // Store Jacobian of feet in contact
@@ -195,9 +189,9 @@ void InvKin::refreshAndCompute(Matrix14 const& contacts, Matrix43 const& pgoals,
   // Base angular task
   acc.block(0, 3, 1, 3) = awbasis.transpose();
   // Non-moving contact task
-  for (int i = 0; i < 4; i++) {
+  /*for (int i = 0; i < 4; i++) {
     acc.block(0, 18 + 3 * i, 1, 3) = afeet_contacts_.row(i);
-  }
+  }*/
 
   /////
   // Fill velocity reference vector
@@ -205,16 +199,16 @@ void InvKin::refreshAndCompute(Matrix14 const& contacts, Matrix43 const& pgoals,
 
   // Feet / base tracking task
   for (int i = 0; i < 4; i++) {
-    dx_r.block(0, 6 + 3 * i, 1, 3) = vfeet_ref.row(i) - vb_ref_.transpose();
+    dx_r.block(0, 6 + 3 * i, 1, 3) = vfeet_ref.row(i);  // - vb_ref_.transpose();
   }
   // Base linear task
   dx_r.block(0, 0, 1, 3) = vb_ref_.transpose();
   // Base angular task
   dx_r.block(0, 3, 1, 3) = wb_ref_.transpose();
   // Non-moving contact task
-  for (int i = 0; i < 4; i++) {
+  /*for (int i = 0; i < 4; i++) {
     dx_r.block(0, 18 + 3 * i, 1, 3) = vfeet_ref.row(i);
-  }
+  }*/
 
   /////
   // Fill position reference vector
@@ -222,48 +216,54 @@ void InvKin::refreshAndCompute(Matrix14 const& contacts, Matrix43 const& pgoals,
 
   // Feet / base tracking task
   for (int i = 0; i < 4; i++) {
-    x_err.block(0, 6 + 3 * i, 1, 3) = pfeet_err.row(i) - posb_err_.transpose();
+    x_err.block(0, 6 + 3 * i, 1, 3) = pfeet_err.row(i);  // - posb_err_.transpose();
   }
   // Base linear task
   x_err.block(0, 0, 1, 3) = posb_err_.transpose();
   // Base angular task
   x_err.block(0, 3, 1, 3) = rotb_err_.transpose();
   // Non-moving contact task
-  for (int i = 0; i < 4; i++) {
+  /*for (int i = 0; i < 4; i++) {
     x_err.block(0, 18 + 3 * i, 1, 3) = pfeet_err.row(i);
-  }
+  }*/
 
   /////
   // Apply tasks weights
   /////
+
+  if(contacts.isZero()) {
+    w_tasks.tail(7).setZero();
+  } else {
+    w_tasks.tail(7).setOnes();
+  }
 
   // Product with tasks weights for Jacobian
   J_.block(6, 0, 12, 18) *= w_tasks(0, 0);
   for (int i = 0; i < 6; i++) {
     J_.row(i) *= w_tasks(1 + i, 0);
   }
-  J_.block(18, 0, 12, 18) *= w_tasks(7, 0);
+  // J_.block(18, 0, 12, 18) *= w_tasks(7, 0);
 
   // Product with tasks weights for acc references
   acc.block(6, 0, 1, 12) *= w_tasks(0, 0);
   for (int i = 0; i < 6; i++) {
     acc(0, i) *= w_tasks(1 + i, 0);
   }
-  acc.tail(12) *= w_tasks(7, 0);
+  // acc.tail(12) *= w_tasks(7, 0);
 
   // Product with tasks weights for vel references
   dx_r.block(6, 0, 1, 12) *= w_tasks(0, 0);
   for (int i = 0; i < 6; i++) {
     dx_r(0, i) *= w_tasks(1 + i, 0);
   }
-  dx_r.tail(12) *= w_tasks(7, 0);
+  // dx_r.tail(12) *= w_tasks(7, 0);
 
   // Product with tasks weights for pos references
   x_err.block(6, 0, 1, 12) *= w_tasks(0, 0);
   for (int i = 0; i < 6; i++) {
     x_err(0, i) *= w_tasks(1 + i, 0);
   }
-  x_err.tail(12) *= w_tasks(7, 0);
+  // x_err.tail(12) *= w_tasks(7, 0);
 
   /////
   // Jacobian inversion
@@ -272,29 +272,62 @@ void InvKin::refreshAndCompute(Matrix14 const& contacts, Matrix43 const& pgoals,
   // Using damped pseudo inverse
   invJ_ = pseudoInverse(J_);
 
+  MatrixN test = MatrixN::Zero(18, 18);
+  Matrix3 invJi;
+  test.block(0, 0, 3, 3) = J_.block(0, 0, 3, 3).transpose();
+  test.block(3, 3, 3, 3) = J_.block(0, 0, 3, 3).transpose();
+  for (int i = 0; i < 4; i++) {
+    invJi = pseudoInverse(J_.block(6 + 3 * i, 6 + 3 * i, 3, 3));
+    test.block(6 + 3 * i, 0, 3, 3) = -invJi;
+    Matrix3 pskew;
+    pskew << 0.0, -posf_(i, 2), posf_(i, 1),
+            posf_(i, 2), 0.0, -posf_(i, 0),
+            -posf_(i, 1), posf_(i, 0), 0.0;
+    test.block(6 + 3 * i, 3, 3, 3) = invJi * pskew;
+    test.block(6 + 3 * i, 6 + 3 * i, 3, 3) = invJi;
+  }
+
+  std::cout << "==========" << std::endl;
+  std::cout << "Ref:" << std::endl << invJ_ << std::endl;
+  std::cout << "New:" << std::endl << test << std::endl;
+  std::cout << "Dif:" << std::endl << invJ_ - test << std::endl;
+
   /////
   // Compute command accelerations, velocities and positions
   /////
 
   ddq_cmd_ = invJ_ * acc.transpose();
   dq_cmd_ = invJ_ * dx_r.transpose();
+  
+  /*for (int i = 0; i < 4; i++) {
+    if (contacts(0, i) == 0.0) {
+      invJ_.block(6 + 3 * i, 0, 3, 6).setZero();
+    }
+  }*/
+
   q_step_ = invJ_ * x_err.transpose();  // Not a position but a step in position
 
-  // std::cout << "pfeet_err" << std::endl << pfeet_err << std::endl;
+  // dq_cmd_ = invJ_.block(0, 6, 18, 12) * dx_r.transpose().tail(12);
+  // q_step_ = invJ_.block(0, 6, 18, 12) * x_err.transpose().tail(12);  // Not a position but a step in position
 
-  /*std::cout << "acc: " << std::endl << acc << std::endl;
-  std::cout << "J_   : " << std::endl << J_ << std::endl;
-  std::cout << "invJ_: " << std::endl << invJ_ << std::endl;
-  std::cout << "ddq_cmd_: " << std::endl << ddq_cmd_.transpose() << std::endl;*/
+  // dq_cmd_ = invJ_.block(0, 3, 18, 15) * dx_r.transpose().tail(15);
+  // q_step_ = invJ_.block(0, 3, 18, 15) * x_err.transpose().tail(15);  // Not a position but a step in position
+
+  //std::cout << "pfeet_err" << std::endl << pfeet_err << std::endl;
+
+  //std::cout << "acc: " << std::endl << acc << std::endl;
+  //std::cout << "J_   : " << std::endl << J_ << std::endl;
+  //std::cout << "invJ_: " << std::endl << invJ_ << std::endl;
+  //std::cout << "ddq_cmd_: " << std::endl << ddq_cmd_.transpose() << std::endl;
 
   /*std::cout << "J" << std::endl << J_ << std::endl;
-  std::cout << "invJ" << std::endl << invJ_ << std::endl;*/
-  /*std::cout << "acc" << std::endl << acc << std::endl;
+  std::cout << "invJ" << std::endl << invJ_ << std::endl;
+  std::cout << "acc" << std::endl << acc << std::endl;
   std::cout << "dx_r" << std::endl << dx_r << std::endl;
-  std::cout << "x_err" << std::endl << x_err << std::endl;*/
-  /*std::cout << "ddq_cmd" << std::endl << ddq_cmd_ << std::endl;
-  std::cout << "dq_cmd" << std::endl << dq_cmd_ << std::endl;
-  std::cout << "q_step" << std::endl << q_step_ << std::endl;*/
+  std::cout << "x_err" << std::endl << x_err << std::endl;
+  std::cout << "ddq_cmd" << std::endl << ddq_cmd_.transpose() << std::endl;
+  std::cout << "dq_cmd" << std::endl << dq_cmd_.transpose() << std::endl;
+  std::cout << "q_step" << std::endl << q_step_.transpose() << std::endl;*/
 
   // Store data
   /*
@@ -366,52 +399,6 @@ void InvKin::run_InvKin(VectorN const& q, VectorN const& dq, MatrixN const& cont
   std::cout << wb_ << std::endl;
   std::cout << ab_ << std::endl;*/
 
-  /*
-  Eigen::Matrix<double, 6, 18> dJf = Eigen::Matrix<double, 6, 18>::Zero();
-  std::cout << "analysis: " << std::endl;
-  std::cout << pinocchio::getJointJacobianTimeVariation(model_, data_, foot_ids_[0], pinocchio::LOCAL_WORLD_ALIGNED,
-  dJf) << std::endl; std::cout << "---" << std::endl; std::cout << dq.transpose() << std::endl; std::cout << "---" <<
-  std::endl; std::cout << dJf * dq << std::endl; std::cout << "---" << std::endl;*/
-
-  // Eigen::Matrix<double, 6, 18> dJf = Eigen::Matrix<double, 6, 18>::Zero();
-  /*
-  for (int i = 0; i < 4; i++) {
-    Jf_tmp_.setZero();
-    pinocchio::getFrameJacobianTimeVariation(model_, data_, foot_ids_[i], pinocchio::LOCAL_WORLD_ALIGNED, Jf_tmp_);
-    dJdq_.row(i) = (Jf_tmp_.block(0, 0, 3, 18) * dq).transpose();
-  }
-  */
-  /*std::cout << "Other: " << dJdq_.row(0) << std::endl;
-  std::cout << "Other: " << dJdq_.row(1) << std::endl;
-  std::cout << "Other: " << dJdq_.row(2) << std::endl;
-  std::cout << "Other: " << dJdq_.row(3) << std::endl;*/
-
-  /*
-  Jf_tmp_.setZero();
-  pinocchio::getFrameJacobianTimeVariation(model_, data_, base_id_, pinocchio::LOCAL_WORLD_ALIGNED, Jf_tmp_);
-  */
-  // std::cout << "Base dJdq: " << (Jf_tmp_ * dq).transpose() << std::endl;
-
-  /*
-  pinocchio::forwardKinematics(model_dJdq_, data_dJdq_, q, dq, VectorN::Zero(model_.nv));
-  pinocchio::updateFramePlacements(model_dJdq_, data_dJdq_);
-  pinocchio::rnea(model_dJdq_, data_dJdq_, q, dq, VectorN::Zero(model_dJdq_.nv));
-  for (int i = 0; i < 4; i++) {
-    pinocchio::Motion a = data_dJdq_.a[foot_joints_ids_[i]];
-    pinocchio::Motion v = data_dJdq_.v[foot_joints_ids_[i]];
-    // pinocchio::FrameVector foot = model_dJdq_.frames[foot_ids_[0]]
-    pinocchio::SE3 kMf = (model_dJdq_.frames[foot_ids_[i]]).placement;
-    pinocchio::SE3 wMf = data_dJdq_.oMf[foot_ids_[i]];
-    // f_a = kMf.actInv(a)
-    // f_v = kMf.actInv(v)
-    Vector3 f_a3 = kMf.actInv(a).linear() + (kMf.actInv(v).angular()).cross(kMf.actInv(v).linear());
-    Vector3 w_a3 = wMf.rotation() * f_a3;
-    // std::cout << "f_a3: " << f_a3.transpose() << std::endl;
-    // std::cout << "w_a3: " << w_a3.transpose() << std::endl;
-    dJdq_.row(i) = w_a3.transpose();
-  }
-  */
-
   // IK output for accelerations of actuators (stored in ddq_cmd_)
   // IK output for velocities of actuators (stored in dq_cmd_)
   refreshAndCompute(contacts, pgoals, vgoals, agoals);
@@ -419,32 +406,16 @@ void InvKin::run_InvKin(VectorN const& q, VectorN const& dq, MatrixN const& cont
   // IK output for positions of actuators
   q_cmd_ = pinocchio::integrate(model_, q, q_step_);
 
-  /*pinocchio::forwardKinematics(model_, data_, q_cmd_, dq_cmd_, ddq_cmd_);
-  pinocchio::computeJointJacobians(model_, data_);
-  pinocchio::updateFramePlacements(model_, data_);
-  std::cout << "pos after step" << std::endl;
-  std::cout << data_.oMf[foot_ids_[0]].translation()  << std::endl;
-  std::cout << "vel after step" << std::endl;
-  std::cout << pinocchio::getFrameVelocity(model_, data_, foot_ids_[0], pinocchio::LOCAL_WORLD_ALIGNED).linear() <<
-  std::endl; std::cout << "acc after step" << std::endl; std::cout << pinocchio::getFrameAcceleration(model_, data_,
-  foot_ids_[0], pinocchio::LOCAL_WORLD_ALIGNED).linear() << std::endl;*/
-
-  /*std::cout << "q: " << q << std::endl;
-  std::cout << "q_step_: " << q_step_ << std::endl;
-  std::cout << " q_cmd_: " <<  q_cmd_ << std::endl;*/
-
-  /*pinocchio::forwardKinematics(model_, data_, q, dq, ddq_cmd_);
-  pinocchio::updateFramePlacements(model_, data_);
-  std::cout << "Feet velocities after IK:" << std::endl;
+  // Clamping
+  /*double q_lim = 30.0 * M_PI / 180.0;
   for (int i = 0; i < 4; i++) {
-    int idx = foot_ids_[i];
-    pinocchio::Motion nu = pinocchio::getFrameVelocity(model_, data_, idx, pinocchio::LOCAL_WORLD_ALIGNED);
-    std::cout << nu.linear() << std::endl;
-  }
-  std::cout << "Feet accelerations after IK:" << std::endl;
-  for (int i = 0; i < 4; i++) {
-    int idx = foot_ids_[i];
-    pinocchio::Motion acc = pinocchio::getFrameClassicalAcceleration(model_, data_, idx,
-  pinocchio::LOCAL_WORLD_ALIGNED); std::cout << acc.linear() << std::endl;
+    if (q_cmd_(9 + 3 * i, 0) > 0) {
+      if (q_cmd_(9 + 3 * i, 0) < q_lim) { std::cout << "Clamping " << i << std::endl; }
+      q_cmd_(9 + 3 * i, 0) = q_cmd_(9 + 3 * i, 0) > q_lim ? q_cmd_(9 + 3 * i, 0) : q_lim;
+    } else if (q_cmd_(9 + 3 * i, 0) < 0) {
+      q_cmd_(9 + 3 * i, 0) = q_cmd_(9 + 3 * i, 0) < -q_lim ? q_cmd_(9 + 3 * i, 0) : -q_lim;
+      if (q_cmd_(9 + 3 * i, 0) > -q_lim) { std::cout << "Clamping " << i << std::endl; }
+    }
   }*/
+
 }

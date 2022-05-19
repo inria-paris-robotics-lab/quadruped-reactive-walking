@@ -100,9 +100,9 @@ class InvKin {
 
   // Matrices initialisation
   Matrix12 invJ;                       // Inverse of the feet Jacobian
-  Eigen::Matrix<double, 1, 30> acc;    // Reshaped feet acceleration references to get command acc for actuators
-  Eigen::Matrix<double, 1, 30> x_err;  // Reshaped feet position errors to get command position step for actuators
-  Eigen::Matrix<double, 1, 30> dx_r;   // Reshaped feet velocity references to get command velocities for actuators
+  Eigen::Matrix<double, 1, 18> acc;    // Reshaped feet acceleration references to get command acc for actuators
+  Eigen::Matrix<double, 1, 18> x_err;  // Reshaped feet position errors to get command position step for actuators
+  Eigen::Matrix<double, 1, 18> dx_r;   // Reshaped feet velocity references to get command velocities for actuators
 
   Matrix43 pfeet_err;  // Feet position errors to get command position step for actuators
   Matrix43 vfeet_ref;  // Feet velocity references to get command velocities for actuators
@@ -137,8 +137,8 @@ class InvKin {
   Matrix43 afeet_contacts_;          // Acceleration references for the feet contact task
   Eigen::Matrix<double, 6, 18> Jb_;  // Jacobian of the base (linear/angular)
 
-  Eigen::Matrix<double, 30, 18> J_;     // Task Jacobian
-  Eigen::Matrix<double, 18, 30> invJ_;  // Inverse of Task Jacobian
+  Eigen::Matrix<double, 18, 18> J_;     // Task Jacobian
+  Eigen::Matrix<double, 18, 18> invJ_;  // Inverse of Task Jacobian
 
   Vector3 Kp_base_position;     // Proportional gains for base position task
   Vector3 Kd_base_position;     // Derivative gains for base position task
