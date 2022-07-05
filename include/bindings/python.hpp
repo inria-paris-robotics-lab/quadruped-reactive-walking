@@ -11,21 +11,7 @@
 
 namespace bp = boost::python;
 
-void exposeMPC();
-void exposeFilter();
-void exposeStatePlanner();
-void exposeGait();
-void exposeFootstepPlanner();
-void exposeFootTrajectoryGenerator();
-void exposeInvKin();
-void exposeQPWBC();
-void exposeWbcWrapper();
-void exposeEstimator();
 void exposeJoystick();
 void exposeParams();
-void exposeSurface();
-void exposeFootTrajectoryGeneratorBezier();
-void exposeFootstepPlannerQP();
-void exposeStatePlanner3D();
 
 #endif

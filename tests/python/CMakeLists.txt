@@ -1,1 +1,0 @@
-ADD_PYTHON_UNIT_TEST("qrw" "tests/python/test1.py" "python")

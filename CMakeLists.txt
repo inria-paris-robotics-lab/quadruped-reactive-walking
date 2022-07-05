@@ -47,53 +47,14 @@ SEARCH_FOR_BOOST()
 # Main Library
 set(${PROJECT_NAME}_HEADERS
   include/bindings/python.hpp
-  include/qrw/Solo3D/Heightmap.hpp
-  include/qrw/Solo3D/FootTrajectoryGeneratorBezier.hpp
-  include/qrw/Solo3D/FootstepPlannerQP.hpp
-  include/qrw/Solo3D/StatePlanner3D.hpp
-  include/qrw/Solo3D/Surface.hpp
-  include/qrw/MPC.hpp
-  include/qrw/Gait.hpp
-  include/qrw/FootTrajectoryGenerator.hpp
-  include/qrw/FootstepPlanner.hpp
-  include/qrw/StatePlanner.hpp
   include/qrw/Types.h
-  include/qrw/InvKin.hpp
-  include/qrw/QPWBC.hpp
-  include/qrw/WbcWrapper.hpp
   include/qrw/Params.hpp
-  include/qrw/Estimator.hpp
-  include/qrw/ComplementaryFilter.hpp
   include/qrw/Joystick.hpp
-  include/qrw/Filter.hpp
-  include/qrw/Controller.hpp
-  include/qrw/MpcWrapper.hpp
-  include/qrw/FakeRobot.hpp
-  include/other/st_to_cc.hpp
   )
 
 set(${PROJECT_NAME}_SOURCES
-  src/st_to_cc.cpp
-  src/Solo3D/Heightmap.cpp
-  src/Solo3D/FootTrajectoryGeneratorBezier.cpp
-  src/Solo3D/FootstepPlannerQP.cpp
-  src/Solo3D/StatePlanner3D.cpp
-  src/Solo3D/Surface.cpp
-  src/MPC.cpp
-  src/Gait.cpp
-  src/FootTrajectoryGenerator.cpp
-  src/FootstepPlanner.cpp
-  src/StatePlanner.cpp
-  src/InvKin.cpp
-  src/QPWBC.cpp
-  src/WbcWrapper.cpp
   src/Params.cpp
-  src/Estimator.cpp
-  src/ComplementaryFilter.cpp
   src/Joystick.cpp
-  src/Filter.cpp
-  src/Controller.cpp
-  src/MpcWrapper.cpp
   )
 
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SOURCES} ${${PROJECT_NAME}_HEADERS})
@@ -112,29 +73,11 @@ add_project_dependency(pinocchio REQUIRED)
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC pinocchio::pinocchio)
 
 # Link odri_control_interface library
-find_package(odri_control_interface REQUIRED)
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC odri_control_interface::odri_control_interface)
+# find_package(odri_control_interface REQUIRED)
+# TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC odri_control_interface::odri_control_interface)
 
 # Link master board library
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC master_board_sdk::master_board_sdk)
-
-# Find parametric curves library and headers
-add_project_dependency(ndcurves REQUIRED)
-
-# Link parametric curves library
-target_link_libraries(${PROJECT_NAME} PUBLIC ndcurves::ndcurves)
-
-# Find eiquadprog library and headers
-add_project_dependency(eiquadprog REQUIRED)
-
-# Link eiquadprog library
-target_link_libraries(${PROJECT_NAME} PUBLIC eiquadprog::eiquadprog)
-
-# Find OSQP library and headers
-find_package(osqp REQUIRED)
-
-# Link the OSQP shared library
-target_link_libraries(${PROJECT_NAME} PUBLIC osqp::osqp)
+# TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC master_board_sdk::master_board_sdk)
 
 #find_package(yaml-cpp REQUIRED)
 #target_link_libraries(${PROJECT_NAME} PRIVATE yaml-cpp::yaml-cpp)
@@ -144,9 +87,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${YAML_CPP_LIBRARIES})
 if(SUFFIX_SO_VERSION)
   set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION ${PROJECT_VERSION})
 endif()
-
-# target_compile_options(${PROJECT_NAME} PUBLIC PRINTING)
-# target_compile_definitions(${PROJECT_NAME} PUBLIC PRINTING)
 
 target_compile_options(${PROJECT_NAME} PUBLIC -DNDEBUG -O3)
 
@@ -167,9 +107,6 @@ target_link_libraries(${PROJECT_NAMESPACE}-${PROJECT_NAME} ${PROJECT_NAME} mqtt-
 if(BUILD_PYTHON_INTERFACE)
   add_subdirectory(python)
 endif()
-
-# Unit tests
-add_subdirectory(tests)
 
 # Installation
 if(NOT INSTALL_PYTHON_INTERFACE_ONLY)

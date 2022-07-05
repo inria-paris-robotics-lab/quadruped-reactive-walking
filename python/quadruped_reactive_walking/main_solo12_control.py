@@ -5,7 +5,7 @@ import numpy as np
 
 from . import quadruped_reactive_walking as qrw
 from .Controller import Controller
-from .tools.LoggerControlSimple import LoggerControl
+from .tools.LoggerControl import LoggerControl
 
 params = qrw.Params()  # Object that holds all controller parameters
 

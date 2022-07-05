@@ -1,21 +1,7 @@
 set(${PY_NAME}_SOURCES
   main.cpp
-  Estimator.cpp
-  Filter.cpp
-  MPC.cpp
-  FootstepPlanner.cpp
-  FootTrajectoryGenerator.cpp
-  Gait.cpp
-  InvKin.cpp
   Joystick.cpp
   Params.cpp
-  QPWBC.cpp
-  StatePlanner.cpp
-  WbcWrapper.cpp
-  Solo3D/FootstepPlannerQP.cpp
-  Solo3D/FootTrajectoryGeneratorBezier.cpp
-  Solo3D/StatePlanner3D.cpp
-  Solo3D/Surface.cpp
 )
 
 add_library(${PY_NAME} SHARED ${${PY_NAME}_SOURCES})
@@ -33,49 +19,30 @@ set(${PY_NAME}_PYTHON
   __init__.py
   Controller.py
   main_solo12_control.py
-  main_solo12_replay.py
-  MPC_Wrapper.py
+  WB_MPC_Wrapper.py
   )
 
-set(${PY_NAME}_CROCODDYL_PYTHON
+set(${PY_NAME}_WB_MPC_PYTHON
   __init__.py
-  MPC_crocoddyl.py
-  MPC_crocoddyl_2.py
-  MPC_crocoddyl_planner.py
-  )
-
-set(${PY_NAME}_SOLO3D_PYTHON
-  __init__.py
-  heightmap_generator.py
-  heightmap_tools.py
-  pyb_environment_3D.py
-  SurfacePlanner.py
-  SurfacePlannerWrapper.py
-  utils.py
+  CrocoddylOCP.py
+  CasadiOCP.py
+  ShootingNode.py
   )
 
 set(${PY_NAME}_TOOLS_PYTHON
-  ForceMonitor.py
   gamepadClient.py
   __init__.py
   LoggerControl.py
-  LoggerSensors.py
-  place_com_with_invkin.py
   PyBulletSimulator.py
   qualisysClient.py
-  utils_mpc.py
   )
 
 foreach(python ${${PY_NAME}_PYTHON})
   PYTHON_INSTALL_ON_SITE(${PY_NAME} ${python})
 endforeach()
 
-foreach(python ${${PY_NAME}_CROCODDYL_PYTHON})
-  PYTHON_INSTALL_ON_SITE(${PY_NAME}/Crocoddyl ${python})
-endforeach()
-
-foreach(python ${${PY_NAME}_SOLO3D_PYTHON})
-  PYTHON_INSTALL_ON_SITE(${PY_NAME}/solo3D ${python})
+foreach(python ${${PY_NAME}_WB_MPC_PYTHON})
+  PYTHON_INSTALL_ON_SITE(${PY_NAME}/WB_MPC ${python})
 endforeach()
 
 foreach(python ${${PY_NAME}_TOOLS_PYTHON})

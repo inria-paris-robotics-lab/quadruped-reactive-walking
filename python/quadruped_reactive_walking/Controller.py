@@ -56,7 +56,6 @@ class Controller:
             q_init (array): initial position of actuators
             t (float): time of the simulation
         """
-        self.enable_pyb_GUI = params.enable_pyb_GUI
         self.q_security = np.array([1.2, 2.1, 3.14] * 4)
 
         self.mpc = WB_MPC_Wrapper.MPC_Wrapper(params)
@@ -77,13 +76,14 @@ class Controller:
         t_start = time.time()
 
         try:
-            self.mpc_wrapper.solve()
+            self.mpc.solve()
         except ValueError:
+            self.error = True
             print("MPC Problem")
 
-        self.mpc_result, self.mpc_cost = self.mpc_wrapper.get_latest_result()
-
         if not self.error:
+            self.mpc_result, self.mpc_cost = self.mpc.get_latest_result()
+
             self.result.P = np.array(self.params.Kp_main.tolist() * 4)
             self.result.D = np.array(self.params.Kd_main.tolist() * 4)
             self.result.FF = self.params.Kff_main * np.ones(12)
@@ -95,9 +95,10 @@ class Controller:
 
         self.clamp_result(device)
         self.security_check()
-        if self.error or self.joystick.get_stop():
+
+        if self.error:
             self.set_null_control()
-        
+
         self.pyb_camera(device)
 
         self.t_loop = time.time() - t_start
@@ -123,7 +124,9 @@ class Controller:
         Check if the command is fine and set the command to zero in case of error
         """
 
-        if not (self.error or self.joystick.get_stop()):
+        # TODO change with the good values
+
+        if not self.error:
             if (np.abs(self.estimator.get_q_estimate()[7:]) > self.q_security).any():
                 print("-- POSITION LIMIT ERROR --")
                 print(self.estimator.get_q_estimate()[7:])
