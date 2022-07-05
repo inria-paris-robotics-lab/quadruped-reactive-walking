@@ -5,8 +5,7 @@ import numpy as np
 
 from . import quadruped_reactive_walking as qrw
 from .Controller import Controller
-from .tools.LoggerControl import LoggerControl
-from .tools.LoggerSensors import LoggerSensors
+from .tools.LoggerControlSimple import LoggerControl
 
 params = qrw.Params()  # Object that holds all controller parameters
 
@@ -113,7 +112,7 @@ def damp_control(device, nb_motors):
         t += params.dt_wbc
 
 
-def control_loop(des_vel_analysis=None):
+def control_loop():
     """
     Main function that calibrates the robot, get it into a default waiting position then launch
     the main control loop once the user has pressed the Enter key
@@ -125,25 +124,7 @@ def control_loop(des_vel_analysis=None):
         params.enable_pyb_GUI = False
 
     q_init = np.array(params.q_init.tolist())  # Default position after calibration
-
-    if params.SIMULATION and (des_vel_analysis is not None):
-        print(
-            "Analysis: %1.1f %1.1f %1.1f"
-            % (des_vel_analysis[0], des_vel_analysis[1], des_vel_analysis[5])
-        )
-        acceleration_rate = 0.1  # m/s^2
-        steady_state_duration = 3  # s
-        N_analysis = (
-            int(np.max(np.abs(des_vel_analysis)) / acceleration_rate / params.dt_wbc)
-            + 1
-        )
-        N_steady = int(steady_state_duration / params.dt_wbc)
-        params.N_SIMULATION = N_analysis + N_steady
-
     controller = Controller(params, q_init, 0.0)
-
-    if params.SIMULATION and (des_vel_analysis is not None):
-        controller.joystick.update_for_analysis(des_vel_analysis, N_analysis, N_steady)
 
     if params.SIMULATION:
         device = PyBulletSimulator()
@@ -153,10 +134,7 @@ def control_loop(des_vel_analysis=None):
         qc = QualisysClient(ip="140.93.16.160", body_id=0)
 
     if params.LOGGING or params.PLOTTING:
-        loggerSensors = LoggerSensors(
-            device, qualisys=qc, logSize=params.N_SIMULATION - 3
-        )
-        loggerControl = LoggerControl(params, logSize=params.N_SIMULATION - 3)
+        loggerControl = LoggerControl(params, log_size=params.N_SIMULATION - 3)
 
     if params.SIMULATION:
         device.Init(
@@ -166,8 +144,6 @@ def control_loop(des_vel_analysis=None):
             params.enable_pyb_GUI,
             params.dt_wbc,
         )
-        # import ForceMonitor
-        # myForceMonitor = ForceMonitor.ForceMonitor(device.pyb_sim.robotId, device.pyb_sim.planeId)
     else:
         device.initialize(q_init[:])
         device.joints.set_zero_commands()
@@ -183,12 +159,6 @@ def control_loop(des_vel_analysis=None):
     k_log_whole = 0
     T_whole = time.time()
     dT_whole = 0.0
-
-    log_Mddq = np.zeros((params.N_SIMULATION, 6))
-    log_NLE = np.zeros((params.N_SIMULATION, 6))
-    log_JcTf = np.zeros((params.N_SIMULATION, 6))
-    log_Mddq_out = np.zeros((params.N_SIMULATION, 6))
-    log_JcTf_out = np.zeros((params.N_SIMULATION, 6))
     while (not device.is_timeout) and (t < t_max) and (not controller.error):
         t_start_whole = time.time()
 
@@ -208,35 +178,13 @@ def control_loop(des_vel_analysis=None):
             controller.result.FF * controller.result.tau_ff.ravel()
         )
 
-        log_Mddq[k_log_whole] = controller.wbcWrapper.Mddq
-        log_NLE[k_log_whole] = controller.wbcWrapper.NLE
-        log_JcTf[k_log_whole] = controller.wbcWrapper.JcTf
-        log_Mddq_out[k_log_whole] = controller.wbcWrapper.Mddq_out
-        log_JcTf_out[k_log_whole] = controller.wbcWrapper.JcTf_out
-
-        # Call logger
         if params.LOGGING or params.PLOTTING:
-            loggerSensors.sample(device, qc)
-            loggerControl.sample(
-                controller.joystick,
-                controller.estimator,
-                controller,
-                controller.gait,
-                controller.statePlanner,
-                controller.footstepPlanner,
-                controller.footTrajectoryGenerator,
-                controller.wbcWrapper,
-                dT_whole,
-            )
+            loggerControl.sample(device, qc, controller)
 
         t_end_whole = time.time()
 
-        # myForceMonitor.display_contact_forces()
-
-        device.send_command_and_wait_end_of_cycle(
-            params.dt_wbc
-        )  # Send command to the robot
-        t += params.dt_wbc  # Increment loop time
+        device.send_command_and_wait_end_of_cycle(params.dt_wbc)
+        t += params.dt_wbc
 
         dT_whole = T_whole
         T_whole = time.time()
@@ -253,10 +201,6 @@ def control_loop(des_vel_analysis=None):
         print("Stopping parallel process MPC")
         controller.mpc_wrapper.stop_parallel_loop()
 
-    if params.solo3D and params.enable_multiprocessing_mip:
-        print("Stopping parallel process MIP")
-        controller.surfacePlanner.stop_parallel_loop()
-
     # ****************************************************************
 
     # Send 0 torques to the motors.
@@ -265,27 +209,22 @@ def control_loop(des_vel_analysis=None):
 
     if device.is_timeout:
         print("Masterboard timeout detected.")
-        print(
-            "Either the masterboard has been shut down or there has been a connection issue with the cable/wifi."
-        )
 
     if params.LOGGING:
         log_path = Path("/tmp") / "logs"
         log_path.mkdir(parents=True)
-        loggerControl.saveAll(loggerSensors, str(log_path / "data"))
+        loggerControl.save(str(log_path / "data"))
 
     if params.PLOTTING:
-        loggerControl.plotAllGraphs(loggerSensors)
+        loggerControl.plot()
 
     if params.SIMULATION and params.enable_pyb_GUI:
         device.Stop()
 
     print("End of script")
-    return finished, des_vel_analysis
 
 
 if __name__ == "__main__":
     #  os.nice(-20)
-    f, v = control_loop()  # , np.array([1.5, 0.0, 0.0, 0.0, 0.0, 0.0]))
-    print(f, v)
+    control_loop()
     quit()
