@@ -6,7 +6,7 @@ from time import time
 
 import numpy as np
 
-from .Crocoddyl.CrocoddylOCP import OCP
+from .WB_MPC.CrocoddylOCP import OCP
 
 from . import quadruped_reactive_walking as qrw
 
@@ -18,9 +18,9 @@ class DataInCtype(Structure):
 
     params = qrw.Params()
     # TODO add the data exchanged with the OCP
-    fields_ = [
+    _fields_ = [
         ("k", ctypes.c_int64),
-        ("blop", ctypes.c_double * 12),
+        ("blop", ctypes.c_double * 12)
     ]
 
 
@@ -62,7 +62,7 @@ class MPC_Wrapper:
             k (int): Number of inv dynamics iterations since the start of the simulation
         """
         if self.multiprocessing:
-            self.run_MPC_asynchronous(inputs)
+            self.run_MPC_asynchronous(k, inputs)
         else:
             self.run_MPC_synchronous(inputs)
 

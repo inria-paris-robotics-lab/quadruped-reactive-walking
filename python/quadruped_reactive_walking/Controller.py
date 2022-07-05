@@ -5,8 +5,6 @@ import pinocchio as pin
 import pybullet as pyb
 
 from . import WB_MPC_Wrapper
-from .solo3D.utils import quaternionToRPY
-from .tools.utils_mpc import init_robot
 
 
 class Result:
@@ -60,12 +58,17 @@ class Controller:
 
         self.mpc = WB_MPC_Wrapper.MPC_Wrapper(params)
 
+        self.k = 0
         self.error = False
         self.result = Result(params)
-
+        self.params = params
+        self.q_init = np.zeros(18)
+        
         device = DummyDevice()
         device.joints.positions = q_init
         self.compute(device)
+
+
 
     def compute(self, device, qc=None):
         """Run one iteration of the main control loop
@@ -76,7 +79,7 @@ class Controller:
         t_start = time.time()
 
         try:
-            self.mpc.solve()
+            self.mpc.solve(self.k, None)
         except ValueError:
             self.error = True
             print("MPC Problem")
