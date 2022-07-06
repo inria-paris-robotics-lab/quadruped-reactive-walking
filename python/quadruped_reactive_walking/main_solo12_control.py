@@ -3,7 +3,7 @@ import time
 from pathlib import Path
 import numpy as np
 
-from . import quadruped_reactive_walking as qrw
+import quadruped_reactive_walking as qrw
 from .Controller import Controller
 from .tools.LoggerControl import LoggerControl
 
@@ -14,6 +14,7 @@ if params.SIMULATION:
 else:
     import libodri_control_interface_pywrap as oci
     from .tools.qualisysClient import QualisysClient
+
 
 
 def get_input():
@@ -123,7 +124,8 @@ def control_loop():
     if not params.SIMULATION:
         params.enable_pyb_GUI = False
 
-    q_init = np.array(params.q_init.tolist())  # Default position after calibration
+    # Default position after calibration
+    q_init = np.array(params.q_init.tolist())
     controller = Controller(params, q_init, 0.0)
 
     if params.SIMULATION:
