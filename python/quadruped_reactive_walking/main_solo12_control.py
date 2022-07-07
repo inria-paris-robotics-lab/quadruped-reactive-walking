@@ -6,12 +6,13 @@ import numpy as np
 import quadruped_reactive_walking as qrw
 from .Controller import Controller
 from .tools.LoggerControl import LoggerControl
-from .WB_MPC.ProblemData import ProblemData
+from .WB_MPC.ProblemData import ProblemData, ProblemDataFull
 from .WB_MPC.Target import Target
 
 params = qrw.Params()  # Object that holds all controller parameters
-pd = ProblemData(params)
+pd = ProblemDataFull(params)
 target = Target(pd)
+target.update(0)
 
 if params.SIMULATION:
     from .tools.PyBulletSimulator import PyBulletSimulator
@@ -165,10 +166,12 @@ def control_loop():
     k_log_whole = 0
     T_whole = time.time()
     dT_whole = 0.0
+    cnt = 0
     while (not device.is_timeout) and (t < t_max) and (not controller.error):
         t_start_whole = time.time()
 
         device.parse_sensor_data()
+        target.update(cnt)
         if controller.compute(device, qc):
             break
 
@@ -198,6 +201,7 @@ def control_loop():
 
         t_log_whole[k_log_whole] = t_end_whole - t_start_whole
         k_log_whole += 1
+        cnt += 1
 
     # ****************************************************************
     finished = t >= t_max

@@ -87,7 +87,7 @@ class ProblemData(problemDataAbstract):
         self.terminal_velocity_w = np.array([0] * 18 + [1e3] * 18 )
         self.control_bound_w = 1e3
 
-        self.x0 = np.array([ 0, 0, 0.23289725, 0, 0, 0, 1, 0.1, 0.8, -1.6,
+        self.x0 = np.array([ 0.0, 0.0, 0.2607495, 0, 0, 0, 1, 0.1, 0.8, -1.6,
                             -0.1,  0.8, -1.6,  0.1, -0.8, 1.6, -0.1, -0.8, 1.6,
                             0, 0, 0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # x0 got from PyBullet
                             

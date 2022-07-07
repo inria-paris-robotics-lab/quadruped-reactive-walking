@@ -30,6 +30,8 @@ class DummyDevice:
         self.base_position = np.zeros(3)
         self.base_position[2] = 0.1944
         self.b_base_velocity = np.zeros(3)
+        self.baseState = tuple()
+        self.baseVel = tuple()
 
     class IMU:
         def __init__(self):
@@ -57,6 +59,8 @@ class Controller:
         self.q_security = np.array([1.2, 2.1, 3.14] * 4)
 
         self.mpc = WB_MPC_Wrapper.MPC_Wrapper(pd, target, params)
+        self.pd = pd
+        self.target = target
 
         self.k = 0
         self.error = False
@@ -66,8 +70,8 @@ class Controller:
         
         device = DummyDevice()
         device.joints.positions = q_init
-        self.compute(device)
-
+        self.guess = {}
+        #self.compute(device)
 
 
     def compute(self, device, qc=None):
@@ -78,8 +82,10 @@ class Controller:
         """
         t_start = time.time()
 
+        m = self.read_state(device)
+
         try:
-            self.mpc.solve(self.k, None)
+            self.mpc.solve(self.k, m['x_m'], self.guess)
         except ValueError:
             self.error = True
             print("MPC Problem")
@@ -89,10 +95,14 @@ class Controller:
 
             self.result.P = np.array(self.params.Kp_main.tolist() * 4)
             self.result.D = np.array(self.params.Kd_main.tolist() * 4)
-            self.result.FF = self.params.Kff_main * np.ones(12)
-            self.result.q_des = np.zeros(12)
-            self.result.v_des = np.zeros(12)
+            self.result.FF = np.zeros(12)
+            # self.result.FF = self.params.Kff_main * np.ones(12)
+            self.result.q_des = self.mpc_result.q[1]
+            self.result.v_des = self.mpc_result.v[1]
             self.result.tau_ff = np.zeros(12)
+
+            self.guess["xs"] = self.mpc_result.x
+            self.guess["us"] = self.mpc_result.u
 
         self.t_wbc = time.time() - t_start
 
@@ -114,7 +124,7 @@ class Controller:
         Update position of PyBullet camera on the robot position to do as if it was
         attached to the robot
         """
-        if self.k > 10 and self.enable_pyb_GUI:
+        if self.k > 10 and self.params.enable_pyb_GUI:
             pyb.resetDebugVisualizerCamera(
                 cameraDistance=0.6,
                 cameraYaw=45,
@@ -148,10 +158,10 @@ class Controller:
 
     def clamp(self, num, min_value=None, max_value=None):
         clamped = False
-        if min_value is not None and num <= min_value:
+        if min_value is not None and num.any() <= min_value:
             num = min_value
             clamped = True
-        if max_value is not None and num >= max_value:
+        if max_value is not None and num.any() >= max_value:
             num = max_value
             clamped = True
         return clamped
@@ -208,3 +218,19 @@ class Controller:
         self.result.q_des[:] = np.zeros(12)
         self.result.v_des[:] = np.zeros(12)
         self.result.tau_ff[:] = np.zeros(12)
+
+    def read_state(self, device):
+        qj_m = device.joints.positions
+        vj_m = device.joints.velocities
+        bp_m = self.tuple_to_array(device.baseState)
+        bv_m = self.tuple_to_array(device.baseVel)
+        if self.pd.useFixedBase == 0:
+            x_m = np.concatenate([bp_m, qj_m, bv_m, vj_m])
+        else:
+            x_m = np.concatenate([qj_m[3:6], vj_m[3:6]])
+
+        return {'qj_m': qj_m, 'vj_m': vj_m, 'x_m': x_m}
+
+    def tuple_to_array(self, tup):
+        a = np.array([element for tupl in tup for element in tupl])
+        return a

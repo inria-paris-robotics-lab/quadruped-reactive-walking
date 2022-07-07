@@ -31,6 +31,7 @@ set(${PY_NAME}_WB_MPC_PYTHON
   ShootingNode.py
   ProblemData.py
   Target.py
+  OcpResult.py
   )
 
 set(${PY_NAME}_TOOLS_PYTHON

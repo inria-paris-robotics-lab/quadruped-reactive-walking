@@ -20,7 +20,8 @@ class DataInCtype(Structure):
     # TODO add the data exchanged with the OCP
     _fields_ = [
         ("k", ctypes.c_int64),
-        ("blop", ctypes.c_double * 12)
+        ("x0", ctypes.c_double * 6),
+        ("guess", ctypes.c_double * 12),
     ]
 
 
@@ -33,6 +34,8 @@ class MPC_Wrapper:
     def __init__(self, pd, target, params):
         self.initialized = False
         self.params = params
+        self.pd = pd
+        self.target = target
 
         n_nodes = 0
 
@@ -53,7 +56,7 @@ class MPC_Wrapper:
         self.last_available_result = np.zeros((24, n_nodes))
         self.last_cost = 0.0
 
-    def solve(self, k, inputs):
+    def solve(self, k, x0, guess=None):
         """
         Call either the asynchronous MPC or the synchronous MPC depending on the value
         of multiprocessing during the creation of the wrapper
@@ -61,10 +64,11 @@ class MPC_Wrapper:
         Args:
             k (int): Number of inv dynamics iterations since the start of the simulation
         """
+
         if self.multiprocessing:
-            self.run_MPC_asynchronous(k, inputs)
+            self.run_MPC_asynchronous(k, x0, guess)
         else:
-            self.run_MPC_synchronous(inputs)
+            self.run_MPC_synchronous(x0, guess)
 
     def get_latest_result(self):
         """
@@ -82,15 +86,15 @@ class MPC_Wrapper:
             self.initialized = True
         return self.last_available_result, self.last_cost
 
-    def run_MPC_synchronous(self, inputs):
+    def run_MPC_synchronous(self, x0, guess):
         """
         Run the MPC (synchronous version)
         """
-        self.ocp.solve(inputs)
-        self.last_available_result = self.ocp.get_latest_result()
-        self.last_cost = self.ocp.retrieve_cost()
+        self.ocp.solve(x0, guess)
+        self.last_available_result = self.ocp.get_results()
+        #self.last_cost = self.ocp.retrieve_cost()
 
-    def run_MPC_asynchronous(self, k, inputs):
+    def run_MPC_asynchronous(self, k, x0, guess):
         """
         Run the MPC (asynchronous version)
         """
@@ -98,7 +102,7 @@ class MPC_Wrapper:
             p = Process(target=self.MPC_asynchronous)
             p.start()
 
-        self.add_new_data(k, inputs)
+        self.add_new_data(k, x0, guess)
 
     def MPC_asynchronous(self):
         """
@@ -108,17 +112,17 @@ class MPC_Wrapper:
             if self.newData.value:
                 self.newData.value = False
 
-                k, inputs = self.decompress_dataIn(self.dataIn)
+                k, x0, guess = self.decompress_dataIn(self.dataIn)
 
                 if k == 0:
-                    loop_ocp = OCP(self.params)
+                    loop_ocp = OCP(self.pd, self.target)
 
-                loop_ocp.solve(inputs)
+                loop_ocp.solve(x0, guess)
                 self.dataOut[:] = loop_ocp.get_latest_result().ravel(order="F")
                 self.cost.value = loop_ocp.retrieve_cost()
                 self.newResult.value = True
 
-    def add_new_data(self, k, inputs):
+    def add_new_data(self, k, x0):
         """
         Compress data in a C-type structure that belongs to the shared memory to send 
         data from the main control loop to the asynchronous MPC and notify the process

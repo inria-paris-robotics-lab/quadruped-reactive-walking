@@ -1,6 +1,7 @@
 from tracemalloc import start
 from .ProblemData import ProblemData
 from .Target import Target
+from .OcpResult import OcpResult
 import crocoddyl
 import pinocchio as pin
 import numpy as np
@@ -11,6 +12,7 @@ class OCP:
         self.pd = pd
         self.target = target
         self.state = crocoddyl.StateMultibody(self.pd.model)
+        self.results = OcpResult()
         if pd.useFixedBase == 0:
             self.actuation = crocoddyl.ActuationModelFloatingBase(self.state)
         else:
@@ -143,8 +145,27 @@ class OCP:
             us = guess['us']
             print("Using warmstart")
         start_time = time()
-        self.ddp.solve(xs, us, 1, False)
+        self.ddp.solve(xs, us, 30, False)
         print("Solver time: ", time()- start_time, "\n")
+
+
+    def get_results(self):
+        self.results.x = self.ddp.xs.tolist()
+        self.results.a = self.get_croco_acc()
+        self.results.u = self.ddp.us.tolist()
+        self.results.K = self.ddp.K
+
+        if self.pd.useFixedBase == 0:
+            self.results.q = np.array(self.results.x)[:, 7: self.pd.nq]
+            self.results.v = np.array(self.results.x)[:, self.pd.nq + 6: ]
+        else:
+            self.results.q = self.pd.q0
+            self.results.v = self.pd.q0
+            self.results.q[3:6] = np.array(self.results.x)[:, : self.pd.nq]
+            self.results.v[3:6] = np.array(self.results.x)[:, self.pd.nq :]
+
+
+        return self.results
 
     def get_croco_forces(self):
         d = self.ddp.problem.runningDatas[0]
@@ -179,13 +200,4 @@ class OCP:
          for m in self.ddp.problem.runningDatas]
         return acc
 
-    def get_results(self):
-        x = self.ddp.xs.tolist()
-        a = self.get_croco_acc()
-        u = self.ddp.us.tolist()
-        if self.pd.useFixedBase == 0:
-            f_ws = self.get_croco_forces_ws()
-        else:
-            f_ws = []
-
-        return None, x, a, u, f_ws, None
+    
