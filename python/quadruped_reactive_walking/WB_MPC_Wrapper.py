@@ -8,7 +8,7 @@ import numpy as np
 
 from .WB_MPC.CrocoddylOCP import OCP
 
-from . import quadruped_reactive_walking as qrw
+import quadruped_reactive_walking as qrw
 
 
 class DataInCtype(Structure):
@@ -30,7 +30,7 @@ class MPC_Wrapper:
     a parallel process
     """
 
-    def __init__(self, params):
+    def __init__(self, pd, target, params):
         self.initialized = False
         self.params = params
 
@@ -47,7 +47,7 @@ class MPC_Wrapper:
             self.dataOut = Array("d", [0] * 24 * n_nodes)
             self.cost = Value("d", 0.0)
         else:
-            self.ocp = OCP(params)
+            self.ocp = OCP(pd, target)
 
         # TODO initialize first result
         self.last_available_result = np.zeros((24, n_nodes))

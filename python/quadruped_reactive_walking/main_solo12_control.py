@@ -6,8 +6,12 @@ import numpy as np
 import quadruped_reactive_walking as qrw
 from .Controller import Controller
 from .tools.LoggerControl import LoggerControl
+from .WB_MPC.ProblemData import ProblemData
+from .WB_MPC.Target import Target
 
 params = qrw.Params()  # Object that holds all controller parameters
+pd = ProblemData(params)
+target = Target(pd)
 
 if params.SIMULATION:
     from .tools.PyBulletSimulator import PyBulletSimulator
@@ -126,7 +130,7 @@ def control_loop():
 
     # Default position after calibration
     q_init = np.array(params.q_init.tolist())
-    controller = Controller(params, q_init, 0.0)
+    controller = Controller(pd, target, params, q_init, 0.0)
 
     if params.SIMULATION:
         device = PyBulletSimulator()

@@ -45,7 +45,7 @@ class DummyDevice:
 
 
 class Controller:
-    def __init__(self, params, q_init, t):
+    def __init__(self, pd, target, params, q_init, t):
         """Function that runs a simulation scenario based on a reference velocity profile, an environment and
         various parameters to define the gait
 
@@ -56,7 +56,7 @@ class Controller:
         """
         self.q_security = np.array([1.2, 2.1, 3.14] * 4)
 
-        self.mpc = WB_MPC_Wrapper.MPC_Wrapper(params)
+        self.mpc = WB_MPC_Wrapper.MPC_Wrapper(pd, target, params)
 
         self.k = 0
         self.error = False
@@ -129,7 +129,7 @@ class Controller:
 
         # TODO change with the good values
 
-        if not self.error:
+        """ if not self.error:
             if (np.abs(self.estimator.get_q_estimate()[7:]) > self.q_security).any():
                 print("-- POSITION LIMIT ERROR --")
                 print(self.estimator.get_q_estimate()[7:])
@@ -144,7 +144,7 @@ class Controller:
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")
                 print(self.wbcWrapper.tau_ff)
                 print(np.abs(self.wbcWrapper.tau_ff) > 8.0)
-                self.error = True
+                self.error = True """
 
     def clamp(self, num, min_value=None, max_value=None):
         clamped = False
