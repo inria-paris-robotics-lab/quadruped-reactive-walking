@@ -170,7 +170,6 @@ def control_loop():
     while (not device.is_timeout) and (t < t_max) and (not controller.error):
         t_start_whole = time.time()
 
-        device.parse_sensor_data()
         target.update(cnt)
         if controller.compute(device, qc):
             break
@@ -179,20 +178,20 @@ def control_loop():
             break
 
         # Set desired quantities for the actuators
-        device.joints.set_position_gains(controller.result.P)
-        device.joints.set_velocity_gains(controller.result.D)
-        device.joints.set_desired_positions(controller.result.q_des)
-        device.joints.set_desired_velocities(controller.result.v_des)
-        device.joints.set_torques(
-            controller.result.FF * controller.result.tau_ff.ravel()
-        )
+        q_des, v_des = controller.interpolate_traj(device, controller.result.q_des, controller.result.v_des, pd.r1)
+        for k in range(controller.pd.r1):
+            device.joints.set_position_gains(controller.result.P)
+            device.joints.set_velocity_gains(controller.result.D)
+            device.joints.set_desired_positions(q_des[k])
+            device.joints.set_desired_velocities(v_des[k])
+            device.send_command_and_wait_end_of_cycle(params.dt_wbc)
 
         if params.LOGGING or params.PLOTTING:
             loggerControl.sample(device, qc, controller)
 
         t_end_whole = time.time()
 
-        device.send_command_and_wait_end_of_cycle(params.dt_wbc)
+        
         t += params.dt_wbc
 
         dT_whole = T_whole

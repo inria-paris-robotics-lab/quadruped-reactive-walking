@@ -93,16 +93,25 @@ class Controller:
         if not self.error:
             self.mpc_result, self.mpc_cost = self.mpc.get_latest_result()
 
-            self.result.P = np.array(self.params.Kp_main.tolist() * 4)
-            self.result.D = np.array(self.params.Kd_main.tolist() * 4)
+            #self.result.P = np.array(self.params.Kp_main.tolist() * 4)
+            self.result.P = np.array([5] * 3 + [5] * 3 + [5]*6)      
+            #self.result.D = np.array(self.params.Kd_main.tolist() * 4)
+            self.result.D = np.array([0.3] * 3 + [0.1] * 3 + [0.3]*6)    
             self.result.FF = np.zeros(12)
             # self.result.FF = self.params.Kff_main * np.ones(12)
+
+            # Keep only the actuated joints and set the other to default values
+            self.mpc_result.q = np.array([self.pd.q0] * (self.pd.T + 1))[:, 7: 19]
+            self.mpc_result.v = np.array([self.pd.v0] * (self.pd.T +1 ))[:, 6: ]
+            self.mpc_result.q[:, 3:6] = np.array(self.mpc_result.x)[:, : self.pd.nq]
+            self.mpc_result.v[:, 3:6] = np.array(self.mpc_result.x)[:, self.pd.nq :]
+
             self.result.q_des = self.mpc_result.q[1]
             self.result.v_des = self.mpc_result.v[1]
             self.result.tau_ff = np.zeros(12)
 
-            self.guess["xs"] = self.mpc_result.x
-            self.guess["us"] = self.mpc_result.u
+            self.guess["xs"] = self.mpc_result.x[1:] + [self.mpc_result.x[-1]*0]
+            self.guess["us"] = self.mpc_result.u[1:] + [self.mpc_result.u[-1]*0]
 
         self.t_wbc = time.time() - t_start
 
@@ -220,6 +229,7 @@ class Controller:
         self.result.tau_ff[:] = np.zeros(12)
 
     def read_state(self, device):
+        device.parse_sensor_data()
         qj_m = device.joints.positions
         vj_m = device.joints.velocities
         bp_m = self.tuple_to_array(device.baseState)
@@ -230,6 +240,13 @@ class Controller:
             x_m = np.concatenate([qj_m[3:6], vj_m[3:6]])
 
         return {'qj_m': qj_m, 'vj_m': vj_m, 'x_m': x_m}
+
+    def interpolate_traj(self, device, q_des, v_des, ratio):
+        measures = self.read_state(device)
+        qj_des_i = np.linspace(measures['qj_m'], q_des, ratio)
+        vj_des_i = np.linspace(measures['vj_m'], v_des, ratio)
+
+        return qj_des_i, vj_des_i
 
     def tuple_to_array(self, tup):
         a = np.array([element for tupl in tup for element in tupl])

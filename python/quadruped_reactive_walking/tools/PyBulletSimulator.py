@@ -42,7 +42,7 @@ class pybullet_simulator:
 
         # Either use a flat ground or a rough terrain
         if use_flat_plane:
-            self.planeId = pyb.loadURDF("plane.urdf")  # Flat plane
+            """ self.planeId = pyb.loadURDF("plane.urdf")  # Flat plane
             self.planeIdbis = pyb.loadURDF("plane.urdf")  # Flat plane
 
             # Tune position and orientation of plane
@@ -55,7 +55,7 @@ class pybullet_simulator:
                 self.planeIdbis,
                 [200.0, 0, -100.0 * np.sin(p_pitch)],
                 pin.Quaternion(pin.rpy.rpyToMatrix(p_roll, p_pitch, 0.0)).coeffs(),
-            )
+            ) """
         else:
             import random
 
@@ -269,12 +269,12 @@ class pybullet_simulator:
         pyb.setGravity(0, 0, -9.81)
 
         # Load Quadruped robot
-        robotStartPos = [0, 0, 0.0]
+        robotStartPos = [0, 0, 0.2607495]
         robotStartOrientation = pyb.getQuaternionFromEuler([0.0, 0.0, 0.0])
         pyb.setAdditionalSearchPath(
             EXAMPLE_ROBOT_DATA_MODEL_DIR + "/solo_description/robots"
         )
-        self.robotId = pyb.loadURDF("solo12.urdf", robotStartPos, robotStartOrientation)
+        self.robotId = pyb.loadURDF("solo12.urdf", robotStartPos, robotStartOrientation, useFixedBase = 1)
 
         # Disable default motor control for revolute joints
         self.revoluteJointIndices = [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14]
@@ -301,42 +301,6 @@ class pybullet_simulator:
             forces=jointTorques,
         )
 
-        # Get position of feet in world frame with base at (0, 0, 0)
-        feetLinksID = [3, 7, 11, 15]
-        linkStates = pyb.getLinkStates(self.robotId, feetLinksID)
-
-        # Get minimum height of feet (they are in the ground since base is at 0, 0, 0)
-        z_min = linkStates[0][4][2]
-        i_min = 0
-        i = 1
-        for link in linkStates[1:]:
-            if link[4][2] < z_min:
-                z_min = link[4][2]
-                i_min = i
-            i += 1
-
-        # Set base at (0, 0, -z_min) so that the lowest foot is at z = 0
-        pyb.resetBasePositionAndOrientation(
-            self.robotId,
-            [0.0, 0.0, -z_min],
-            pin.Quaternion(pin.rpy.rpyToMatrix(p_roll, p_pitch, 0.0)).coeffs(),
-        )
-
-        # Progressively raise the base to achieve proper contact (take into account radius of the foot)
-        while (
-            pyb.getClosestPoints(
-                self.robotId,
-                self.planeId,
-                distance=0.005,
-                linkIndexA=feetLinksID[i_min],
-            )
-        )[0][8] < -0.001:
-            z_min -= 0.001
-            pyb.resetBasePositionAndOrientation(
-                self.robotId,
-                [0.0, 0.0, -z_min],
-                pin.Quaternion(pin.rpy.rpyToMatrix(p_roll, p_pitch, 0.0)).coeffs(),
-            )
 
         # Fix the base in the world frame
         # pyb.createConstraint(self.robotId, -1, -1, -1, pyb.JOINT_FIXED, [0, 0, 0], [0, 0, 0], [0, 0, robotStartPos[2]])

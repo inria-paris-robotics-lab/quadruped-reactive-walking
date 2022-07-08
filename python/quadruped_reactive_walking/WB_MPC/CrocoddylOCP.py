@@ -145,7 +145,7 @@ class OCP:
             us = guess['us']
             print("Using warmstart")
         start_time = time()
-        self.ddp.solve(xs, us, 30, False)
+        self.ddp.solve(xs, us, 1, False)
         print("Solver time: ", time()- start_time, "\n")
 
 
@@ -154,17 +154,6 @@ class OCP:
         self.results.a = self.get_croco_acc()
         self.results.u = self.ddp.us.tolist()
         self.results.K = self.ddp.K
-
-        if self.pd.useFixedBase == 0:
-            self.results.q = np.array(self.results.x)[:, 7: self.pd.nq]
-            self.results.v = np.array(self.results.x)[:, self.pd.nq + 6: ]
-        else:
-            self.results.q = self.pd.q0
-            self.results.v = self.pd.q0
-            self.results.q[3:6] = np.array(self.results.x)[:, : self.pd.nq]
-            self.results.v[3:6] = np.array(self.results.x)[:, self.pd.nq :]
-
-
         return self.results
 
     def get_croco_forces(self):
