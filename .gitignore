@@ -16,6 +16,7 @@ cprofile.txt
 # Distribution / packaging
 .Python
 build/
+build_pin2/
 develop-eggs/
 dist/
 downloads/
