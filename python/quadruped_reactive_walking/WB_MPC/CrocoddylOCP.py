@@ -13,12 +13,14 @@ class OCP:
         self.target = target
         
         self.results = OcpResult()
+        self.state = crocoddyl.StateMultibody(self.pd.model)
         self.initialize_models()
     
     def initialize_models(self):
         self.models = []
-        for _ in range(self.pd.T+1):
-            self.models.append(Model(self.pd))
+        for _ in range(self.pd.T):
+            self.models.append(Model(self.pd, self.state)) # RunningModels
+        self.models.append(Model(self.pd, self.state, isTerminal=True)) #TerminalModel
         
 
     def make_crocoddyl_ocp(self, x0):
@@ -129,12 +131,12 @@ class OCP:
     
 
 class Model:
-    def __init__(self, pd, supportFootIds=[], isTerminal=False):
+    def __init__(self, pd, state, supportFootIds=[], isTerminal=False):
         self.pd = pd
         self.supportFootIds=supportFootIds
         self.isTerminal=isTerminal
 
-        self.state = crocoddyl.StateMultibody(self.pd.model)
+        self.state = state
         if pd.useFixedBase == 0:
             self.actuation = crocoddyl.ActuationModelFloatingBase(self.state)
         else:
@@ -202,7 +204,7 @@ class Model:
         self.model = crocoddyl.IntegratedActionModelEuler(self.dmodel, self.control, self.pd.dt)
 
     def tracking_cost(self, swingFootTask):
-        if swingFootTask is not None:
+        if swingFootTask is not None and not self.isTerminal:
             for i in swingFootTask:
                 frameTranslationResidual = crocoddyl.ResidualModelFrameTranslation(self.state, i[0], i[1].translation,self.nu)
                 footTrack = crocoddyl.CostModelResidual(self.state, frameTranslationResidual)
