@@ -23,13 +23,12 @@ class OCP:
         self.models.append(Model(self.pd, self.state, isTerminal=True)) #TerminalModel
         
 
-    def make_crocoddyl_ocp(self, x0):
+    def make_ocp(self, x0):
         """ Create a shooting problem for a simple walking gait.
 
         :param x0: initial state
         """
         
-
         # Compute the current foot positions
         q0 = x0[:self.pd.nq]
         pin.forwardKinematics(self.pd.model, self.pd.rdata, q0)
@@ -38,12 +37,11 @@ class OCP:
         for t in range(self.pd.T):
             target = self.target.evaluate_in_t(t)
             freeIds = [idf for idf in self.pd.allContactIds if idf not in self.target.contactSequence[t]]
-            contactIds = self.target.contactSequence[t]
-            self.appendTargetToModel(self.models[t], target, freeIds, False)
+            self.appendTargetToModel(self.models[t], target, freeIds)
 
         freeIds = [idf for idf in self.pd.allContactIds if idf not in self.target.contactSequence[self.pd.T]]
         #contactIds = self.target.contactSequence[self.pd.T]
-        self.appendTargetToModel(self.models[self.pd.T], self.target.evaluate_in_t(self.pd.T), freeIds, True)
+        self.appendTargetToModel(self.models[self.pd.T], self.target.evaluate_in_t(self.pd.T), freeIds)
 
         problem = crocoddyl.ShootingProblem(x0, 
                                             [m.model for m in self.models[:-1]], 
@@ -51,7 +49,7 @@ class OCP:
 
         return problem
 
-    def appendTargetToModel(self, model, target, swingFootIds, isTerminal=False):
+    def appendTargetToModel(self, model, target, swingFootIds):
         """ Action models for a footstep phase.
         :param numKnots: number of knots for the footstep phase
         :param supportFootIds: Ids of the supporting feet
@@ -72,7 +70,7 @@ class OCP:
 
 # Solve
     def solve(self, x0, guess=None):
-        problem = self.make_crocoddyl_ocp(x0)
+        problem = self.make_ocp(x0)
         self.ddp = crocoddyl.SolverFDDP(problem)
         self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
 
@@ -202,6 +200,7 @@ class Model:
         self.dmodel = crocoddyl.DifferentialActionModelContactFwdDynamics(self.state, self.actuation, self.contactModel,
                                                                     self.costModel, 0., True)
         self.model = crocoddyl.IntegratedActionModelEuler(self.dmodel, self.control, self.pd.dt)
+
 
     def tracking_cost(self, swingFootTask):
         if swingFootTask is not None and not self.isTerminal:

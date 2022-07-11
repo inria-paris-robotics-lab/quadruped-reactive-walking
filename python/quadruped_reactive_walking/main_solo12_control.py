@@ -173,7 +173,7 @@ def control_loop():
         target.update(cnt)
         if controller.compute(device, qc):
             break
-
+        print("Total loop time: ", controller.t_loop, "\n")
         if t <= 10 * params.dt_wbc and check_position_error(device, controller):
             break
 
@@ -184,6 +184,7 @@ def control_loop():
             device.joints.set_velocity_gains(controller.result.D)
             device.joints.set_desired_positions(q_des[k])
             device.joints.set_desired_velocities(v_des[k])
+            #device.joints.set_torques(controller.result.FF)
             device.send_command_and_wait_end_of_cycle(params.dt_wbc)
 
         if params.LOGGING or params.PLOTTING:

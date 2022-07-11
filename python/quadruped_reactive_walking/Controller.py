@@ -94,11 +94,11 @@ class Controller:
             self.mpc_result, self.mpc_cost = self.mpc.get_latest_result()
 
             #self.result.P = np.array(self.params.Kp_main.tolist() * 4)
-            self.result.P = np.array([5] * 3 + [5] * 3 + [5]*6)      
+            self.result.P = np.array([5] * 3 + [5] * 3 + [5]*6)
             #self.result.D = np.array(self.params.Kd_main.tolist() * 4)
-            self.result.D = np.array([0.3] * 3 + [0.1] * 3 + [0.3]*6)    
-            self.result.FF = np.zeros(12)
-            # self.result.FF = self.params.Kff_main * np.ones(12)
+            self.result.D = np.array([0.3] * 3 + [0.1] * 3 + [0.3]*6)
+            #tauFF = self.mpc_result.u[0] + np.dot(self.mpc_result.K[0], self.mpc.ocp.state.diff(m["x_m"], self.mpc_result.x[0]))
+            #self.result.FF = self.params.Kff_main * np.array([0] * 3 + list(tauFF) + [0]*6) 
 
             # Keep only the actuated joints and set the other to default values
             self.mpc_result.q = np.array([self.pd.q0] * (self.pd.T + 1))[:, 7: 19]
