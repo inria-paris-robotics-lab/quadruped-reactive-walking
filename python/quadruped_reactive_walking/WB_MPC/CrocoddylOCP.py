@@ -35,7 +35,7 @@ class OCP:
         pin.updateFramePlacements(self.pd.model, self.pd.rdata)
 
         if self.initialized:
-            self.models = self.models[1:] + [self.models[-2]]
+            self.models = self.models[1:] + [self.models[0]]
 
         for t in range(self.pd.T):
             target = self.target.evaluate_in_t(t)
