@@ -171,6 +171,7 @@ def control_loop():
         t_start_whole = time.time()
 
         target.update(cnt)
+        target.shift_gait()
         if controller.compute(device, qc):
             break
         print("Total loop time: ", controller.t_loop, "\n")
