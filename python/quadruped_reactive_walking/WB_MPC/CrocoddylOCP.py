@@ -20,7 +20,7 @@ class OCP:
     def initialize_models(self):
         self.models = []
         for _ in range(self.pd.T):
-            self.models.append(Model(self.pd, self.state)) # RunningModels
+            self.models.append(Model(self.pd, self.state, self.target.contactSequence[_])) # RunningModels
         self.models.append(Model(self.pd, self.state, isTerminal=True)) # TerminalModel
         
     def make_ocp(self, x0):
@@ -40,11 +40,12 @@ class OCP:
         for t in range(self.pd.T):
             target = self.target.evaluate_in_t(t)
             freeIds = [idf for idf in self.pd.allContactIds if idf not in self.target.contactSequence[t]]
-            self.appendTargetToModel(self.models[t], target, freeIds)
+            self.appendTargetToModel(self.models[t], target, self.target.contactSequence[t], freeIds)
 
         freeIds = [idf for idf in self.pd.allContactIds if idf not in self.target.contactSequence[self.pd.T]]
         #contactIds = self.target.contactSequence[self.pd.T]
-        self.appendTargetToModel(self.models[self.pd.T], self.target.evaluate_in_t(self.pd.T), freeIds, True)
+        self.appendTargetToModel(self.models[self.pd.T], self.target.evaluate_in_t(self.pd.T), 
+                                    self.target.contactSequence[self.pd.T], freeIds, True)
 
         problem = crocoddyl.ShootingProblem(x0, 
                                             [m.model for m in self.models[:-1]], 
@@ -53,7 +54,7 @@ class OCP:
 
         return problem
 
-    def appendTargetToModel(self, model, target, swingFootIds, isTerminal=False):
+    def appendTargetToModel(self, model, target, contactIds, freeIds, isTerminal=False):
         """ Action models for a footstep phase.
         :param numKnots: number of knots for the footstep phase
         :param supportFootIds: Ids of the supporting feet
@@ -62,14 +63,14 @@ class OCP:
         """
         # Action models for the foot swing
         swingFootTask = []
-        for i in swingFootIds:
+        for i in freeIds:
             try:
                 tref = target[i]
                 swingFootTask += [[i, pin.SE3(np.eye(3), tref)]]
             except:
                 pass
         
-        model.update_model(swingFootTask, isTerminal=isTerminal)
+        model.update_model(contactIds, swingFootTask, isTerminal=isTerminal)
 
 
 # Solve
@@ -161,6 +162,7 @@ class Model:
         :param swingFootTask: swinging foot task
         :return action model for a swing foot phase
         """
+        
         self.contactModel = crocoddyl.ContactModelMultiple(self.state, self.nu)
         for i in self.supportFootIds:
             supportContactModel = crocoddyl.ContactModel3D(self.state, i, np.array([0., 0., 0.]), self.nu,
@@ -180,6 +182,14 @@ class Model:
         self.dmodel = crocoddyl.DifferentialActionModelContactFwdDynamics(self.state, self.actuation, self.contactModel,
                                                                     self.costModel, 0., True)
         self.model = crocoddyl.IntegratedActionModelEuler(self.dmodel, self.control, self.pd.dt)
+
+    def update_contact_model(self):
+        self.remove_contacts()
+        self.contactModel = crocoddyl.ContactModelMultiple(self.state, self.nu)
+        for i in self.supportFootIds:
+            supportContactModel = crocoddyl.ContactModel3D(self.state, i, np.array([0., 0., 0.]), self.nu,
+                                                           np.array([0., 0.]))
+            self.dmodel.contacts.addContact(self.pd.model.frames[i].name + "_contact", supportContactModel)
     
     def make_terminal_model(self):
         self.remove_running_costs()  
@@ -193,6 +203,8 @@ class Model:
         self.remove_terminal_cost()
 
         self.isTerminal = False
+
+        self.update_contact_model()
         for i in self.supportFootIds:
             cone = crocoddyl.FrictionCone(self.pd.Rsurf, self.pd.mu, 4, False)
             coneResidual = crocoddyl.ResidualModelContactFrictionCone(self.state, i, cone, self.nu)
@@ -221,6 +233,11 @@ class Model:
         if "terminalVelocity" in self.dmodel.costs.active.tolist():
                 self.dmodel.costs.removeCost("terminalVelocity")
 
+    def remove_contacts(self):
+        allContacts = self.dmodel.contacts.contacts.todict()
+        for c in allContacts:
+            self.dmodel.contacts.removeContact(c)
+
     def tracking_cost(self, swingFootTask):
         if swingFootTask is not None:
             for i in swingFootTask:
@@ -230,10 +247,11 @@ class Model:
                     self.dmodel.costs.removeCost(self.pd.model.frames[i[0]].name + "_footTrack")
                 self.costModel.addCost(self.pd.model.frames[i[0]].name + "_footTrack", footTrack, self.pd.foot_tracking_w)
 
-    def update_model(self, swingFootTask=[], isTerminal = False):
+    def update_model(self, supportFootIds = [], swingFootTask=[], isTerminal = False):
         if isTerminal:
             self.make_terminal_model()
         elif self.isTerminal:
+            self.supportFootIds = supportFootIds
             self.make_running_model()
             self.tracking_cost(swingFootTask)
         else:
