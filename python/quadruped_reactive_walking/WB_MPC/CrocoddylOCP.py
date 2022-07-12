@@ -79,6 +79,11 @@ class OCP:
         self.ddp = crocoddyl.SolverFDDP(problem)
         self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
 
+        # for i, c in enumerate(self.ddp.problem.runningModels):
+        #     print(str(i), c.differential.contacts.contacts.todict().keys())
+        # print(str(i+1), self.ddp.problem.terminalModel.differential.contacts.contacts.todict().keys())
+        # print("\n")
+
         if not guess:
             print("No warmstart provided")
             xs = [x0] * (self.ddp.problem.T + 1)
@@ -193,6 +198,8 @@ class Model:
     
     def make_terminal_model(self):
         self.remove_running_costs()  
+        self.update_contact_model()
+
         self.isTerminal=True
         stateResidual = crocoddyl.ResidualModelState(self.state, self.pd.xref, self.nu)
         stateActivation = crocoddyl.ActivationModelWeightedQuad(self.pd.terminal_velocity_w**2)
@@ -249,6 +256,7 @@ class Model:
 
     def update_model(self, supportFootIds = [], swingFootTask=[], isTerminal = False):
         if isTerminal:
+            self.supportFootIds = supportFootIds
             self.make_terminal_model()
         elif self.isTerminal:
             self.supportFootIds = supportFootIds
