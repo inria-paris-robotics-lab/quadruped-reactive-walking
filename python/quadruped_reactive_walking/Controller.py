@@ -64,6 +64,7 @@ class Controller:
 
         self.k = 0
         self.error = False
+        self.initialized = False
         self.result = Result(params)
         self.params = params
         self.q_init = np.zeros(18)
@@ -85,7 +86,14 @@ class Controller:
         m = self.read_state(device)
 
         try:
-            self.mpc.solve(self.k, m['x_m'], self.guess)
+            # self.mpc.solve(self.k, m['x_m'], self.guess) # Closed loop mpc
+
+            # Trajectory tracking
+            if self.initialized:
+                self.mpc.solve(self.k, self.mpc_result.x, self.guess)
+            else:
+                self.mpc.solve(self.k, m["x_m"], self.guess)
+
         except ValueError:
             self.error = True
             print("MPC Problem")
@@ -125,6 +133,7 @@ class Controller:
 
         self.t_loop = time.time() - t_start
         self.k += 1
+        self.initialized = True
 
         return self.error
 
