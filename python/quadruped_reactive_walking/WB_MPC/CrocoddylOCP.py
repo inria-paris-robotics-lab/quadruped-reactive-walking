@@ -94,13 +94,15 @@ class OCP:
             print("Using warmstart")
         start_time = time()
         self.ddp.solve(xs, us, 1, False)
-        print("Solver time: ", time()- start_time, "\n")
+        self.solver_time = time()- start_time
+        print("Solver time: ", self.solver_time , "\n")
 
     def get_results(self):
         self.results.x = self.ddp.xs.tolist()
         self.results.a = self.get_croco_acc()
         self.results.u = self.ddp.us.tolist()
         self.results.K = self.ddp.K
+        self.results.solver_time = self.solver_time
         return self.results
 
     def get_croco_forces(self):

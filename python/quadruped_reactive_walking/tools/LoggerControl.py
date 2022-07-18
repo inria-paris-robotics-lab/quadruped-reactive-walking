@@ -52,11 +52,11 @@ class LoggerControl:
         self.wbc_tau_ff = np.zeros([size, 12])  # feedforward torques
 
     def sample(self, controller, device, qualisys=None):
-        if self.i >= self.size:
-            if self.loop_buffer:
-                self.i = 0
-            else:
-                return
+        # if self.i >= self.size:
+        #     if self.loop_buffer:
+        #         self.i = 0
+        #     else:
+        #         return
 
         # Logging from the device (data coming from the robot)
         self.q_mes[self.i] = device.joints.positions
@@ -103,7 +103,25 @@ class LoggerControl:
         self.i += 1
 
     def plot(self):
-        from matplotlib import pyplot as plt
+        import matplotlib
+        import matplotlib.pyplot as plt
+        matplotlib.use("QtAgg")
+        plt.style.use("seaborn")
+
+        legend = ['Hip', 'Shoulder', 'Knee']
+        plt.figure(figsize=(12, 6), dpi = 90)
+        i = 0
+        for i in range(4):
+            plt.subplot(2,2,i+1)
+            plt.title('Joint torques of ' + str(i))
+            [plt.plot(np.array(self.torquesFromCurrentMeasurment)[:, (3*i+jj)]) for jj in range(3) ]
+            plt.ylabel('Velocity [Deg/s]')
+            plt.xlabel('t[s]')
+            plt.legend(legend)
+        plt.draw()
+
+
+        plt.show()
 
         # TODO add the plots you want
 

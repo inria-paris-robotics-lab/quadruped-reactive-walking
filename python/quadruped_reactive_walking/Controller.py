@@ -86,11 +86,11 @@ class Controller:
         m = self.read_state(device)
 
         try:
-            # self.mpc.solve(self.k, m['x_m'], self.guess) # Closed loop mpc
+            #self.mpc.solve(self.k, m['x_m'], self.guess) # Closed loop mpc
 
             # Trajectory tracking
             if self.initialized:
-                self.mpc.solve(self.k, self.mpc_result.x, self.guess)
+                self.mpc.solve(self.k, self.mpc_result.x[1], self.guess)
             else:
                 self.mpc.solve(self.k, m["x_m"], self.guess)
 
@@ -102,9 +102,9 @@ class Controller:
             self.mpc_result, self.mpc_cost = self.mpc.get_latest_result()
 
             #self.result.P = np.array(self.params.Kp_main.tolist() * 4)
-            self.result.P = np.array([5] * 3 + [5] * 3 + [5]*6)
+            self.result.P = np.array([5] * 3 + [3] * 3 + [5]*6)
             #self.result.D = np.array(self.params.Kd_main.tolist() * 4)
-            self.result.D = np.array([0.3] * 3 + [0.1] * 3 + [0.3]*6)
+            self.result.D = np.array([0.3] * 3 + [0.3] * 3 + [0.3]*6)
             #tauFF = self.mpc_result.u[0] + np.dot(self.mpc_result.K[0], self.mpc.ocp.state.diff(m["x_m"], self.mpc_result.x[0]))
             #self.result.FF = self.params.Kff_main * np.array([0] * 3 + list(tauFF) + [0]*6) 
 
@@ -124,7 +124,7 @@ class Controller:
         self.t_wbc = time.time() - t_start
 
         self.clamp_result(device)
-        self.security_check()
+        self.security_check(m)
 
         if self.error:
             self.set_null_control()
@@ -150,25 +150,25 @@ class Controller:
                 cameraTargetPosition=[device.height[0], device.height[1], 0.0],
             )
 
-    def security_check(self):
+    def security_check(self, m):
         """
         Check if the command is fine and set the command to zero in case of error
         """
 
         # TODO change with the good values
 
-        """ if not self.error:
-            if (np.abs(self.estimator.get_q_estimate()[7:]) > self.q_security).any():
+        if not self.error:
+            if (np.abs(m["qj_m"]) > self.q_security).any():
                 print("-- POSITION LIMIT ERROR --")
-                print(self.estimator.get_q_estimate()[7:])
-                print(np.abs(self.estimator.get_q_estimate()[7:]) > self.q_security)
+                print(self.m["qj_m"])
+                print(np.abs(m["qj_m"]) > self.q_security)
                 self.error = True
-            elif (np.abs(self.estimator.get_v_security()) > 100.0).any():
+            elif (np.abs(m["vj_m"]) > 100.0).any():
                 print("-- VELOCITY TOO HIGH ERROR --")
-                print(self.estimator.get_v_security())
-                print(np.abs(self.estimator.get_v_security()) > 100.0)
+                print(m["vj_m"])
+                print(np.abs(m["vj_m"]) > 100.0)
                 self.error = True
-            elif (np.abs(self.wbcWrapper.tau_ff) > 8.0).any():
+            """ elif (np.abs(self.wbcWrapper.tau_ff) > 8.0).any():
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")
                 print(self.wbcWrapper.tau_ff)
                 print(np.abs(self.wbcWrapper.tau_ff) > 8.0)

@@ -8,3 +8,4 @@ class OcpResult:
         self.f_world = None
         self.q = None
         self.v = None
+        self.solver_time = None

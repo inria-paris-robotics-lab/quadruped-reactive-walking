@@ -141,7 +141,7 @@ def control_loop():
         qc = QualisysClient(ip="140.93.16.160", body_id=0)
 
     if params.LOGGING or params.PLOTTING:
-        loggerControl = LoggerControl(log_size=params.N_SIMULATION - 3)
+        loggerControl = LoggerControl(log_size=params.N_SIMULATION)
 
     if params.SIMULATION:
         device.Init(
@@ -160,7 +160,7 @@ def control_loop():
     # CONTROL LOOP ***************************************************
 
     t = 0.0
-    t_max = (params.N_SIMULATION - 2) * params.dt_wbc
+    t_max = (params.N_SIMULATION - 1) * params.dt_wbc
 
     t_log_whole = np.zeros((params.N_SIMULATION))
     k_log_whole = 0
@@ -189,7 +189,7 @@ def control_loop():
             device.send_command_and_wait_end_of_cycle(params.dt_wbc)
 
         if params.LOGGING or params.PLOTTING:
-            loggerControl.sample(device, qc, controller)
+            loggerControl.sample(controller, device, qc)
 
         t_end_whole = time.time()
 
@@ -221,10 +221,10 @@ def control_loop():
     if device.is_timeout:
         print("Masterboard timeout detected.")
 
-    if params.LOGGING:
-        log_path = Path("/tmp") / "logs"
-        log_path.mkdir(parents=True)
-        loggerControl.save(str(log_path / "data"))
+    #if params.LOGGING:
+    #    log_path = Path("/tmp") / "logs"
+    #    log_path.mkdir(parents=True)
+    #    loggerControl.save(str(log_path / "data"))
 
     if params.PLOTTING:
         loggerControl.plot()
