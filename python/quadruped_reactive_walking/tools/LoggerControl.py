@@ -41,6 +41,8 @@ class LoggerControl:
 
         # Controller timings: MPC time, ...
 
+        self.ocp_timings = np.zeros([size])
+
         # MPC
 
         # Whole body control
@@ -88,6 +90,7 @@ class LoggerControl:
         # Controller timings: MPC time, ...
 
         # Logging from model predictive control
+        self.ocp_timings[self.i] = controller.mpc.ocp.results.solver_time
 
         # Logging from whole body control
         self.wbc_P[self.i] = controller.result.P
@@ -107,6 +110,13 @@ class LoggerControl:
         import matplotlib.pyplot as plt
         matplotlib.use("QtAgg")
         plt.style.use("seaborn")
+        
+        legend = ['Hip', 'Shoulder', 'Knee']
+        plt.figure(figsize=(12, 6), dpi = 90)
+        plt.title("Solver timings")
+        plt.hist(self.ocp_timings, 30)
+        plt.xlabel("timee [s]")
+        plt.ylabel("Number of cases [#]")
 
         legend = ['Hip', 'Shoulder', 'Knee']
         plt.figure(figsize=(12, 6), dpi = 90)
@@ -115,7 +125,7 @@ class LoggerControl:
             plt.subplot(2,2,i+1)
             plt.title('Joint torques of ' + str(i))
             [plt.plot(np.array(self.torquesFromCurrentMeasurment)[:, (3*i+jj)]) for jj in range(3) ]
-            plt.ylabel('Velocity [Deg/s]')
+            plt.ylabel('Torque [Nm]')
             plt.xlabel('t[s]')
             plt.legend(legend)
         plt.draw()

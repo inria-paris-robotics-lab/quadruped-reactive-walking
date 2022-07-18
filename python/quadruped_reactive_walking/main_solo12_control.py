@@ -9,6 +9,7 @@ from .tools.LoggerControl import LoggerControl
 from .WB_MPC.ProblemData import ProblemData, ProblemDataFull
 from .WB_MPC.Target import Target
 
+
 params = qrw.Params()  # Object that holds all controller parameters
 pd = ProblemDataFull(params)
 target = Target(pd)
@@ -141,7 +142,7 @@ def control_loop():
         qc = QualisysClient(ip="140.93.16.160", body_id=0)
 
     if params.LOGGING or params.PLOTTING:
-        loggerControl = LoggerControl(log_size=params.N_SIMULATION)
+        loggerControl = LoggerControl(log_size=params.N_SIMULATION-1)
 
     if params.SIMULATION:
         device.Init(
@@ -236,6 +237,6 @@ def control_loop():
 
 
 if __name__ == "__main__":
-    #  os.nice(-20)
+    #os.nice(-20)
     control_loop()
     quit()

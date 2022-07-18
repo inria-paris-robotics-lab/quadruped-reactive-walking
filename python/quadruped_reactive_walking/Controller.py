@@ -102,7 +102,7 @@ class Controller:
             self.mpc_result, self.mpc_cost = self.mpc.get_latest_result()
 
             #self.result.P = np.array(self.params.Kp_main.tolist() * 4)
-            self.result.P = np.array([5] * 3 + [3] * 3 + [5]*6)
+            self.result.P = np.array([5] * 3 + [1] * 3 + [5]*6)
             #self.result.D = np.array(self.params.Kd_main.tolist() * 4)
             self.result.D = np.array([0.3] * 3 + [0.3] * 3 + [0.3]*6)
             #tauFF = self.mpc_result.u[0] + np.dot(self.mpc_result.K[0], self.mpc.ocp.state.diff(m["x_m"], self.mpc_result.x[0]))
@@ -160,7 +160,7 @@ class Controller:
         if not self.error:
             if (np.abs(m["qj_m"]) > self.q_security).any():
                 print("-- POSITION LIMIT ERROR --")
-                print(self.m["qj_m"])
+                print(m["qj_m"])
                 print(np.abs(m["qj_m"]) > self.q_security)
                 self.error = True
             elif (np.abs(m["vj_m"]) > 100.0).any():
