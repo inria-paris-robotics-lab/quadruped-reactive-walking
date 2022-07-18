@@ -3,7 +3,7 @@ robot:
     config_file: config_solo12.yaml  #  Name of the yaml file containing hardware information
 
     interface: eth0  # Name of the communication inerface (check with ifconfig)
-    LOGGING: false  # Enable/disable logging during the experiment
+    LOGGING: true  # Enable/disable logging during the experiment
     PLOTTING: false  # Enable/disable automatic plotting at the end of the experiment
     DEMONSTRATION: false  # Enable/disable demonstration functionalities
     SIMULATION: true  # Enable/disable PyBullet simulation or running on real robot
