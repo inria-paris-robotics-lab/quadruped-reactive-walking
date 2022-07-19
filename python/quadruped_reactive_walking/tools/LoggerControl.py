@@ -118,6 +118,31 @@ class LoggerControl:
         plt.xlabel("timee [s]")
         plt.ylabel("Number of cases [#]")
 
+
+        legend = ['Hip', 'Shoulder', 'Knee']
+        plt.figure(figsize=(12, 6), dpi = 90)
+        i = 0
+        for i in range(4):
+            plt.subplot(2,2,i+1)
+            plt.title('Joint position of ' + str(i))
+            [plt.plot(np.array(self.q_mes)[:, (3*i+jj)] * 180/np.pi ) for jj in range(3) ]
+            plt.ylabel('Joint position [deg]')
+            plt.xlabel('t[s]')
+            plt.legend(legend)
+        plt.draw()
+
+        legend = ['Hip', 'Shoulder', 'Knee']
+        plt.figure(figsize=(12, 6), dpi = 90)
+        i = 0
+        for i in range(4):
+            plt.subplot(2,2,i+1)
+            plt.title('Joint velocity of ' + str(i))
+            [plt.plot(np.array(self.v_mes)[:, (3*i+jj)] * 180/np.pi ) for jj in range(3) ]
+            plt.ylabel('Joint velocity [deg/s]')
+            plt.xlabel('t[s]')
+            plt.legend(legend)
+        plt.draw()
+
         legend = ['Hip', 'Shoulder', 'Knee']
         plt.figure(figsize=(12, 6), dpi = 90)
         i = 0
