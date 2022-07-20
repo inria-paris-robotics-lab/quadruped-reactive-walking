@@ -40,6 +40,7 @@ set(${PY_NAME}_TOOLS_PYTHON
   LoggerControl.py
   PyBulletSimulator.py
   qualisysClient.py
+  kinematics_utils.py
   )
 
 foreach(python ${${PY_NAME}_PYTHON})

@@ -1,10 +1,11 @@
 from datetime import datetime
 from time import time
 import numpy as np
+from .kinematics_utils import get_translation, get_translation_array
 
 
 class LoggerControl:
-    def __init__(self, log_size=60e3, loop_buffer=False, file=None):
+    def __init__(self, pd, log_size=60e3, loop_buffer=False, file=None):
         if file is not None:
             self.data = np.load(file, allow_pickle=True)
 
@@ -13,6 +14,7 @@ class LoggerControl:
         self.loop_buffer = loop_buffer
 
         size = self.log_size
+        self.pd = pd
 
         # IMU and actuators:
         self.q_mes = np.zeros([size, 12])
@@ -42,6 +44,7 @@ class LoggerControl:
         # Controller timings: MPC time, ...
 
         self.ocp_timings = np.zeros([size])
+        self.ocp_storage = {"xs": np.zeros([size, pd.T + 1, pd.nx])}
 
         # MPC
 
@@ -91,6 +94,7 @@ class LoggerControl:
 
         # Logging from model predictive control
         self.ocp_timings[self.i] = controller.mpc.ocp.results.solver_time
+        self.ocp_storage["xs"][self.i] = np.array(controller.mpc.ocp.results.x)
 
         # Logging from whole body control
         self.wbc_P[self.i] = controller.result.P
@@ -110,6 +114,14 @@ class LoggerControl:
         import matplotlib.pyplot as plt
         matplotlib.use("QtAgg")
         plt.style.use("seaborn")
+
+        horizon = self.ocp_storage["xs"].shape[0]
+        t15 = np.linspace(0, horizon*self.pd.dt, horizon+1)
+        t1 = np.linspace(0, (horizon)*self.pd.dt, (horizon)*self.pd.r1+1)
+        t_mpc = np.linspace(0, (horizon)*self.pd.dt, horizon+1)
+
+        all_ocp_feet_p_log = {idx: [get_translation_array(self.pd, x, idx)[0] for x in self.ocp_storage["xs"]] for idx in self.pd.allContactIds}
+        for foot in all_ocp_feet_p_log: all_ocp_feet_p_log[foot] = np.array(all_ocp_feet_p_log[foot])
         
         legend = ['Hip', 'Shoulder', 'Knee']
         plt.figure(figsize=(12, 6), dpi = 90)
@@ -155,6 +167,19 @@ class LoggerControl:
             plt.legend(legend)
         plt.draw()
 
+        legend = ['x', 'y', 'z']
+        plt.figure(figsize=(12, 18), dpi = 90)
+        for p in range(3):
+            plt.subplot(3,1, p+1)
+            plt.title('Free foot on ' + legend[p])
+            for i in range(horizon-1):
+                t = np.linspace(i*self.pd.dt, (self.pd.T+ i)*self.pd.dt, self.pd.T+1)
+                y = all_ocp_feet_p_log[self.pd.rfFootId][i+1][:,p]
+                for j in range(len(y) - 1):
+                    plt.plot(t[j:j+2], y[j:j+2], color='royalblue', linewidth = 3, marker='o' ,alpha=max([1 - j/len(y), 0]))
+            #plt.plot(t_mpc, feet_p_log_mpc[18][:, p], linewidth=0.8, color = 'tomato', marker='o')
+            #plt.plot(t1, feet_p_log_m[18][:, p], linewidth=2, color = 'lightgreen')
+        plt.draw()
 
         plt.show()
 
