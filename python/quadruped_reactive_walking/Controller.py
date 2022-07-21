@@ -91,7 +91,6 @@ class Controller:
 
         m = self.read_state(device)
 
-        print(m['x_m'])
         try:
             #self.mpc.solve(self.k, m['x_m'], self.guess) # Closed loop mpc
 

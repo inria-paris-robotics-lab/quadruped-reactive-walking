@@ -3,7 +3,6 @@ from .CrocoddylOCP import OCP
 from .ProblemData import ProblemData, ProblemDataFull
 from .Target import Target
 
-
 import crocoddyl
 import pinocchio
 import example_robot_data
@@ -13,7 +12,6 @@ import time
 
 T = int(sys.argv[1]) if (len(sys.argv) > 1) else int(5e3)  # number of trials
 MAXITER = 1
-GAIT = "walking"  # 55 nodes
 
 
 def createProblem():
@@ -22,11 +20,53 @@ def createProblem():
     target = Target(pd)
     target.update(0)
 
-    OCP = OCP(pd, target)
-    problem = OCP.make_ocp(x0)
+    x0 = np.array(
+        [
+            0.0,
+            0.0,
+            0.2607495,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.7,
+            -1.4,
+            0.0,
+            0.7,
+            -1.4,
+            0.0,
+            -0.7,
+            1.4,
+            0.0,
+            -0.7,
+            1.4,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
+    )
 
-    xs = [robot_model.defaultState] * (len(problem.runningModels) + 1)
-    us = [m.quasiStatic(d, robot_model.defaultState) for m, d in list(zip(problem.runningModels, problem.runningDatas))]
+    ocp = OCP(pd, target)
+    problem = ocp.make_ocp(x0)
+
+    xs = [x0] * (ocp.ddp.problem.T + 1)
+    us = ocp.ddp.problem.quasiStatic([x0] * ocp.ddp.problem.T)
     return xs, us, problem
 
 
@@ -74,25 +114,27 @@ def runShootingProblemCalcDiffBenchmark(xs, us, problem):
     return avrg_duration, min_duration, max_duration
 
 
-# Setting up all tasks
-if GAIT == 'walking':
-    GAITPHASE = {
-        'walking': {
-            'stepLength': 0.6,
-            'stepHeight': 0.1,
-            'timeStep': 0.0375,
-            'stepKnots': 25,
-            'supportKnots': 1
-        }
-    }
-
-print('\033[1m')
-print('Python bindings:')
-xs, us, problem = createProblem(GAITPHASE)
+print("\033[1m")
+print("Python bindings:")
+xs, us, problem = createProblem()
 avrg_duration, min_duration, max_duration = runDDPSolveBenchmark(xs, us, problem)
-print('  DDP.solve [ms]: {0} ({1}, {2})'.format(avrg_duration, min_duration, max_duration))
-avrg_duration, min_duration, max_duration = runShootingProblemCalcBenchmark(xs, us, problem)
-print('  ShootingProblem.calc [ms]: {0} ({1}, {2})'.format(avrg_duration, min_duration, max_duration))
-avrg_duration, min_duration, max_duration = runShootingProblemCalcDiffBenchmark(xs, us, problem)
-print('  ShootingProblem.calcDiff [ms]: {0} ({1}, {2})'.format(avrg_duration, min_duration, max_duration))
-print('\033[0m')
+print(
+    "  DDP.solve [ms]: {0} ({1}, {2})".format(avrg_duration, min_duration, max_duration)
+)
+avrg_duration, min_duration, max_duration = runShootingProblemCalcBenchmark(
+    xs, us, problem
+)
+print(
+    "  ShootingProblem.calc [ms]: {0} ({1}, {2})".format(
+        avrg_duration, min_duration, max_duration
+    )
+)
+avrg_duration, min_duration, max_duration = runShootingProblemCalcDiffBenchmark(
+    xs, us, problem
+)
+print(
+    "  ShootingProblem.calcDiff [ms]: {0} ({1}, {2})".format(
+        avrg_duration, min_duration, max_duration
+    )
+)
+print("\033[0m")
