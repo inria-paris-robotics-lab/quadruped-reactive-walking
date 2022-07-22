@@ -44,7 +44,8 @@ class LoggerControl:
         # Controller timings: MPC time, ...
 
         self.ocp_timings = np.zeros([size])
-        self.ocp_storage = {"xs": np.zeros([size, pd.T + 1, pd.nx])}
+        self.ocp_storage = {"xs": np.zeros([size, pd.T + 1, pd.nx]),
+                            "us": np.zeros([size, pd.T, pd.nu])}
 
         # MPC
 
@@ -131,7 +132,7 @@ class LoggerControl:
         plt.xlabel("timee [s]")
         plt.ylabel("Number of cases [#]")
         plt.draw()
-        if save: plt.savefig(fileName + "solver_timings")
+        if save: plt.savefig(fileName + "_solver_timings")
 
         legend = ['Hip', 'Shoulder', 'Knee']
         plt.figure(figsize=(12, 6), dpi = 90)
@@ -144,7 +145,7 @@ class LoggerControl:
             plt.xlabel('t[s]')
             plt.legend(legend)
         plt.draw()
-        if save: plt.savefig(fileName + "joint_positions")
+        if save: plt.savefig(fileName + "_joint_positions")
 
         legend = ['Hip', 'Shoulder', 'Knee']
         plt.figure(figsize=(12, 6), dpi = 90)
@@ -157,7 +158,7 @@ class LoggerControl:
             plt.xlabel('t[s]')
             plt.legend(legend)
         plt.draw()
-        if save: plt.savefig(fileName + "joint_velocities")
+        if save: plt.savefig(fileName + "_joint_velocities")
 
         legend = ['Hip', 'Shoulder', 'Knee']
         plt.figure(figsize=(12, 6), dpi = 90)
@@ -170,7 +171,7 @@ class LoggerControl:
             plt.xlabel('t[s]')
             plt.legend(legend)
         plt.draw()
-        if save: plt.savefig(fileName + "joint_torques")
+        if save: plt.savefig(fileName + "_joint_torques")
 
         """ legend = ['x', 'y', 'z']
         plt.figure(figsize=(12, 18), dpi = 90)
