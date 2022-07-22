@@ -95,6 +95,7 @@ class LoggerControl:
         # Logging from model predictive control
         self.ocp_timings[self.i] = controller.mpc.ocp.results.solver_time
         self.ocp_storage["xs"][self.i] = np.array(controller.mpc.ocp.results.x)
+        self.ocp_storage["us"][self.i] = np.array(controller.mpc.ocp.results.u)
 
         # Logging from whole body control
         self.wbc_P[self.i] = controller.result.P
@@ -254,7 +255,7 @@ class LoggerControl:
 
         # TODO: load your new data
         self.ocp_timings = self.data["mpc_solving_duration"]
-        self.ocp_storage = self.data["ocp_storage"]
+        self.ocp_storage = self.data["ocp_storage"].item()
 
         self.wbc_P = self.data["wbc_P"]
         self.wbc_D = self.data["wbc_D"]
