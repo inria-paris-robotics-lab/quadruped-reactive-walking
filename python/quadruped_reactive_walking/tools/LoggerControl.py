@@ -253,6 +253,8 @@ class LoggerControl:
         self.energy = self.data["energy"]
 
         # TODO: load your new data
+        self.ocp_timings = self.data["mpc_solving_duration"]
+        self.ocp_storage = self.data["ocp_storage"]
 
         self.wbc_P = self.data["wbc_P"]
         self.wbc_D = self.data["wbc_D"]
