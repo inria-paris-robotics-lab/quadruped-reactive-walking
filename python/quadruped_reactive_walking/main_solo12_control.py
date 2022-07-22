@@ -18,6 +18,7 @@ target.update(0)
 
 repo = git.Repo(search_parent_directories=True)
 sha = repo.head.object.hexsha
+msg = repo.head.object.message
 
 if params.SIMULATION:
     from .tools.PyBulletSimulator import PyBulletSimulator
@@ -227,13 +228,11 @@ def control_loop():
         print("Masterboard timeout detected.")
 
     if params.LOGGING:
-        log_path = Path("/home/aassirelli/devel/experimental_stuff/experiments/solo-reduced-model") / sha / "log"
-        try:
-            log_path.mkdir(parents=True)
-        except:
-            print("The directory already exists, delete it before running")
-
-        loggerControl.save(str(log_path / "data"))
+        log_path = Path("/home/aassirelli/devel/experimental_stuff/experiments/solo-reduced-model") / sha
+        log_path.mkdir(parents=False)
+        loggerControl.save(str(log_path / "logs"))
+        with open(str(log_path / 'readme.txt') , 'w') as f:
+            f.write(msg)
 
     if params.SIMULATION and params.enable_pyb_GUI:
         device.Stop()
