@@ -228,11 +228,14 @@ def control_loop():
         print("Masterboard timeout detected.")
 
     if params.LOGGING:
-        log_path = Path("/home/aassirelli/devel/experimental_stuff/experiments/solo-reduced-model") / sha
-        log_path.mkdir(parents=True)
-        loggerControl.save(str(log_path / "data"))
-        with open(str(log_path / 'readme.txt') , 'w') as f:
-            f.write(msg)
+        try:
+            log_path = Path("/home/aassirelli/devel/experimental_stuff/experiments/solo-reduced-model") / sha
+            log_path.mkdir(parents=True)
+            loggerControl.save(str(log_path / "data"))
+            with open(str(log_path / 'readme.txt') , 'w') as f:
+                f.write(msg)
+        except:
+            print("The folder already exists !!! Please delete the folder with the name of your current commit")
 
     if params.SIMULATION and params.enable_pyb_GUI:
         device.Stop()
