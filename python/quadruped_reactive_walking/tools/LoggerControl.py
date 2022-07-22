@@ -109,7 +109,7 @@ class LoggerControl:
 
         self.i += 1
 
-    def plot(self):
+    def plot(self, fileName):
         import matplotlib
         import matplotlib.pyplot as plt
         matplotlib.use("QtAgg")
@@ -129,7 +129,8 @@ class LoggerControl:
         plt.hist(self.ocp_timings, 30)
         plt.xlabel("timee [s]")
         plt.ylabel("Number of cases [#]")
-
+        plt.draw()
+        plt.savefig(fileName + "solver_timings")
 
         legend = ['Hip', 'Shoulder', 'Knee']
         plt.figure(figsize=(12, 6), dpi = 90)
@@ -142,6 +143,7 @@ class LoggerControl:
             plt.xlabel('t[s]')
             plt.legend(legend)
         plt.draw()
+        plt.savefig(fileName + "joint_positions")
 
         legend = ['Hip', 'Shoulder', 'Knee']
         plt.figure(figsize=(12, 6), dpi = 90)
@@ -154,6 +156,7 @@ class LoggerControl:
             plt.xlabel('t[s]')
             plt.legend(legend)
         plt.draw()
+        plt.savefig(fileName + "joint_velocities")
 
         legend = ['Hip', 'Shoulder', 'Knee']
         plt.figure(figsize=(12, 6), dpi = 90)
@@ -166,6 +169,7 @@ class LoggerControl:
             plt.xlabel('t[s]')
             plt.legend(legend)
         plt.draw()
+        plt.savefig(fileName + "joint_torques")
 
         """ legend = ['x', 'y', 'z']
         plt.figure(figsize=(12, 18), dpi = 90)
@@ -186,15 +190,15 @@ class LoggerControl:
         # TODO add the plots you want
 
     def save(self, fileName="data"):
-        date_str = datetime.now().strftime("_%Y_%m_%d_%H_%M")
-        name = fileName + date_str + "_" + str(self.type_MPC) + ".npz"
+        #date_str = datetime.now().strftime("_%Y_%m_%d_%H_%M")
+        #name = fileName + date_str + "_" + str(self.type_MPC) + ".npz"
 
         np.savez_compressed(
-            name,
-            t_MPC=self.t_MPC,
-            # mpc_result=self.mpc_result,
-            mpc_solving_duration=self.mpc_solving_duration,
-            mpc_cost=self.mpc_cost,
+            fileName,
+            #t_MPC=self.t_MPC,
+            ocp_storage=self.ocp_storage,
+            mpc_solving_duration=self.ocp_timings,
+            #mpc_cost=self.mpc_cost,
             wbc_P=self.wbc_P,
             wbc_D=self.wbc_D,
             wbc_q_des=self.wbc_q_des,
@@ -219,7 +223,9 @@ class LoggerControl:
             voltage=self.voltage,
             energy=self.energy,
         )
-        print("Logs saved in " + name)
+        self.plot(fileName)
+
+        print("Logs and plots saved in " + fileName)
 
     def load(self):
         if self.data is None:
