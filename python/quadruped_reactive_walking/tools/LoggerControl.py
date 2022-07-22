@@ -109,7 +109,7 @@ class LoggerControl:
 
         self.i += 1
 
-    def plot(self, fileName):
+    def plot(self, save = False, fileName = 'tmp/'):
         import matplotlib
         import matplotlib.pyplot as plt
         matplotlib.use("QtAgg")
@@ -130,7 +130,7 @@ class LoggerControl:
         plt.xlabel("timee [s]")
         plt.ylabel("Number of cases [#]")
         plt.draw()
-        plt.savefig(fileName + "solver_timings")
+        if save: plt.savefig(fileName + "solver_timings")
 
         legend = ['Hip', 'Shoulder', 'Knee']
         plt.figure(figsize=(12, 6), dpi = 90)
@@ -143,7 +143,7 @@ class LoggerControl:
             plt.xlabel('t[s]')
             plt.legend(legend)
         plt.draw()
-        plt.savefig(fileName + "joint_positions")
+        if save: plt.savefig(fileName + "joint_positions")
 
         legend = ['Hip', 'Shoulder', 'Knee']
         plt.figure(figsize=(12, 6), dpi = 90)
@@ -156,7 +156,7 @@ class LoggerControl:
             plt.xlabel('t[s]')
             plt.legend(legend)
         plt.draw()
-        plt.savefig(fileName + "joint_velocities")
+        if save: plt.savefig(fileName + "joint_velocities")
 
         legend = ['Hip', 'Shoulder', 'Knee']
         plt.figure(figsize=(12, 6), dpi = 90)
@@ -169,7 +169,7 @@ class LoggerControl:
             plt.xlabel('t[s]')
             plt.legend(legend)
         plt.draw()
-        plt.savefig(fileName + "joint_torques")
+        if save: plt.savefig(fileName + "joint_torques")
 
         """ legend = ['x', 'y', 'z']
         plt.figure(figsize=(12, 18), dpi = 90)
@@ -223,7 +223,7 @@ class LoggerControl:
             voltage=self.voltage,
             energy=self.energy,
         )
-        self.plot(fileName)
+        self.plot(True, fileName)
 
         print("Logs and plots saved in " + fileName)
 
