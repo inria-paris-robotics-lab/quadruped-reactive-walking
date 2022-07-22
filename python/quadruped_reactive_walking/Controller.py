@@ -161,8 +161,6 @@ class Controller:
         Check if the command is fine and set the command to zero in case of error
         """
 
-        # TODO change with the good values
-
         if not self.error:
             if (np.abs(m["qj_m"]) > self.q_security).any():
                 print("-- POSITION LIMIT ERROR --")
@@ -174,11 +172,11 @@ class Controller:
                 print(m["vj_m"])
                 print(np.abs(m["vj_m"]) > 100.0)
                 self.error = True
-            """ elif (np.abs(self.wbcWrapper.tau_ff) > 8.0).any():
+            elif (np.abs(self.result.FF) > 8.0).any():
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")
-                print(self.wbcWrapper.tau_ff)
-                print(np.abs(self.wbcWrapper.tau_ff) > 8.0)
-                self.error = True """
+                print(self.result.FF)
+                print(np.abs(self.result.FF) > 8.0)
+                self.error = True
 
     def clamp(self, num, min_value=None, max_value=None):
         clamped = False
