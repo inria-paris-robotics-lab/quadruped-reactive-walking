@@ -184,8 +184,8 @@ def control_loop():
         for k in range(controller.pd.r1):
             device.joints.set_position_gains(controller.result.P)
             device.joints.set_velocity_gains(controller.result.D)
-            device.joints.set_desired_positions(q_des[k])
-            device.joints.set_desired_velocities(v_des[k])
+            device.joints.set_desired_positions(controller.result.q_des)
+            device.joints.set_desired_velocities(controller.result.v_des)
             #device.joints.set_torques(controller.result.FF)
             device.send_command_and_wait_end_of_cycle(params.dt_wbc)
 

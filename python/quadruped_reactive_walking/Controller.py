@@ -71,7 +71,13 @@ class Controller:
         
         device = DummyDevice()
         device.joints.positions = q_init
-        self.guess = {}
+        try:
+            file = np.load('/tmp/init_guess.npy', allow_pickle=True).item()
+            self.guess = {'xs': list(file['xs']), 'us': list(file['us'])}
+            print("\nInitial guess loaded\n")
+        except:
+            self.guess = {}
+            print("\nNo tinitial_guess\n")
         #self.compute(device)
 
 

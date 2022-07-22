@@ -167,7 +167,7 @@ class LoggerControl:
             plt.legend(legend)
         plt.draw()
 
-        legend = ['x', 'y', 'z']
+        """ legend = ['x', 'y', 'z']
         plt.figure(figsize=(12, 18), dpi = 90)
         for p in range(3):
             plt.subplot(3,1, p+1)
@@ -179,7 +179,7 @@ class LoggerControl:
                     plt.plot(t[j:j+2], y[j:j+2], color='royalblue', linewidth = 3, marker='o' ,alpha=max([1 - j/len(y), 0]))
             #plt.plot(t_mpc, feet_p_log_mpc[18][:, p], linewidth=0.8, color = 'tomato', marker='o')
             #plt.plot(t1, feet_p_log_m[18][:, p], linewidth=2, color = 'lightgreen')
-        plt.draw()
+        plt.draw() """
 
         plt.show()
 
