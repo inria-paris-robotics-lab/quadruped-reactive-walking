@@ -2,6 +2,7 @@ import threading
 import time
 from pathlib import Path
 import numpy as np
+import git
 
 import quadruped_reactive_walking as qrw
 from .Controller import Controller
@@ -14,6 +15,9 @@ params = qrw.Params()  # Object that holds all controller parameters
 pd = ProblemDataFull(params)
 target = Target(pd)
 target.update(0)
+
+repo = git.Repo(search_parent_directories=True)
+sha = repo.head.object.hexsha
 
 if params.SIMULATION:
     from .tools.PyBulletSimulator import PyBulletSimulator
@@ -222,13 +226,14 @@ def control_loop():
     if device.is_timeout:
         print("Masterboard timeout detected.")
 
-    #if params.LOGGING:
-    #    log_path = Path("/tmp") / "logs"
-    #    log_path.mkdir(parents=True)
-    #    loggerControl.save(str(log_path / "data"))
+    if params.LOGGING:
+        log_path = Path("/home/aassirelli/devel/experimental_stuff/experiments/solo-reduced-model") / sha / "log"
+        try:
+            log_path.mkdir(parents=True)
+        except:
+            print("The directory already exists, delete it before running")
 
-    if params.PLOTTING:
-        loggerControl.plot()
+        loggerControl.save(str(log_path / "data"))
 
     if params.SIMULATION and params.enable_pyb_GUI:
         device.Stop()
