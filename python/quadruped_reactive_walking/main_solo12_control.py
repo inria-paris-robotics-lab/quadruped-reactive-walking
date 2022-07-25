@@ -174,13 +174,13 @@ def control_loop():
     dT_whole = 0.0
     cnt = 0
     while (not device.is_timeout) and (t < t_max) and (not controller.error):
+        print("ITER #", cnt)
         t_start_whole = time.time()
 
         target.update(cnt)
         target.shift_gait()
         if controller.compute(device, qc):
             break
-        print("Total loop time: ", controller.t_loop, "\n")
         if t <= 10 * params.dt_wbc and check_position_error(device, controller):
             break
 
@@ -209,6 +209,8 @@ def control_loop():
         t_log_whole[k_log_whole] = t_end_whole - t_start_whole
         k_log_whole += 1
         cnt += 1
+
+        print("Total loop time: ", controller.t_loop, "\n")
 
     # ****************************************************************
     finished = t >= t_max
