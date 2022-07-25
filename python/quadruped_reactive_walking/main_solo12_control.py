@@ -210,7 +210,7 @@ def control_loop():
         k_log_whole += 1
         cnt += 1
 
-        print("Total loop time: ", controller.t_loop, "\n")
+        print("Total loop time: ", t_log_whole[k_log_whole-1], "\n")
 
     # ****************************************************************
     finished = t >= t_max
@@ -231,16 +231,17 @@ def control_loop():
 
     if params.LOGGING:
         try:
-            log_path = Path("/tmp/logs/") / sha
+            log_path = Path("/tmp/") / "logs" / sha
             log_path.mkdir(parents=True)
             loggerControl.save(str(log_path / "data"))
             with open(str(log_path / 'readme.txt') , 'w') as f:
                 f.write(msg)
 
-            if params.PLOTING:
+            if params.PLOTTING:
                 loggerControl.plot(True, str(log_path / "data"))
         except:
-            print("The folder already exists !!! Please delete the folder with the name of your current commit")
+            print("\nCANNOT SAVE THE LOG\n\
+                The folder already exists !!! Please delete the folder with the name of your current commit\n")
 
 
 

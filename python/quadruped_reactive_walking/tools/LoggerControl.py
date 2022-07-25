@@ -2,6 +2,11 @@ from datetime import datetime
 from time import time
 import numpy as np
 from .kinematics_utils import get_translation, get_translation_array
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use("QtAgg")
+plt.style.use("seaborn")
 
 
 class LoggerControl:
@@ -42,11 +47,10 @@ class LoggerControl:
         # TODO: ADD WHAT YOU WANT TO LOG
 
         # Controller timings: MPC time, ...
-        self.ocp_timings = np.zeros(size)
         self.t_measures = np.zeros(size)
-        self.t_mpc = np.zeros(size)
-        self.t_send = np.zeros(size)
-        self.t_loop = np.zeros(size)
+        self.t_mpc = np.zeros(size) #solver time
+        self.t_send = np.zeros(size) #
+        self.t_loop = np.zeros(size) #controller time loop
 
         # MPC
         self.ocp_storage = {
@@ -97,9 +101,11 @@ class LoggerControl:
             self.mocapOrientationQuat[self.i] = device.baseState[1]
 
         # Controller timings: MPC time, ...
+        self.t_mpc[self.i] = controller.mpc.ocp.results.solver_time
+        self.t_send[self.i] = controller.t_send
+        self.t_loop[self.i] = controller.t_loop
 
         # Logging from model predictive control
-        self.ocp_timings[self.i] = controller.mpc.ocp.results.solver_time
         self.ocp_storage["xs"][self.i] = np.array(controller.mpc.ocp.results.x)
         self.ocp_storage["us"][self.i] = np.array(controller.mpc.ocp.results.u)
 
@@ -117,11 +123,6 @@ class LoggerControl:
         self.i += 1
 
     def plot(self, save=False, fileName="tmp/"):
-        import matplotlib
-        import matplotlib.pyplot as plt
-
-        matplotlib.use("QtAgg")
-        plt.style.use("seaborn")
 
         horizon = self.ocp_storage["xs"].shape[0]
         t15 = np.linspace(0, horizon * self.pd.dt, horizon + 1)
@@ -138,15 +139,14 @@ class LoggerControl:
         for foot in all_ocp_feet_p_log:
             all_ocp_feet_p_log[foot] = np.array(all_ocp_feet_p_log[foot])
 
-        legend = ["Hip", "Shoulder", "Knee"]
-        plt.figure(figsize=(12, 6), dpi=90)
+        """ plt.figure(figsize=(12, 6), dpi=90)
         plt.title("Solver timings")
-        plt.hist(self.ocp_timings, 30)
-        plt.xlabel("timee [s]")
+        plt.hist(self.t_mpc, 30)
+        plt.xlabel("times [s]")
         plt.ylabel("Number of cases [#]")
         plt.draw()
         if save:
-            plt.savefig(fileName + "_solver_timings")
+            plt.savefig(fileName + "_solver_timings") """
 
         legend = ["Hip", "Shoulder", "Knee"]
         plt.figure(figsize=(12, 6), dpi=90)
@@ -189,7 +189,8 @@ class LoggerControl:
             plt.subplot(2, 2, i + 1)
             plt.title("Joint torques of " + str(i))
             [
-                plt.plot(np.array(self.torquesFromCurrentMeasurment)[:, (3 * i + jj)])
+                plt.plot(np.array(self.torquesFromCurrentMeasurment)
+                         [:, (3 * i + jj)])
                 for jj in range(3)
             ]
             plt.ylabel("Torque [Nm]")
@@ -198,6 +199,18 @@ class LoggerControl:
         plt.draw()
         if save:
             plt.savefig(fileName + "_joint_torques")
+
+        t_range = np.array([k * self.pd.dt_sim for k in range(self.tstamps.shape[0])])
+
+        plt.figure(figsize=(12, 6), dpi=90)
+        plt.plot(t_range, self.t_mpc)
+        plt.plot(t_range, self.t_send)
+        plt.plot(t_range, self.t_loop, color="rebeccapurple")
+        lgd = [ "MPC", "T SEND", "CONTROLLER"]
+        plt.legend(lgd)
+        plt.xlabel("Time [s]")
+        plt.ylabel("Time [s]")
+        plt.draw()
 
         """ legend = ['x', 'y', 'z']
         plt.figure(figsize=(12, 18), dpi = 90)
@@ -217,6 +230,8 @@ class LoggerControl:
 
         # TODO add the plots you want
 
+
+
     def save(self, fileName="data"):
         # date_str = datetime.now().strftime("_%Y_%m_%d_%H_%M")
         # name = fileName + date_str + "_" + str(self.type_MPC) + ".npz"
@@ -225,7 +240,9 @@ class LoggerControl:
             fileName,
             # t_MPC=self.t_MPC,
             ocp_storage=self.ocp_storage,
-            mpc_solving_duration=self.ocp_timings,
+            mpc_solving_duration=self.t_mpc,
+            t_send = self.t_send,
+            t_loop = self.t_loop,
             # mpc_cost=self.mpc_cost,
             wbc_P=self.wbc_P,
             wbc_D=self.wbc_D,
@@ -279,7 +296,10 @@ class LoggerControl:
         self.energy = self.data["energy"]
 
         # TODO: load your new data
-        self.ocp_timings = self.data["mpc_solving_duration"]
+        self.t_mpc = self.data["mpc_solving_duration"]
+        self.t_send = self.data["t_send"]
+        self.t_loop = self.data["t_loop"]
+
         self.ocp_storage = self.data["ocp_storage"].item()
 
         self.wbc_P = self.data["wbc_P"]
