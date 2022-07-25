@@ -130,6 +130,7 @@ class LoggerControl:
         t15 = np.linspace(0, horizon * self.pd.dt, horizon + 1)
         t1 = np.linspace(0, (horizon) * self.pd.dt, (horizon) * self.pd.r1 + 1)
         t_mpc = np.linspace(0, (horizon) * self.pd.dt, horizon + 1)
+        t_range = np.array([k * self.pd.dt_sim for k in range(self.tstamps.shape[0])])
 
         all_ocp_feet_p_log = {
             idx: [
@@ -157,7 +158,7 @@ class LoggerControl:
             plt.subplot(2, 2, i + 1)
             plt.title("Joint position of " + str(i))
             [
-                plt.plot(np.array(self.q_mes)[:, (3 * i + jj)] * 180 / np.pi)
+                plt.plot(t_range, np.array(self.q_mes)[:, (3 * i + jj)] * 180 / np.pi)
                 for jj in range(3)
             ]
             plt.ylabel("Joint position [deg]")
@@ -174,7 +175,7 @@ class LoggerControl:
             plt.subplot(2, 2, i + 1)
             plt.title("Joint velocity of " + str(i))
             [
-                plt.plot(np.array(self.v_mes)[:, (3 * i + jj)] * 180 / np.pi)
+                plt.plot(t_range, np.array(self.v_mes)[:, (3 * i + jj)] * 180 / np.pi)
                 for jj in range(3)
             ]
             plt.ylabel("Joint velocity [deg/s]")
@@ -191,7 +192,7 @@ class LoggerControl:
             plt.subplot(2, 2, i + 1)
             plt.title("Joint torques of " + str(i))
             [
-                plt.plot(np.array(self.torquesFromCurrentMeasurment)
+                plt.plot(t_range, np.array(self.torquesFromCurrentMeasurment)
                          [:, (3 * i + jj)])
                 for jj in range(3)
             ]
@@ -202,7 +203,7 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "_joint_torques")
 
-        t_range = np.array([k * self.pd.dt_sim for k in range(self.tstamps.shape[0])])
+        
 
         plt.figure(figsize=(12, 6), dpi=90)
         plt.plot(t_range, self.t_mpc)

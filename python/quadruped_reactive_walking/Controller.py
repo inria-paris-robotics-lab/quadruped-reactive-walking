@@ -95,13 +95,13 @@ class Controller:
         self.t_measures = t_measures - t_start
 
         try:
-            #self.mpc.solve(self.k, m['x_m'], self.guess) # Closed loop mpc
+            self.mpc.solve(self.k, m['x_m'], self.guess) # Closed loop mpc
 
             # Trajectory tracking
-            if self.initialized:
-                self.mpc.solve(self.k, self.mpc_result.x[1], self.guess)
-            else:
-                self.mpc.solve(self.k, m["x_m"], self.guess)
+            #if self.initialized:
+            #    self.mpc.solve(self.k, self.mpc_result.x[1], self.guess)
+            #else:
+            #    self.mpc.solve(self.k, m["x_m"], self.guess)
 
         except ValueError:
             self.error = True
