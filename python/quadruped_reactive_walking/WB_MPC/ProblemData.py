@@ -8,8 +8,8 @@ class problemDataAbstract:
         self.dt_sim = 0.001
         self.dt_bldc = 0.0005
         self.r1 = int(self.dt / self.dt_sim)
-        self.init_steps = 0 # full stand phase
-        self.target_steps =  120 # manipulation steps
+        self.init_steps = 0
+        self.target_steps =  120
         self.T = self.init_steps + self.target_steps -1
 
         self.robot = erd.load("solo12")

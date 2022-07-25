@@ -174,7 +174,6 @@ def control_loop():
     dT_whole = 0.0
     cnt = 0
     while (not device.is_timeout) and (t < t_max) and (not controller.error):
-        print("ITER #", cnt)
         t_start_whole = time.time()
 
         target.update(cnt)
@@ -210,8 +209,6 @@ def control_loop():
         k_log_whole += 1
         cnt += 1
 
-        print("Total loop time: ", t_log_whole[k_log_whole-1], "\n")
-
     # ****************************************************************
     finished = t >= t_max
     damp_control(device, 12)
@@ -230,20 +227,11 @@ def control_loop():
         print("Masterboard timeout detected.")
 
     if params.LOGGING:
-        try:
-            log_path = Path("/tmp/") / "logs" / sha
-            log_path.mkdir(parents=True)
-            loggerControl.save(str(log_path / "data"))
-            with open(str(log_path / 'readme.txt') , 'w') as f:
-                f.write(msg)
+        log_path = Path("/tmp") / "logs"
+        loggerControl.save(str(log_path / "data"))
 
-            if params.PLOTTING:
-                loggerControl.plot(True, str(log_path / "data"))
-        except:
-            print("\nCANNOT SAVE THE LOG\n\
-                The folder already exists !!! Please delete the folder with the name of your current commit\n")
-
-
+    if params.PLOTTING:
+        loggerControl.plot()
 
     if params.SIMULATION and params.enable_pyb_GUI:
         device.Stop()
