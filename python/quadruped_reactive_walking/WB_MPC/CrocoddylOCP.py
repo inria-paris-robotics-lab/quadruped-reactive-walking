@@ -15,13 +15,24 @@ class OCP:
         self.results = OcpResult()
         self.state = crocoddyl.StateMultibody(self.pd.model)
         self.initialized = False
+        self.t_problem_update = 0
         self.initialize_models()
     
     def initialize_models(self):
-        self.models = []
-        for _ in range(self.pd.T):
-            self.models.append(Model(self.pd, self.state, self.target.contactSequence[_])) # RunningModels
-        self.models.append(Model(self.pd, self.state, isTerminal=True)) # TerminalModel
+        self.runningModels = []
+        self.terminalModel = []
+        for t in range(self.pd.T):
+            self.runningModels.append(Model(self.pd, self.state, self.target.contactSequence[t])) # RunningModels
+            target = self.target.evaluate_in_t(t)
+            freeIds = [idf for idf in self.pd.allContactIds if idf not in self.target.contactSequence[t]]
+            self.appendTargetToModel(self.runningModels[t], target, self.target.contactSequence[t], freeIds)
+
+        self.bufferModel = self.runningModels[0]
+        self.bufferData = self.runningModels[0].model.createData()
+
+        self.terminalModel.append(Model(self.pd, self.state, isTerminal=True)) # TerminalModel
+
+        self.models = self.runningModels + self.terminalModel
         
     def make_ocp(self, x0):
         """ Create a shooting problem for a simple walking gait.
@@ -34,29 +45,28 @@ class OCP:
         pin.forwardKinematics(self.pd.model, self.pd.rdata, q0)
         pin.updateFramePlacements(self.pd.model, self.pd.rdata)
 
+        start_time = time()
         if self.initialized:
-            self.models = self.models[1:] + [self.models[0]]
-
-        for t in range(self.pd.T):
-            target = self.target.evaluate_in_t(t)
-            freeIds = [idf for idf in self.pd.allContactIds if idf not in self.target.contactSequence[t]]
-            self.appendTargetToModel(self.models[t], target, self.target.contactSequence[t], freeIds)
-
-        freeIds = [idf for idf in self.pd.allContactIds if idf not in self.target.contactSequence[self.pd.T]]
-        #contactIds = self.target.contactSequence[self.pd.T]
-        self.appendTargetToModel(self.models[self.pd.T], self.target.evaluate_in_t(self.pd.T), 
-                                    self.target.contactSequence[self.pd.T], freeIds, True)
-
-        problem = crocoddyl.ShootingProblem(x0, 
+            target = self.target.evaluate_in_t(self.pd.T-1)
+            freeIds = [idf for idf in self.pd.allContactIds if idf not in self.target.contactSequence[self.pd.T-1]]        
+            self.appendTargetToModel(self.bufferModel, target, self.target.contactSequence[self.pd.T-1], freeIds)
+            self.problem.circularAppend(self.bufferModel.model, self.bufferModel.model.createData())
+        else:
+            self.problem = crocoddyl.ShootingProblem(x0, 
                                             [m.model for m in self.models[:-1]], 
                                             self.models[-1].model)
-        self.ddp = crocoddyl.SolverFDDP(problem)
+        
+        
+        self.t_problem_update = time() - start_time
+        
+        
+        self.ddp = crocoddyl.SolverFDDP(self.problem)
 
         self.initialized = True
 
-        return problem
+        return self.problem
 
-    def appendTargetToModel(self, model, target, contactIds, freeIds, isTerminal=False):
+    def appendTargetToModel(self, model, target, contactIds, freeIds):
         """ Action models for a footstep phase.
         :param numKnots: number of knots for the footstep phase
         :param supportFootIds: Ids of the supporting feet
@@ -71,8 +81,9 @@ class OCP:
                 swingFootTask += [[i, pin.SE3(np.eye(3), tref)]]
             except:
                 pass
+
         
-        model.update_model(contactIds, swingFootTask, isTerminal=isTerminal)
+        model.update_model(contactIds, swingFootTask)
 
 
 # Solve
@@ -258,13 +269,6 @@ class Model:
                     self.dmodel.costs.removeCost(self.pd.model.frames[i[0]].name + "_footTrack")
                 self.costModel.addCost(self.pd.model.frames[i[0]].name + "_footTrack", footTrack, self.pd.foot_tracking_w)
 
-    def update_model(self, supportFootIds = [], swingFootTask=[], isTerminal = False):
-        if isTerminal:
-            self.supportFootIds = supportFootIds
-            self.make_terminal_model()
-        elif self.isTerminal:
-            self.supportFootIds = supportFootIds
-            self.make_running_model()
-            self.tracking_cost(swingFootTask)
-        else:
-            self.tracking_cost(swingFootTask)
+    def update_model(self, supportFootIds = [], swingFootTask=[]):
+        self.supportFootIds = supportFootIds
+        self.tracking_cost(swingFootTask)
