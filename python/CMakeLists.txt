@@ -26,6 +26,7 @@ set(${PY_NAME}_PYTHON
 
 set(${PY_NAME}_WB_MPC_PYTHON
   __init__.py
+  BenchmarkCrocoddylOCP.py
   CrocoddylOCP.py
   CasadiOCP.py
   ShootingNode.py

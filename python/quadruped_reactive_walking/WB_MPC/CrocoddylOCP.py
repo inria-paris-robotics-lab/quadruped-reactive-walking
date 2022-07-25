@@ -50,6 +50,8 @@ class OCP:
         problem = crocoddyl.ShootingProblem(x0, 
                                             [m.model for m in self.models[:-1]], 
                                             self.models[-1].model)
+        self.ddp = crocoddyl.SolverFDDP(problem)
+
         self.initialized = True
 
         return problem
@@ -77,7 +79,7 @@ class OCP:
     def solve(self, x0, guess=None):
         problem = self.make_ocp(x0)
         self.ddp = crocoddyl.SolverFDDP(problem)
-        self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
+        # self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
 
         # for i, c in enumerate(self.ddp.problem.runningModels):
         #     print(str(i), c.differential.contacts.contacts.todict().keys())
@@ -93,7 +95,7 @@ class OCP:
             us = guess['us']
             print("Using warmstart")
         start_time = time()
-        self.ddp.solve(xs, us, 1000, False)
+        self.ddp.solve(xs, us, 1, False)
         self.solver_time = time()- start_time
         print("Solver time: ", self.solver_time , "\n")
 
