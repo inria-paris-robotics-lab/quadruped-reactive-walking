@@ -67,7 +67,7 @@ class Controller:
         self.initialized = False
         self.result = Result(params)
         self.params = params
-        self.q_init = np.zeros(18)
+        self.q_init = pd.q0
         
         device = DummyDevice()
         device.joints.positions = q_init
