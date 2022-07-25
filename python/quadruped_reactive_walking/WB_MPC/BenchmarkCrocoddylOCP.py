@@ -16,51 +16,11 @@ MAXITER = 1
 
 def createProblem():
     params = qrw.Params()
-    pd = ProblemData(params)
+    pd = ProblemDataFull(params)
     target = Target(pd)
     target.update(0)
 
-    x0 = np.array(
-        [
-            0.0,
-            0.0,
-            0.2607495,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.7,
-            -1.4,
-            0.0,
-            0.7,
-            -1.4,
-            0.0,
-            -0.7,
-            1.4,
-            0.0,
-            -0.7,
-            1.4,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ]
-    )
+    x0 = pd.x0_reduced
 
     ocp = OCP(pd, target)
     problem = ocp.make_ocp(x0)

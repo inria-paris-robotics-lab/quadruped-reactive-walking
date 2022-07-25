@@ -44,8 +44,10 @@ class LoggerControl:
         # Controller timings: MPC time, ...
 
         self.ocp_timings = np.zeros([size])
-        self.ocp_storage = {"xs": np.zeros([size, pd.T + 1, pd.nx]),
-                            "us": np.zeros([size, pd.T, pd.nu])}
+        self.ocp_storage = {
+            "xs": np.zeros([size, pd.T + 1, pd.nx]),
+            "us": np.zeros([size, pd.T, pd.nu]),
+        }
 
         # MPC
 
@@ -111,67 +113,88 @@ class LoggerControl:
 
         self.i += 1
 
-    def plot(self, save = False, fileName = 'tmp/'):
+    def plot(self, save=False, fileName="tmp/"):
         import matplotlib
         import matplotlib.pyplot as plt
+
         matplotlib.use("QtAgg")
         plt.style.use("seaborn")
 
         horizon = self.ocp_storage["xs"].shape[0]
-        t15 = np.linspace(0, horizon*self.pd.dt, horizon+1)
-        t1 = np.linspace(0, (horizon)*self.pd.dt, (horizon)*self.pd.r1+1)
-        t_mpc = np.linspace(0, (horizon)*self.pd.dt, horizon+1)
+        t15 = np.linspace(0, horizon * self.pd.dt, horizon + 1)
+        t1 = np.linspace(0, (horizon) * self.pd.dt, (horizon) * self.pd.r1 + 1)
+        t_mpc = np.linspace(0, (horizon) * self.pd.dt, horizon + 1)
 
-        all_ocp_feet_p_log = {idx: [get_translation_array(self.pd, x, idx)[0] for x in self.ocp_storage["xs"]] for idx in self.pd.allContactIds}
-        for foot in all_ocp_feet_p_log: all_ocp_feet_p_log[foot] = np.array(all_ocp_feet_p_log[foot])
-        
-        legend = ['Hip', 'Shoulder', 'Knee']
-        plt.figure(figsize=(12, 6), dpi = 90)
+        all_ocp_feet_p_log = {
+            idx: [
+                get_translation_array(self.pd, x, idx)[0]
+                for x in self.ocp_storage["xs"]
+            ]
+            for idx in self.pd.allContactIds
+        }
+        for foot in all_ocp_feet_p_log:
+            all_ocp_feet_p_log[foot] = np.array(all_ocp_feet_p_log[foot])
+
+        legend = ["Hip", "Shoulder", "Knee"]
+        plt.figure(figsize=(12, 6), dpi=90)
         plt.title("Solver timings")
         plt.hist(self.ocp_timings, 30)
         plt.xlabel("timee [s]")
         plt.ylabel("Number of cases [#]")
         plt.draw()
-        if save: plt.savefig(fileName + "_solver_timings")
+        if save:
+            plt.savefig(fileName + "_solver_timings")
 
-        legend = ['Hip', 'Shoulder', 'Knee']
-        plt.figure(figsize=(12, 6), dpi = 90)
+        legend = ["Hip", "Shoulder", "Knee"]
+        plt.figure(figsize=(12, 6), dpi=90)
         i = 0
         for i in range(4):
-            plt.subplot(2,2,i+1)
-            plt.title('Joint position of ' + str(i))
-            [plt.plot(np.array(self.q_mes)[:, (3*i+jj)] * 180/np.pi ) for jj in range(3) ]
-            plt.ylabel('Joint position [deg]')
-            plt.xlabel('t[s]')
+            plt.subplot(2, 2, i + 1)
+            plt.title("Joint position of " + str(i))
+            [
+                plt.plot(np.array(self.q_mes)[:, (3 * i + jj)] * 180 / np.pi)
+                for jj in range(3)
+            ]
+            plt.ylabel("Joint position [deg]")
+            plt.xlabel("t[s]")
             plt.legend(legend)
         plt.draw()
-        if save: plt.savefig(fileName + "_joint_positions")
+        if save:
+            plt.savefig(fileName + "_joint_positions")
 
-        legend = ['Hip', 'Shoulder', 'Knee']
-        plt.figure(figsize=(12, 6), dpi = 90)
+        legend = ["Hip", "Shoulder", "Knee"]
+        plt.figure(figsize=(12, 6), dpi=90)
         i = 0
         for i in range(4):
-            plt.subplot(2,2,i+1)
-            plt.title('Joint velocity of ' + str(i))
-            [plt.plot(np.array(self.v_mes)[:, (3*i+jj)] * 180/np.pi ) for jj in range(3) ]
-            plt.ylabel('Joint velocity [deg/s]')
-            plt.xlabel('t[s]')
+            plt.subplot(2, 2, i + 1)
+            plt.title("Joint velocity of " + str(i))
+            [
+                plt.plot(np.array(self.v_mes)[:, (3 * i + jj)] * 180 / np.pi)
+                for jj in range(3)
+            ]
+            plt.ylabel("Joint velocity [deg/s]")
+            plt.xlabel("t[s]")
             plt.legend(legend)
         plt.draw()
-        if save: plt.savefig(fileName + "_joint_velocities")
+        if save:
+            plt.savefig(fileName + "_joint_velocities")
 
-        legend = ['Hip', 'Shoulder', 'Knee']
-        plt.figure(figsize=(12, 6), dpi = 90)
+        legend = ["Hip", "Shoulder", "Knee"]
+        plt.figure(figsize=(12, 6), dpi=90)
         i = 0
         for i in range(4):
-            plt.subplot(2,2,i+1)
-            plt.title('Joint torques of ' + str(i))
-            [plt.plot(np.array(self.torquesFromCurrentMeasurment)[:, (3*i+jj)]) for jj in range(3) ]
-            plt.ylabel('Torque [Nm]')
-            plt.xlabel('t[s]')
+            plt.subplot(2, 2, i + 1)
+            plt.title("Joint torques of " + str(i))
+            [
+                plt.plot(np.array(self.torquesFromCurrentMeasurment)[:, (3 * i + jj)])
+                for jj in range(3)
+            ]
+            plt.ylabel("Torque [Nm]")
+            plt.xlabel("t[s]")
             plt.legend(legend)
         plt.draw()
-        if save: plt.savefig(fileName + "_joint_torques")
+        if save:
+            plt.savefig(fileName + "_joint_torques")
 
         """ legend = ['x', 'y', 'z']
         plt.figure(figsize=(12, 18), dpi = 90)
@@ -192,15 +215,15 @@ class LoggerControl:
         # TODO add the plots you want
 
     def save(self, fileName="data"):
-        #date_str = datetime.now().strftime("_%Y_%m_%d_%H_%M")
-        #name = fileName + date_str + "_" + str(self.type_MPC) + ".npz"
+        # date_str = datetime.now().strftime("_%Y_%m_%d_%H_%M")
+        # name = fileName + date_str + "_" + str(self.type_MPC) + ".npz"
 
         np.savez_compressed(
             fileName,
-            #t_MPC=self.t_MPC,
+            # t_MPC=self.t_MPC,
             ocp_storage=self.ocp_storage,
             mpc_solving_duration=self.ocp_timings,
-            #mpc_cost=self.mpc_cost,
+            # mpc_cost=self.mpc_cost,
             wbc_P=self.wbc_P,
             wbc_D=self.wbc_D,
             wbc_q_des=self.wbc_q_des,
@@ -225,8 +248,6 @@ class LoggerControl:
             voltage=self.voltage,
             energy=self.energy,
         )
-        self.plot(True, fileName)
-
         print("Logs and plots saved in " + fileName)
 
     def load(self):
