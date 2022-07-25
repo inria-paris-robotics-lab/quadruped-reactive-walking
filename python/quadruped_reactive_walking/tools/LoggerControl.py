@@ -48,9 +48,10 @@ class LoggerControl:
 
         # Controller timings: MPC time, ...
         self.t_measures = np.zeros(size)
-        self.t_mpc = np.zeros(size) #solver time
+        self.t_mpc = np.zeros(size) #solver time #measurement time
         self.t_send = np.zeros(size) #
         self.t_loop = np.zeros(size) #controller time loop
+        self.t_whole = np.zeros(size) #controller time loop
 
         # MPC
         self.ocp_storage = {
@@ -104,6 +105,7 @@ class LoggerControl:
         self.t_mpc[self.i] = controller.mpc.ocp.results.solver_time
         self.t_send[self.i] = controller.t_send
         self.t_loop[self.i] = controller.t_loop
+        self.t_measures[self.i] = controller.t_measures
 
         # Logging from model predictive control
         self.ocp_storage["xs"][self.i] = np.array(controller.mpc.ocp.results.x)
@@ -204,13 +206,16 @@ class LoggerControl:
 
         plt.figure(figsize=(12, 6), dpi=90)
         plt.plot(t_range, self.t_mpc)
+        plt.plot(t_range, self.t_measures)
         plt.plot(t_range, self.t_send)
         plt.plot(t_range, self.t_loop, color="rebeccapurple")
-        lgd = [ "MPC", "T SEND", "CONTROLLER"]
+        lgd = [ "MPC", "MEASUREMENT", "T SEND", "CONTROLLER"]
         plt.legend(lgd)
         plt.xlabel("Time [s]")
         plt.ylabel("Time [s]")
         plt.draw()
+        if save:
+            plt.savefig(fileName + "_solver_timings")
 
         """ legend = ['x', 'y', 'z']
         plt.figure(figsize=(12, 18), dpi = 90)
@@ -243,6 +248,7 @@ class LoggerControl:
             mpc_solving_duration=self.t_mpc,
             t_send = self.t_send,
             t_loop = self.t_loop,
+            t_measures = self.t_measures,
             # mpc_cost=self.mpc_cost,
             wbc_P=self.wbc_P,
             wbc_D=self.wbc_D,
@@ -299,6 +305,7 @@ class LoggerControl:
         self.t_mpc = self.data["mpc_solving_duration"]
         self.t_send = self.data["t_send"]
         self.t_loop = self.data["t_loop"]
+        self.t_measures = self.data["t_meausres"]
 
         self.ocp_storage = self.data["ocp_storage"].item()
 
