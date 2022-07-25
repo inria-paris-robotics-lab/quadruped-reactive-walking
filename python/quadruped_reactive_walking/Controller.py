@@ -21,7 +21,7 @@ class Result:
         self.q_des = np.zeros(12)
         self.v_des = np.zeros(12)
         self.tau_ff = np.zeros(12)
-
+        
 
 class DummyDevice:
     def __init__(self):
@@ -136,7 +136,7 @@ class Controller:
         t_send = time.time()
         self.t_send = t_send - t_mpc
 
-        # self.clamp_result(device)
+        self.clamp_result(device)
         self.security_check(m)
 
         if self.error:
@@ -187,10 +187,10 @@ class Controller:
 
     def clamp(self, num, min_value=None, max_value=None):
         clamped = False
-        if min_value is not None and num.any() <= min_value:
+        if min_value is not None and num <= min_value:
             num = min_value
             clamped = True
-        if max_value is not None and num.any() >= max_value:
+        if max_value is not None and num >= max_value:
             num = max_value
             clamped = True
         return clamped
@@ -205,12 +205,12 @@ class Controller:
             if self.clamp(self.result.q_des[3 * i + 1], -hip_max, hip_max):
                 print("Clamping hip n " + str(i))
                 self.error = set_error
-            if self.q_init[6 + 3 * i + 2] >= 0.0 and self.clamp(
+            if self.q_init[7 + 3 * i + 2] >= 0.0 and self.clamp(
                 self.result.q_des[3 * i + 2], knee_min
             ):
                 print("Clamping knee n " + str(i))
                 self.error = set_error
-            elif self.q_init[6 + 3 * i + 2] <= 0.0 and self.clamp(
+            elif self.q_init[7 + 3 * i + 2] <= 0.0 and self.clamp(
                 self.result.q_des[3 * i + 2], max_value=-knee_min
             ):
                 print("Clamping knee n " + str(i))
@@ -233,7 +233,7 @@ class Controller:
                 print("Clamping velocity of motor n " + str(i))
                 self.error = set_error
 
-            if self.clamp(self.result.tau_ff[i], -8.0, 8.0):
+            if self.clamp(self.result.tau_ff[i], -3.2, 3.2):
                 print("Clamping torque of motor n " + str(i))
                 self.error = set_error
 
