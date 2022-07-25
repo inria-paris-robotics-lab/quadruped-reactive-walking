@@ -42,14 +42,17 @@ class LoggerControl:
         # TODO: ADD WHAT YOU WANT TO LOG
 
         # Controller timings: MPC time, ...
+        self.ocp_timings = np.zeros(size)
+        self.t_measures = np.zeros(size)
+        self.t_mpc = np.zeros(size)
+        self.t_send = np.zeros(size)
+        self.t_loop = np.zeros(size)
 
-        self.ocp_timings = np.zeros([size])
+        # MPC
         self.ocp_storage = {
             "xs": np.zeros([size, pd.T + 1, pd.nx]),
             "us": np.zeros([size, pd.T, pd.nu]),
         }
-
-        # MPC
 
         # Whole body control
         self.wbc_P = np.zeros([size, 12])  # proportionnal gains of the PD+

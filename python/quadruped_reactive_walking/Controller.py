@@ -91,6 +91,9 @@ class Controller:
 
         m = self.read_state(device)
 
+        t_measures = time.time()
+        self.t_measures = t_measures - t_start
+
         try:
             #self.mpc.solve(self.k, m['x_m'], self.guess) # Closed loop mpc
 
@@ -104,6 +107,9 @@ class Controller:
             self.error = True
             print("MPC Problem")
 
+        t_mpc = time.time()
+        self.t_mpc = t_mpc - t_measures
+        
         if not self.error:
             self.mpc_result, self.mpc_cost = self.mpc.get_latest_result()
 
@@ -124,12 +130,13 @@ class Controller:
             self.result.v_des = self.mpc_result.v[1]
             self.result.tau_ff = np.zeros(12)
 
-            self.guess["xs"] = self.mpc_result.x[1:] + [self.mpc_result.x[-1]*0]
-            self.guess["us"] = self.mpc_result.u[1:] + [self.mpc_result.u[-1]*0]
+            self.guess["xs"] = self.mpc_result.x[1:] + [self.mpc_result.x[-1]]
+            self.guess["us"] = self.mpc_result.u[1:] + [self.mpc_result.u[-1]]
 
-        self.t_wbc = time.time() - t_start
+        t_send = time.time()
+        self.t_send = t_send - t_mpc
 
-        self.clamp_result(device)
+        # self.clamp_result(device)
         self.security_check(m)
 
         if self.error:

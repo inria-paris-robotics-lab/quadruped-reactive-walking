@@ -8,7 +8,6 @@ class problemDataAbstract:
         self.dt_sim = 0.001
         self.dt_bldc = 0.0005
         self.r1 = int(self.dt / self.dt_sim)
-        self.r2 = int(self.dt_sim / self.dt_bldc)
         self.init_steps = 0 # full stand phase
         self.target_steps =  120 # manipulation steps
         self.T = self.init_steps + self.target_steps -1

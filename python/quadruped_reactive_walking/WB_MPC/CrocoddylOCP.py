@@ -95,7 +95,7 @@ class OCP:
             us = guess['us']
             print("Using warmstart")
         start_time = time()
-        self.ddp.solve(xs, us, 1000, False)
+        self.ddp.solve(xs, us, 1, False)
         self.solver_time = time()- start_time
         print("Solver time: ", self.solver_time , "\n")
 
