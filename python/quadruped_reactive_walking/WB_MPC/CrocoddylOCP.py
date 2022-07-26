@@ -21,7 +21,14 @@ class OCP:
         self.initialize_models()
 
         self.x0 = self.pd.x0_reduced
+
+        self.problem = crocoddyl.ShootingProblem(
+            self.x0, self.models, self.terminal_model
+        )
+        self.ddp = crocoddyl.SolverFDDP(self.problem)
+
         self.t_update_last_model = 0
+        self.t_shift = 0
 
     def initialize_models(self):
         self.nodes = []
@@ -49,29 +56,24 @@ class OCP:
 
         t_FK = time()
         self.t_FK = t_FK - t_start
-
+        
         if self.initialized:
             task = self.make_task(self.target.evaluate_in_t(self.pd.T-1), self.target.contactSequence[self.pd.T-1]) # model without contact for this task
             self.nodes[0].update_model(self.target.contactSequence[self.pd.T-1], task)
-            #self.problem.circularAppend(self.nodes[0].model, self.nodes[0].model.createData())
-            self.nodes = self.nodes[1:] + [self.nodes[0]]
-            self.models = [node.model for node in self.nodes]
 
-        t_shift = time()
-        self.t_shift = t_shift - t_FK
+            t_update_last_model = time()
+            self.t_update_last_model = t_update_last_model - t_FK
 
-        t_update_last_model = time()
-        self.t_update_last_model = t_update_last_model - t_shift
+            self.problem.circularAppend(self.nodes[0].model, self.nodes[0].model.createData())
+            t_shift = time()
+            self.t_shift = t_shift - t_update_last_model
+
+        self.problem.x0 = self.x0
 
         # If you need update terminal model
         t_update_terminal_model = time()
-        self.t_update_terminal_model = t_update_terminal_model - t_shift
+        self.t_update_terminal_model = 0
 
-
-        self.problem = crocoddyl.ShootingProblem(
-            self.x0, self.models, self.terminal_model
-        )
-        self.ddp = crocoddyl.SolverFDDP(self.problem)
 
 
         self.initialized = True
@@ -107,7 +109,7 @@ class OCP:
         t_warm_start = time()
         self.t_warm_start = t_warm_start - t_update
 
-        self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
+        #self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
         self.ddp.solve(xs, us, 1, False)
 
         t_ddp = time()
