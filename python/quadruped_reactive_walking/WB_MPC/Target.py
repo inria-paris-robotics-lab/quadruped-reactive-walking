@@ -28,7 +28,7 @@ class Target:
         pin.forwardKinematics(pd.model, pd.rdata, q, v)
         pin.updateFramePlacements(pd.model, pd.rdata)
         self.FR_foot0 = pd.rdata.oMf[pd.rfFootId].translation.copy()
-        self.A = np.array([0, 0.05, 0.05])
+        self.A = np.array([0, 0.03, 0.03])
         self.offset = np.array([0.08, 0.0, 0.06])
         self.freq = np.array([0, 2.5*0, 2.5*0])
         self.phase = np.array([0, 0, np.pi / 2])

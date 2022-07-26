@@ -61,6 +61,7 @@ class Controller:
         self.mpc = WB_MPC_Wrapper.MPC_Wrapper(pd, target, params)
         self.pd = pd
         self.target = target
+        self.point_target = []
 
         self.k = 0
         self.error = False
@@ -93,6 +94,7 @@ class Controller:
         t_measures = time.time()
         self.t_measures = t_measures - t_start
 
+        self.point_target = self.target.evaluate_in_t(1)[self.pd.rfFootId]
         try:
             self.mpc.solve(self.k, m["x_m"], self.guess)  # Closed loop mpc
 

@@ -65,6 +65,7 @@ class LoggerControl:
             "xs": np.zeros([size, pd.T + 1, pd.nx]),
             "us": np.zeros([size, pd.T, pd.nu]),
         }
+        self.target = np.zeros([size, 3])
 
         # Whole body control
         self.wbc_P = np.zeros([size, 12])  # proportionnal gains of the PD+
@@ -103,6 +104,7 @@ class LoggerControl:
             self.mocapOrientationQuat[self.i] = device.baseState[1]
 
         # Controller timings: MPC time, ...
+        self.target[self.i] = controller.point_target
         self.t_mpc[self.i] = controller.mpc.ocp.results.solver_time
         self.t_send[self.i] = controller.t_send
         self.t_loop[self.i] = controller.t_loop
@@ -152,6 +154,15 @@ class LoggerControl:
         }
         for foot in all_ocp_feet_p_log:
             all_ocp_feet_p_log[foot] = np.array(all_ocp_feet_p_log[foot])
+
+        x_mes = np.concatenate([self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis = 1)
+        feet_p_log = {
+            idx: 
+                get_translation_array(self.pd, x_mes, idx)[0]
+            for idx in self.pd.allContactIds
+        }
+        
+        
 
         # plt.figure(figsize=(12, 6), dpi=90)
         # plt.title("Solver timings")
@@ -210,6 +221,15 @@ class LoggerControl:
         plt.draw()
         if save:
             plt.savefig(fileName + "_joint_torques")
+
+        legend = ["x", "y", "z"]
+        plt.figure(figsize=(12, 18), dpi = 90)
+        for p in range(3):
+            plt.subplot(3,1, p+1)
+            plt.title('Free foot on ' + legend[p])
+            plt.plot(self.target[:, p])
+            plt.plot(feet_p_log[self.pd.rfFootId][:, p])
+            plt.legend(["Desired", "Measured"])
 
         self.plot_controller_times()
         self.plot_OCP_times()
