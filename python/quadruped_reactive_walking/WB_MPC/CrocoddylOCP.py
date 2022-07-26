@@ -78,16 +78,6 @@ class OCP:
 
         self.initialized = True
 
-    #def update_model(self, node, target, contactIds, isTerminal=False):
-    #    """
-    #    Action models for a footstep phase.
-    #    :return footstep action models
-    #    """
-    #    # update translation
-    #    translation = np.zeros(3)
-#
-    #    node.update_model(contactIds, translation, isTerminal=isTerminal)
-
     def solve(self, x0, guess=None):
 
         self.x0 = x0
@@ -121,8 +111,7 @@ class OCP:
         swingFootTask = []
         for i in self.freeIds_from_contactIds(contactIds):
             try:
-                tref = target[i]
-                swingFootTask += [[i, pin.SE3(np.eye(3), tref)]]
+                swingFootTask += [[i, target[i]]]
             except:
                 pass
         return swingFootTask
@@ -319,7 +308,7 @@ class Node:
         if swingFootTask is not None:
             for i in swingFootTask:
                 frameTranslationResidual = crocoddyl.ResidualModelFrameTranslation(
-                    self.state, i[0], i[1].translation, self.nu
+                    self.state, i[0], i[1], self.nu
                 )
                 footTrack = crocoddyl.CostModelResidual(
                     self.state, frameTranslationResidual
