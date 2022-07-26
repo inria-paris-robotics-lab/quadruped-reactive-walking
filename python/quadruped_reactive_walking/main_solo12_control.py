@@ -184,13 +184,12 @@ def control_loop():
             break
 
         # Set desired quantities for the actuators
-        q_des, v_des = controller.interpolate_traj(device, controller.result.q_des, controller.result.v_des, pd.r1)
         for k in range(controller.pd.r1):
             device.joints.set_position_gains(controller.result.P)
             device.joints.set_velocity_gains(controller.result.D)
             device.joints.set_desired_positions(controller.result.q_des)
             device.joints.set_desired_velocities(controller.result.v_des)
-            #device.joints.set_torques(controller.result.FF)
+            device.joints.set_torques(controller.result.FF)
             device.send_command_and_wait_end_of_cycle(params.dt_wbc)
 
         if params.LOGGING or params.PLOTTING:
