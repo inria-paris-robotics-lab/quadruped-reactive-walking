@@ -227,7 +227,7 @@ def control_loop():
 
     if params.LOGGING:
         log_path = Path("/tmp") / "logs"
-        loggerControl.save(str(log_path / "data"))
+        loggerControl.save(str(log_path))
 
     if params.PLOTTING:
         loggerControl.plot()

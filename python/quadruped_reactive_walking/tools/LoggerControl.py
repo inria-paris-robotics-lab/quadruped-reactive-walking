@@ -162,54 +162,54 @@ class LoggerControl:
         # if save:
         #     plt.savefig(fileName + "_solver_timings")
 
-        # legend = ["Hip", "Shoulder", "Knee"]
-        # plt.figure(figsize=(12, 6), dpi=90)
-        # i = 0
-        # for i in range(4):
-        #     plt.subplot(2, 2, i + 1)
-        #     plt.title("Joint position of " + str(i))
-        #     [
-        #         plt.plot(np.array(self.q_mes)[:, (3 * i + jj)] * 180 / np.pi)
-        #         for jj in range(3)
-        #     ]
-        #     plt.ylabel("Joint position [deg]")
-        #     plt.xlabel("t[s]")
-        #     plt.legend(legend)
-        # plt.draw()
-        # if save:
-        #     plt.savefig(fileName + "_joint_positions")
+        legend = ["Hip", "Shoulder", "Knee"]
+        plt.figure(figsize=(12, 6), dpi=90)
+        i = 0
+        for i in range(4):
+            plt.subplot(2, 2, i + 1)
+            plt.title("Joint position of " + str(i))
+            [
+                plt.plot(np.array(self.q_mes)[:, (3 * i + jj)] * 180 / np.pi)
+                for jj in range(3)
+            ]
+            plt.ylabel("Joint position [deg]")
+            plt.xlabel("t[s]")
+            plt.legend(legend)
+        plt.draw()
+        if save:
+            plt.savefig(fileName + "_joint_positions")
 
-        # plt.figure(figsize=(12, 6), dpi=90)
-        # i = 0
-        # for i in range(4):
-        #     plt.subplot(2, 2, i + 1)
-        #     plt.title("Joint velocity of " + str(i))
-        #     [
-        #         plt.plot(np.array(self.v_mes)[:, (3 * i + jj)] * 180 / np.pi)
-        #         for jj in range(3)
-        #     ]
-        #     plt.ylabel("Joint velocity [deg/s]")
-        #     plt.xlabel("t[s]")
-        #     plt.legend(legend)
-        # plt.draw()
-        # if save:
-        #     plt.savefig(fileName + "_joint_velocities")
+        plt.figure(figsize=(12, 6), dpi=90)
+        i = 0
+        for i in range(4):
+            plt.subplot(2, 2, i + 1)
+            plt.title("Joint velocity of " + str(i))
+            [
+                plt.plot(np.array(self.v_mes)[:, (3 * i + jj)] * 180 / np.pi)
+                for jj in range(3)
+            ]
+            plt.ylabel("Joint velocity [deg/s]")
+            plt.xlabel("t[s]")
+            plt.legend(legend)
+        plt.draw()
+        if save:
+            plt.savefig(fileName + "_joint_velocities")
 
-        # plt.figure(figsize=(12, 6), dpi=90)
-        # i = 0
-        # for i in range(4):
-        #     plt.subplot(2, 2, i + 1)
-        #     plt.title("Joint torques of " + str(i))
-        #     [
-        #         plt.plot(np.array(self.torquesFromCurrentMeasurment)[:, (3 * i + jj)])
-        #         for jj in range(3)
-        #     ]
-        #     plt.ylabel("Torque [Nm]")
-        #     plt.xlabel("t[s]")
-        #     plt.legend(legend)
-        # plt.draw()
-        # if save:
-        #     plt.savefig(fileName + "_joint_torques")
+        plt.figure(figsize=(12, 6), dpi=90)
+        i = 0
+        for i in range(4):
+            plt.subplot(2, 2, i + 1)
+            plt.title("Joint torques of " + str(i))
+            [
+                plt.plot(np.array(self.torquesFromCurrentMeasurment)[:, (3 * i + jj)])
+                for jj in range(3)
+            ]
+            plt.ylabel("Torque [Nm]")
+            plt.xlabel("t[s]")
+            plt.legend(legend)
+        plt.draw()
+        if save:
+            plt.savefig(fileName + "_joint_torques")
 
         self.plot_controller_times()
         self.plot_OCP_times()

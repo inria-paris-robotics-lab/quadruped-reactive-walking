@@ -74,8 +74,6 @@ class OCP:
         t_update_terminal_model = time()
         self.t_update_terminal_model = 0
 
-
-
         self.initialized = True
 
     def solve(self, x0, guess=None):
@@ -303,8 +301,6 @@ class Node:
 
     def tracking_cost(self, swingFootTask):
 
-        #  TODO all this done in initialisation ? (we always have at maximum one swing
-        # foot task so you can just initialize i once and then add or remove it)
         if swingFootTask is not None:
             for i in swingFootTask:
                 frameTranslationResidual = crocoddyl.ResidualModelFrameTranslation(
