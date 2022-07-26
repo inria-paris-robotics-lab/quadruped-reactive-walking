@@ -1,4 +1,6 @@
 from tracemalloc import start
+
+from matplotlib.pyplot import switch_backend
 from .ProblemData import ProblemData
 from .Target import Target
 from .OcpResult import OcpResult
@@ -25,11 +27,15 @@ class OCP:
         )
         self.ddp = crocoddyl.SolverFDDP(self.problem)
 
+        self.t_update_last_model = 0
+
     def initialize_models(self):
         self.nodes = []
-        for _ in range(self.pd.T):
-            self.nodes.append(Node(self.pd, self.state, self.target.contactSequence[_]))
-        self.terminal_node = Node(self.pd, self.state, isTerminal=True)
+        for t in range(self.pd.T):
+            task = self.make_task(self.target.evaluate_in_t(t), self.target.contactSequence[t])
+            self.nodes.append(
+                Node(self.pd, self.state, self.target.contactSequence[t], task))
+        self.terminal_node = Node(self.pd, self.state, self.target.contactSequence[self.pd.T], isTerminal=True)
 
         self.models = [node.model for node in self.nodes]
         self.terminal_model = self.terminal_node.model
@@ -51,20 +57,19 @@ class OCP:
         self.t_FK = t_FK - t_start
 
         if self.initialized:
-            self.models = self.models[1:] + [self.models[0]]
-            self.nodes = self.nodes[1:] + [self.nodes[0]]
+            task = self.make_task(self.target.evaluate_in_t(self.pd.T-1), self.target.contactSequence[self.pd.T-1]) # model without contact for this task
+            self.nodes[0].update_model(self.target.contactSequence[self.pd.T-1], task)
+            self.problem.circularAppend(self.nodes[0].model, self.nodes[0].model.createData())
+            #self.nodes = self.nodes[1:] + [self.nodes[0]]
+            #self.models = self.nodes
 
         t_shift = time()
         self.t_shift = t_shift - t_FK
-
-        # TODO You only need to update nodes[-1]
-        # use gait instead of contactIds and freeIds ?
 
         t_update_last_model = time()
         self.t_update_last_model = t_update_last_model - t_shift
 
         # If you need update terminal model
-
         t_update_terminal_model = time()
         self.t_update_terminal_model = t_update_terminal_model - t_shift
 
@@ -101,13 +106,26 @@ class OCP:
         t_warm_start = time()
         self.t_warm_start = t_warm_start - t_update
 
-        # self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
-        self.ddp.solve(xs, us, 1, False)
+        self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
+        self.ddp.solve(xs, us, 300, False)
 
         t_ddp = time()
         self.t_ddp = t_ddp - t_warm_start
 
         self.t_solve = time() - t_start
+
+    def make_task(self, target, contactIds):
+        swingFootTask = []
+        for i in self.freeIds_from_contactIds(contactIds):
+            try:
+                tref = target[i]
+                swingFootTask += [[i, pin.SE3(np.eye(3), tref)]]
+            except:
+                pass
+        return swingFootTask
+
+    def freeIds_from_contactIds(self, contactIds):
+        return [idf for idf in self.pd.allContactIds if idf not in contactIds]
 
     def get_results(self):
         self.results.x = self.ddp.xs.tolist()
@@ -146,14 +164,14 @@ class OCP:
 
     def get_croco_acc(self):
         acc = []
-        [acc.append(m.differential.xout) for m in self.ddp.problem.runningDatas]
+        [acc.append(m.differential.xout)
+         for m in self.ddp.problem.runningDatas]
         return acc
 
 
 class Node:
-    def __init__(self, pd, state, supportFootIds=[], isTerminal=False):
+    def __init__(self, pd, state, supportFootIds=[], swingFootTask = [], isTerminal=False):
         self.pd = pd
-        self.supportFootIds = supportFootIds
         self.isTerminal = isTerminal
 
         self.state = state
@@ -161,18 +179,17 @@ class Node:
             self.actuation = crocoddyl.ActuationModelFloatingBase(self.state)
         else:
             self.actuation = crocoddyl.ActuationModelFull(self.state)
-        self.control = crocoddyl.ControlParametrizationModelPolyZero(self.actuation.nu)
+        self.control = crocoddyl.ControlParametrizationModelPolyZero(
+            self.actuation.nu)
         self.nu = self.actuation.nu
 
-        
-
-        self.createStandardModel()
+        self.createStandardModel(supportFootIds)
         if isTerminal:
             self.make_terminal_model()
         else:
-            self.make_running_model()
+            self.make_running_model(supportFootIds ,swingFootTask)
 
-    def createStandardModel(self):
+    def createStandardModel(self, supportFootIds):
         """Action model for a swing foot phase.
 
         :param timeStep: step duration of the action model
@@ -183,9 +200,10 @@ class Node:
         """
 
         self.contactModel = crocoddyl.ContactModelMultiple(self.state, self.nu)
-        for i in self.supportFootIds:
+        for i in supportFootIds:
             supportContactModel = crocoddyl.ContactModel3D(
-                self.state, i, np.array([0.0, 0.0, 0.0]), self.nu, np.array([0.0, 0.0])
+                self.state, i, np.array(
+                    [0.0, 0.0, 0.0]), self.nu, np.array([0.0, 0.0])
             )
             self.contactModel.addContact(
                 self.pd.model.frames[i].name + "_contact", supportContactModel
@@ -194,7 +212,8 @@ class Node:
         # Creating the cost model for a contact phase
         costModel = crocoddyl.CostModelSum(self.state, self.nu)
 
-        stateResidual = crocoddyl.ResidualModelState(self.state, self.pd.xref, self.nu)
+        stateResidual = crocoddyl.ResidualModelState(
+            self.state, self.pd.xref, self.nu)
         stateActivation = crocoddyl.ActivationModelWeightedQuad(
             self.pd.state_reg_w**2
         )
@@ -212,23 +231,22 @@ class Node:
             self.dmodel, self.control, self.pd.dt
         )
 
-    def update_contact_model(self):
+    def update_contact_model(self, supportFootIds):
         self.remove_contacts()
         self.contactModel = crocoddyl.ContactModelMultiple(self.state, self.nu)
-        for i in self.supportFootIds:
+        for i in supportFootIds:
             supportContactModel = crocoddyl.ContactModel3D(
-                self.state, i, np.array([0.0, 0.0, 0.0]), self.nu, np.array([0.0, 0.0])
+                self.state, i, np.array(
+                    [0.0, 0.0, 0.0]), self.nu, np.array([0.0, 0.0])
             )
             self.dmodel.contacts.addContact(
                 self.pd.model.frames[i].name + "_contact", supportContactModel
             )
 
     def make_terminal_model(self):
-        self.remove_running_costs()
-        self.update_contact_model()
-
         self.isTerminal = True
-        stateResidual = crocoddyl.ResidualModelState(self.state, self.pd.xref, self.nu)
+        stateResidual = crocoddyl.ResidualModelState(
+            self.state, self.pd.xref, self.nu)
         stateActivation = crocoddyl.ActivationModelWeightedQuad(
             self.pd.terminal_velocity_w**2
         )
@@ -237,13 +255,8 @@ class Node:
         )
         self.costModel.addCost("terminalVelocity", stateReg, 1)
 
-    def make_running_model(self):
-        self.remove_terminal_cost()
-
-        self.isTerminal = False
-
-        self.update_contact_model()
-        for i in self.supportFootIds:
+    def make_running_model(self, supportFootIds, swingFootTask):
+        for i in supportFootIds:
             cone = crocoddyl.FrictionCone(self.pd.Rsurf, self.pd.mu, 4, False)
             coneResidual = crocoddyl.ResidualModelContactFrictionCone(
                 self.state, i, cone, self.nu
@@ -264,14 +277,20 @@ class Node:
         ctrlReg = crocoddyl.CostModelResidual(self.state, ctrlResidual)
         self.costModel.addCost("ctrlReg", ctrlReg, self.pd.control_reg_w)
 
-        ctrl_bound_residual = crocoddyl.ResidualModelControl(self.state, self.nu)
+        ctrl_bound_residual = crocoddyl.ResidualModelControl(
+            self.state, self.nu)
         ctrl_bound_activation = crocoddyl.ActivationModelQuadraticBarrier(
-            crocoddyl.ActivationBounds(-self.pd.effort_limit, self.pd.effort_limit)
+            crocoddyl.ActivationBounds(-self.pd.effort_limit,
+                                       self.pd.effort_limit)
         )
         ctrl_bound = crocoddyl.CostModelResidual(
             self.state, ctrl_bound_activation, ctrl_bound_residual
         )
-        self.costModel.addCost("ctrlBound", ctrl_bound, self.pd.control_bound_w)
+        self.costModel.addCost("ctrlBound", ctrl_bound,
+                               self.pd.control_bound_w)
+
+
+        self.tracking_cost(swingFootTask)
 
     def remove_running_costs(self):
         runningCosts = self.dmodel.costs.active.tolist()
@@ -292,7 +311,7 @@ class Node:
 
     def tracking_cost(self, swingFootTask):
 
-        #  TODO all this done in initialisation ? (we always have at maximum one swing 
+        #  TODO all this done in initialisation ? (we always have at maximum one swing
         # foot task so you can just initialize i once and then add or remove it)
         if swingFootTask is not None:
             for i in swingFootTask:
@@ -315,13 +334,9 @@ class Node:
                     self.pd.foot_tracking_w,
                 )
 
-    def update_model(self, supportFootIds=[], swingFootTask=[], isTerminal=False):
-        if isTerminal:
-            self.supportFootIds = supportFootIds
-            self.make_terminal_model()
-        elif self.isTerminal:
-            self.supportFootIds = supportFootIds
-            self.make_running_model()
-            self.tracking_cost(swingFootTask)
+    def update_model(self, supportFootIds=[], swingFootTask=[]):
+        if self.isTerminal:
+            self.update_contact_model(supportFootIds)
         else:
+            self.update_contact_model(supportFootIds)
             self.tracking_cost(swingFootTask)
