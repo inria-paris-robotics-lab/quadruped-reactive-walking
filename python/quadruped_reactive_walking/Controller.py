@@ -97,10 +97,10 @@ class Controller:
             self.mpc.solve(self.k, m["x_m"], self.guess)  # Closed loop mpc
 
             # Trajectory tracking
-            # if self.initialized:
-            #    self.mpc.solve(self.k, self.mpc_result.x[1], self.guess)
-            # else:
-            #    self.mpc.solve(self.k, m["x_m"], self.guess)
+            #if self.initialized:
+            #   self.mpc.solve(self.k, self.mpc_result.x[1], self.guess)
+            #else:
+            #   self.mpc.solve(self.k, m["x_m"], self.guess)
 
         except ValueError:
             self.error = True
@@ -113,9 +113,9 @@ class Controller:
             self.mpc_result, self.mpc_cost = self.mpc.get_latest_result()
 
             # self.result.P = np.array(self.params.Kp_main.tolist() * 4)
-            self.result.P = np.array([5] * 3 + [0] * 3 + [5] * 6)
+            self.result.P = np.array([5] * 3 + [1] * 3 + [5] * 6)
             # self.result.D = np.array(self.params.Kd_main.tolist() * 4)
-            self.result.D = np.array([0.3] * 3 + [0] * 3 + [0.3] * 6)
+            self.result.D = np.array([0.3] * 3 + [0.5] * 3 + [0.3] * 6)
             tauFF = self.mpc_result.u[0]
             self.result.FF = self.params.Kff_main * np.array(
                 [0] * 3 + list(tauFF) + [0] * 6
@@ -138,7 +138,7 @@ class Controller:
         self.t_send = t_send - t_mpc
 
         self.clamp_result(device)
-        self.security_check(m)
+        #self.security_check(m)
 
         if self.error:
             self.set_null_control()

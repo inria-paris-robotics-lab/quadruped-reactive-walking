@@ -190,7 +190,7 @@ def control_loop():
             device.joints.set_velocity_gains(controller.result.D)
             device.joints.set_desired_positions(controller.result.q_des)
             device.joints.set_desired_velocities(controller.result.v_des)
-            device.joints.set_torques(controller.result.FF)
+            #device.joints.set_torques(controller.result.FF)
             device.send_command_and_wait_end_of_cycle(params.dt_wbc)
 
         if params.LOGGING or params.PLOTTING:
