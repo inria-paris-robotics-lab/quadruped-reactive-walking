@@ -72,7 +72,7 @@ class Controller:
         device = DummyDevice()
         device.joints.positions = q_init
         try:
-            # file = np.load('/tmp/init_guess.npy', allow_pickle=True).item()
+            file = np.load('/tmp/init_guess.npy', allow_pickle=True).item()
             self.guess = {"xs": list(file["xs"]), "us": list(file["us"])}
             print("\nInitial guess loaded\n")
         except:
@@ -101,6 +101,9 @@ class Controller:
             #   self.mpc.solve(self.k, self.mpc_result.x[1], self.guess)
             #else:
             #   self.mpc.solve(self.k, m["x_m"], self.guess)
+
+            ### ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARMSTART THE INITIAL Problem ###
+            #np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc.ocp.get_results().x, "us": self.mpc.ocp.get_results().u} )
 
         except ValueError:
             self.error = True
@@ -138,7 +141,7 @@ class Controller:
         self.t_send = t_send - t_mpc
 
         self.clamp_result(device)
-        #self.security_check(m)
+        self.security_check(m)
 
         if self.error:
             self.set_null_control()
@@ -175,7 +178,7 @@ class Controller:
                 print(m["qj_m"])
                 print(np.abs(m["qj_m"]) > self.q_security)
                 self.error = True
-            elif (np.abs(m["vj_m"]) > 500 * np.pi / 180).any():
+            elif (np.abs(m["vj_m"]) > 1000 * np.pi / 180).any():
                 print("-- VELOCITY TOO HIGH ERROR --")
                 print(m["vj_m"])
                 print(np.abs(m["vj_m"]) > 500 * np.pi / 180)
