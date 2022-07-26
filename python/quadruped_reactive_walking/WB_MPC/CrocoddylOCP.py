@@ -21,12 +21,6 @@ class OCP:
         self.initialize_models()
 
         self.x0 = self.pd.x0_reduced
-
-        self.problem = crocoddyl.ShootingProblem(
-            self.x0, self.models, self.terminal_model
-        )
-        self.ddp = crocoddyl.SolverFDDP(self.problem)
-
         self.t_update_last_model = 0
 
     def initialize_models(self):
@@ -59,9 +53,9 @@ class OCP:
         if self.initialized:
             task = self.make_task(self.target.evaluate_in_t(self.pd.T-1), self.target.contactSequence[self.pd.T-1]) # model without contact for this task
             self.nodes[0].update_model(self.target.contactSequence[self.pd.T-1], task)
-            self.problem.circularAppend(self.nodes[0].model, self.nodes[0].model.createData())
-            #self.nodes = self.nodes[1:] + [self.nodes[0]]
-            #self.models = self.nodes
+            #self.problem.circularAppend(self.nodes[0].model, self.nodes[0].model.createData())
+            self.nodes = self.nodes[1:] + [self.nodes[0]]
+            self.models = [node.model for node in self.nodes]
 
         t_shift = time()
         self.t_shift = t_shift - t_FK
@@ -73,17 +67,24 @@ class OCP:
         t_update_terminal_model = time()
         self.t_update_terminal_model = t_update_terminal_model - t_shift
 
+
+        self.problem = crocoddyl.ShootingProblem(
+            self.x0, self.models, self.terminal_model
+        )
+        self.ddp = crocoddyl.SolverFDDP(self.problem)
+
+
         self.initialized = True
 
-    def update_model(self, node, target, contactIds, isTerminal=False):
-        """
-        Action models for a footstep phase.
-        :return footstep action models
-        """
-        # update translation
-        translation = np.zeros(3)
-
-        node.update_model(contactIds, translation, isTerminal=isTerminal)
+    #def update_model(self, node, target, contactIds, isTerminal=False):
+    #    """
+    #    Action models for a footstep phase.
+    #    :return footstep action models
+    #    """
+    #    # update translation
+    #    translation = np.zeros(3)
+#
+    #    node.update_model(contactIds, translation, isTerminal=isTerminal)
 
     def solve(self, x0, guess=None):
 
@@ -107,7 +108,7 @@ class OCP:
         self.t_warm_start = t_warm_start - t_update
 
         self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
-        self.ddp.solve(xs, us, 300, False)
+        self.ddp.solve(xs, us, 1, False)
 
         t_ddp = time()
         self.t_ddp = t_ddp - t_warm_start
