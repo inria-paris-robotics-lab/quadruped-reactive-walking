@@ -96,15 +96,15 @@ class Controller:
 
         self.point_target = self.target.evaluate_in_t(1)[self.pd.rfFootId]
         try:
-            self.mpc.solve(self.k, m["x_m"], self.guess)  # Closed loop mpc
+            #self.mpc.solve(self.k, m["x_m"], self.guess)  # Closed loop mpc
 
             ## Trajectory tracking
-            #if self.initialized:
-            #   self.mpc.solve(self.k, self.mpc_result.x[1], self.guess)
-            #else:
-            #   self.mpc.solve(self.k, m["x_m"], self.guess)
+            if self.initialized:
+               self.mpc.solve(self.k, self.mpc_result.x[1], self.guess)
+            else:
+               self.mpc.solve(self.k, m["x_m"], self.guess)
 
-            # ### ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARMSTART THE INITIAL Problem ###
+             ### ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARMSTART THE INITIAL Problem ###
             #if not self.initialized:
             #    np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc.ocp.get_results().x, "us": self.mpc.ocp.get_results().u} )
             #    print("Initial guess saved")
