@@ -119,10 +119,8 @@ class OCP:
 
     def get_results(self):
         self.results.x = self.ddp.xs.tolist()
-        self.results.a = self.get_croco_acc()
         self.results.u = self.ddp.us.tolist()
         self.results.K = self.ddp.K
-        self.results.solver_time = self.t_solve
         return self.results
 
     def get_croco_forces(self):

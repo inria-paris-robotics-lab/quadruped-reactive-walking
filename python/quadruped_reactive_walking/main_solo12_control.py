@@ -180,6 +180,7 @@ def control_loop():
         target.shift_gait()
         if controller.compute(device, qc):
             break
+
         if t <= 10 * params.dt_wbc and check_position_error(device, controller):
             break
 

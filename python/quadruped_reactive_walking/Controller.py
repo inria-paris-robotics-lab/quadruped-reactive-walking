@@ -98,14 +98,16 @@ class Controller:
         try:
             self.mpc.solve(self.k, m["x_m"], self.guess)  # Closed loop mpc
 
-            # Trajectory tracking
+            ## Trajectory tracking
             #if self.initialized:
             #   self.mpc.solve(self.k, self.mpc_result.x[1], self.guess)
             #else:
             #   self.mpc.solve(self.k, m["x_m"], self.guess)
 
-            ### ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARMSTART THE INITIAL Problem ###
-            #np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc.ocp.get_results().x, "us": self.mpc.ocp.get_results().u} )
+            # ### ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARMSTART THE INITIAL Problem ###
+            #if not self.initialized:
+            #    np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc.ocp.get_results().x, "us": self.mpc.ocp.get_results().u} )
+            #    print("Initial guess saved")
 
         except ValueError:
             self.error = True

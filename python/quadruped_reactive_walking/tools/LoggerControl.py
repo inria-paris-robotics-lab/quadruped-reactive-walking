@@ -145,6 +145,13 @@ class LoggerControl:
     def plot(self, save=False, fileName="tmp/"):
         import matplotlib.pyplot as plt
 
+        x_mes = np.concatenate([self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis = 1)
+
+        x_mpc = [self.ocp_storage["xs"][0][0, :]]
+        [x_mpc.append(x[1, :]) for x in self.ocp_storage["xs"][:-1]]
+        x_mpc = np.array(x_mpc)
+
+        # Feet positions calcuilated by every ocp
         all_ocp_feet_p_log = {
             idx: [
                 get_translation_array(self.pd, x, idx)[0]
@@ -155,10 +162,17 @@ class LoggerControl:
         for foot in all_ocp_feet_p_log:
             all_ocp_feet_p_log[foot] = np.array(all_ocp_feet_p_log[foot])
 
-        x_mes = np.concatenate([self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis = 1)
-        feet_p_log = {
+        # Measured feet positions
+        m_feet_p_log = {
             idx: 
                 get_translation_array(self.pd, x_mes, idx)[0]
+            for idx in self.pd.allContactIds
+        }
+
+        # Predicted eet positions
+        feet_p_log = {
+            idx: 
+                get_translation_array(self.pd, x_mpc, idx)[0]
             for idx in self.pd.allContactIds
         }
         
@@ -228,8 +242,9 @@ class LoggerControl:
             plt.subplot(3,1, p+1)
             plt.title('Free foot on ' + legend[p])
             plt.plot(self.target[:, p])
+            plt.plot(m_feet_p_log[self.pd.rfFootId][:, p])
             plt.plot(feet_p_log[self.pd.rfFootId][:, p])
-            plt.legend(["Desired", "Measured"])
+            plt.legend(["Target", "Measured", "Predicted"])
 
         self.plot_controller_times()
         self.plot_OCP_times()
