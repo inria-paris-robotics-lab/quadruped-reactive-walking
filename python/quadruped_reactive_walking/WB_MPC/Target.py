@@ -30,7 +30,7 @@ class Target:
         self.FR_foot0 = pd.rdata.oMf[pd.rfFootId].translation.copy()
         self.A = np.array([0, 0.03, 0.03])
         self.offset = np.array([0.08, 0, 0.06])
-        self.freq = np.array([0, 2.5, 2.5])
+        self.freq = np.array([0, 1, 1])
         self.phase = np.array([0, 0, np.pi / 2])
 
     def patternToId(self, gait):
