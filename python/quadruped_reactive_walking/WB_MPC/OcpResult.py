@@ -1,8 +1,8 @@
 class OcpResult:
     def __init__(self):
-        self.x = None
+        self.xs = None
         self.a = None
-        self.u = None
+        self.us = None
         self.fs = None
         self.K = None
         self.f_world = None

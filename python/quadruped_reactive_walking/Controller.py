@@ -73,16 +73,20 @@ class Controller:
         device = DummyDevice()
         device.joints.positions = q_init
         try:
-            file = np.load('/tmp/init_guess.npy', allow_pickle=True).item()
-            self.guess = {"xs": list(file["xs"]), "us": list(file["us"])}
-            print("\nInitial guess loaded\n")
+            file = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
+            self.xs_init = list(file["xs"])
+            self.us_init = list(file["us"])
+            print("Initial guess loaded \n")
         except:
-            self.guess = {}
-            print("\nNo initial guess\n")
-        # self.compute(device)
+            self.xs_init = None
+            self.us_init = None
+            print("No initial guess\n")
+
+        self.compute(device)
 
     def compute(self, device, qc=None):
-        """Run one iteration of the main control loop
+        """
+        Run one iteration of the main control loop
 
         Args:
             device (object): Interface with the masterboard or the simulation
@@ -96,19 +100,14 @@ class Controller:
 
         self.point_target = self.target.evaluate_in_t(1)[self.pd.rfFootId]
         try:
-            #self.mpc.solve(self.k, m["x_m"], self.guess)  # Closed loop mpc
+            # Closed-loop
+            # self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
 
-            ## Trajectory tracking
+            # Trajectory tracking
             if self.initialized:
-               self.mpc.solve(self.k, self.mpc_result.x[1], self.guess)
+                self.mpc.solve(self.k, self.mpc_result.xs[1], self.xs_init, self.us_init)
             else:
-               self.mpc.solve(self.k, m["x_m"], self.guess)
-
-             ### ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARMSTART THE INITIAL Problem ###
-            #if not self.initialized:
-            #    np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc.ocp.get_results().x, "us": self.mpc.ocp.get_results().u} )
-            #    print("Initial guess saved")
-
+                self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
         except ValueError:
             self.error = True
             print("MPC Problem")
@@ -117,7 +116,12 @@ class Controller:
         self.t_mpc = t_mpc - t_measures
 
         if not self.error:
-            self.mpc_result, self.mpc_cost = self.mpc.get_latest_result()
+            self.mpc_result = self.mpc.get_latest_result()
+
+            ### ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARM-START THE INITIAL Problem ###
+            # if not self.initialized:
+            #    np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc_result.xs, "us": self.mpc_result.us} )
+            #    print("Initial guess saved")
 
             # self.result.P = np.array(self.params.Kp_main.tolist() * 4)
             self.result.P = np.array([5] * 3 + [1] * 3 + [5] * 6)
@@ -138,8 +142,8 @@ class Controller:
             self.result.v_des = self.mpc_result.v[1]
             self.result.tau_ff = np.zeros(12)
 
-            self.guess["xs"] = self.mpc_result.x[1:] + [self.mpc_result.x[-1]]
-            self.guess["us"] = self.mpc_result.u[1:] + [self.mpc_result.u[-1]]
+            self.xs_init = self.mpc_result.x[1:] + [self.mpc_result.x[-1]]
+            self.us_init = self.mpc_result.u[1:] + [self.mpc_result.u[-1]]
 
         t_send = time.time()
         self.t_send = t_send - t_mpc

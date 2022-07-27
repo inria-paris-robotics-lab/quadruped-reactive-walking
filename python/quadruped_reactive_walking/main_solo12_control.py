@@ -147,7 +147,7 @@ def control_loop():
         qc = QualisysClient(ip="140.93.16.160", body_id=0)
 
     if params.LOGGING or params.PLOTTING:
-        loggerControl = LoggerControl(pd, log_size=params.N_SIMULATION-1)
+        loggerControl = LoggerControl(pd, params, log_size=params.N_SIMULATION-1)
 
     if params.SIMULATION:
         device.Init(
