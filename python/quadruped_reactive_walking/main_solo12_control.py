@@ -112,7 +112,7 @@ def damp_control(device, nb_motors):
         device.joints.set_velocity_gains(0.1 * np.ones(nb_motors))
         device.joints.set_desired_positions(np.zeros(nb_motors))
         device.joints.set_desired_velocities(np.zeros(nb_motors))
-        device.joints.set_torques(np.zeros(nb_motors))
+        #device.joints.set_torques(np.zeros(nb_motors))
 
         # Send command to the robot
         device.send_command_and_wait_end_of_cycle(params.dt_wbc)
