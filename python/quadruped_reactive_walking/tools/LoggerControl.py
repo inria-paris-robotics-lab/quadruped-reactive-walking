@@ -63,6 +63,9 @@ class LoggerControl:
             "xs": np.zeros([size, pd.T + 1, pd.nx]),
             "us": np.zeros([size, pd.T, pd.nu]),
         }
+        self.MPC_equivalent_Kp = np.zeros([size, 3])
+        self.MPC_equivalent_Kd = np.zeros([size, 3])
+        self.K = np.zeros([size, 3, 6])
         self.target = np.zeros([size, 3])
 
         # Whole body control
@@ -111,6 +114,10 @@ class LoggerControl:
         # Logging from model predictive control
         self.ocp_storage["xs"][self.i] = np.array(controller.mpc.ocp.results.x)
         self.ocp_storage["us"][self.i] = np.array(controller.mpc.ocp.results.u)
+
+        self.MPC_equivalent_Kp[self.i] = controller.mpc.ocp.results.K[0].diagonal()
+        self.MPC_equivalent_Kd[self.i] = controller.mpc.ocp.results.K[0].diagonal(3)
+        self.K[self.i] = controller.mpc.ocp.results.K[0]
 
         self.t_measures[self.i] = controller.t_measures
         self.t_mpc[self.i] = controller.t_mpc
@@ -234,6 +241,7 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/joint_torques")
 
+        # Target plot
         legend = ["x", "y", "z"]
         plt.figure(figsize=(12, 18), dpi = 90)
         for p in range(3):
@@ -245,6 +253,29 @@ class LoggerControl:
             plt.legend(["Target", "Measured", "Predicted"])
         if save:
             plt.savefig(fileName + "/target")
+
+        # Equivalent Stiffness Damping plots
+        legend = ["Hip", "Shoulder", "Knee"]
+        plt.figure(figsize=(12, 18), dpi = 90)
+        for p in range(3):
+            plt.subplot(3,1, p+1)
+            plt.title('Joint:  ' + legend[p])
+            plt.plot(self.MPC_equivalent_Kp[:, p])
+            plt.plot(self.MPC_equivalent_Kd[:, p])
+            plt.legend(["Stiffness", "Damping"])
+            plt.ylabel("Gains")
+            plt.xlabel("t")
+        if save:
+            plt.savefig(fileName + "/diagonal_Riccati_gains")
+
+        # Riccati gains
+        plt.figure(figsize=(12, 18), dpi = 90)
+        i = 0
+        plt.title("Riccati gains at step: " + str(i))
+        plt.imshow(self.K[i])
+        plt.colorbar()
+        if save:
+            plt.savefig(fileName + "/Riccati_gains")
 
         self.plot_controller_times()
         # self.plot_OCP_times()
@@ -312,6 +343,9 @@ class LoggerControl:
         np.savez_compressed(
             name,
             ocp_storage=self.ocp_storage,
+            MPC_equivalent_Kp = self.MPC_equivalent_Kp,
+            MPC_equivalent_Kd = self.MPC_equivalent_Kd,
+            K = self.K,
             t_measures=self.t_measures,
             t_mpc=self.t_mpc,
             t_send=self.t_send,
@@ -382,6 +416,9 @@ class LoggerControl:
         self.t_measures = self.data["t_meausres"]
 
         self.ocp_storage = self.data["ocp_storage"].item()
+        self.MPC_equivalent_Kp = self.data["self.MPC_equivalent_Kp"]
+        self.MPC_equivalent_Kd = self.data["self.MPC_equivalent_Kd"]
+        self.K = self.data["K"]
 
         self.t_measures = self.data["t_measures"]
         self.t_mpc = self.data["t_mpc"]
