@@ -3,6 +3,7 @@ import time
 from pathlib import Path
 import numpy as np
 import git
+from datetime import datetime
 
 import quadruped_reactive_walking as qrw
 from .Controller import Controller
@@ -18,7 +19,7 @@ target.update(0)
 
 repo = git.Repo(search_parent_directories=True)
 sha = repo.head.object.hexsha
-msg = repo.head.object.message
+msg = repo.head.object.message + "\nCommit: " + sha
 
 if params.SIMULATION:
     from .tools.PyBulletSimulator import PyBulletSimulator
@@ -227,11 +228,16 @@ def control_loop():
         print("Masterboard timeout detected.")
 
     if params.LOGGING:
-        log_path = Path("/tmp") / "logs"
+        date_str = datetime.now().strftime("%Y_%m_%d_%H_%M")
+        log_path = Path("/tmp") / "logs" / date_str
+        log_path.mkdir(parents=True)
         loggerControl.save(str(log_path))
+        with open(str(log_path / 'readme.txt') , 'w') as f:
+                f.write(msg)
 
-    if params.PLOTTING:
-        loggerControl.plot()
+        if params.PLOTTING:
+            loggerControl.plot(save=True, fileName=str(log_path))
+            print("Plots saved in ", str(log_path) + "/")
 
     if params.SIMULATION and params.enable_pyb_GUI:
         device.Stop()

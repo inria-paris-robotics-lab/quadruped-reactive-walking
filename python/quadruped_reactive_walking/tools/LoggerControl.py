@@ -202,7 +202,7 @@ class LoggerControl:
             plt.legend(legend)
         plt.draw()
         if save:
-            plt.savefig(fileName + "_joint_positions")
+            plt.savefig(fileName + "/joint_positions")
 
         plt.figure(figsize=(12, 6), dpi=90)
         i = 0
@@ -218,7 +218,7 @@ class LoggerControl:
             plt.legend(legend)
         plt.draw()
         if save:
-            plt.savefig(fileName + "_joint_velocities")
+            plt.savefig(fileName + "/joint_velocities")
 
         plt.figure(figsize=(12, 6), dpi=90)
         i = 0
@@ -234,7 +234,7 @@ class LoggerControl:
             plt.legend(legend)
         plt.draw()
         if save:
-            plt.savefig(fileName + "_joint_torques")
+            plt.savefig(fileName + "/joint_torques")
 
         legend = ["x", "y", "z"]
         plt.figure(figsize=(12, 18), dpi = 90)
@@ -245,6 +245,8 @@ class LoggerControl:
             plt.plot(m_feet_p_log[self.pd.rfFootId][:, p])
             plt.plot(feet_p_log[self.pd.rfFootId][:, p])
             plt.legend(["Target", "Measured", "Predicted"])
+        if save:
+            plt.savefig(fileName + "/target")
 
         self.plot_controller_times()
         self.plot_OCP_times()
@@ -307,8 +309,7 @@ class LoggerControl:
         plt.ylabel("Time [s]")
 
     def save(self, fileName="data"):
-        date_str = datetime.now().strftime("_%Y_%m_%d_%H_%M")
-        name = fileName + date_str + ".npz"
+        name = fileName + "/data.npz"
 
         np.savez_compressed(
             name,
@@ -349,7 +350,7 @@ class LoggerControl:
             voltage=self.voltage,
             energy=self.energy,
         )
-        print("Logs and plots saved in " + name)
+        print("Logs saved in " + name)
 
     def load(self):
         if self.data is None:
