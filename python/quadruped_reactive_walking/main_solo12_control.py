@@ -28,7 +28,6 @@ else:
     from .tools.qualisysClient import QualisysClient
 
 
-
 def get_input():
     """
     Thread to get the input
@@ -112,7 +111,7 @@ def damp_control(device, nb_motors):
         device.joints.set_velocity_gains(0.1 * np.ones(nb_motors))
         device.joints.set_desired_positions(np.zeros(nb_motors))
         device.joints.set_desired_velocities(np.zeros(nb_motors))
-        #device.joints.set_torques(np.zeros(nb_motors))
+        # device.joints.set_torques(np.zeros(nb_motors))
 
         # Send command to the robot
         device.send_command_and_wait_end_of_cycle(params.dt_wbc)
@@ -199,7 +198,6 @@ def control_loop():
 
         t_end_whole = time.time()
 
-        
         t += params.dt_wbc
 
         dT_whole = T_whole
@@ -232,8 +230,8 @@ def control_loop():
         log_path = Path("/tmp") / "logs" / date_str
         log_path.mkdir(parents=True)
         loggerControl.save(str(log_path))
-        with open(str(log_path / 'readme.txt') , 'w') as f:
-                f.write(msg)
+        with open(str(log_path / 'readme.txt'), 'w') as f:
+            f.write(msg)
 
         if params.PLOTTING:
             loggerControl.plot(save=True, fileName=str(log_path))
@@ -247,6 +245,7 @@ def control_loop():
 
 
 if __name__ == "__main__":
-    #os.nice(-20)
+    # os.nice(-20)
+
     log = control_loop()
-    #quit()
+    # quit()

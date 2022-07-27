@@ -1,6 +1,5 @@
 from tracemalloc import start
 
-from matplotlib.pyplot import switch_backend
 from .ProblemData import ProblemData
 from .Target import Target
 from .OcpResult import OcpResult

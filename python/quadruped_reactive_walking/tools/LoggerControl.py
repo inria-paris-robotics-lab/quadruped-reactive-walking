@@ -2,8 +2,6 @@ from datetime import datetime
 from time import time
 import numpy as np
 from .kinematics_utils import get_translation, get_translation_array
-import matplotlib
-import matplotlib.pyplot as plt
 
 
 class LoggerControl:
@@ -249,8 +247,8 @@ class LoggerControl:
             plt.savefig(fileName + "/target")
 
         self.plot_controller_times()
-        self.plot_OCP_times()
-        self.plot_OCP_update_times()
+        # self.plot_OCP_times()
+        # self.plot_OCP_update_times()
 
         plt.show()
 
