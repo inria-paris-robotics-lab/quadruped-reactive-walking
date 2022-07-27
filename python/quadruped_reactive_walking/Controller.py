@@ -21,7 +21,7 @@ class Result:
         self.q_des = np.zeros(12)
         self.v_des = np.zeros(12)
         self.tau_ff = np.zeros(12)
-        
+
 
 class DummyDevice:
     def __init__(self):
@@ -61,6 +61,7 @@ class Controller:
         self.mpc = WB_MPC_Wrapper.MPC_Wrapper(pd, target, params)
         self.pd = pd
         self.target = target
+        self.point_target = []
 
         self.k = 0
         self.error = False
@@ -68,18 +69,17 @@ class Controller:
         self.result = Result(params)
         self.params = params
         self.q_init = pd.q0
-        
+
         device = DummyDevice()
         device.joints.positions = q_init
         try:
-            #file = np.load('/tmp/init_guess.npy', allow_pickle=True).item()
-            self.guess = {'xs': list(file['xs']), 'us': list(file['us'])}
+            file = np.load('/tmp/init_guess.npy', allow_pickle=True).item()
+            self.guess = {"xs": list(file["xs"]), "us": list(file["us"])}
             print("\nInitial guess loaded\n")
         except:
             self.guess = {}
-            print("\nNo tinitial_guess\n")
-        #self.compute(device)
-
+            print("\nNo initial guess\n")
+        # self.compute(device)
 
     def compute(self, device, qc=None):
         """Run one iteration of the main control loop
@@ -94,14 +94,20 @@ class Controller:
         t_measures = time.time()
         self.t_measures = t_measures - t_start
 
+        self.point_target = self.target.evaluate_in_t(1)[self.pd.rfFootId]
         try:
-            self.mpc.solve(self.k, m['x_m'], self.guess) # Closed loop mpc
+            self.mpc.solve(self.k, m["x_m"], self.guess)  # Closed loop mpc
 
-            # Trajectory tracking
+            ## Trajectory tracking
             #if self.initialized:
-            #    self.mpc.solve(self.k, self.mpc_result.x[1], self.guess)
+            #   self.mpc.solve(self.k, self.mpc_result.x[1], self.guess)
             #else:
-            #    self.mpc.solve(self.k, m["x_m"], self.guess)
+            #   self.mpc.solve(self.k, m["x_m"], self.guess)
+
+            # ### ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARMSTART THE INITIAL Problem ###
+            #if not self.initialized:
+            #    np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc.ocp.get_results().x, "us": self.mpc.ocp.get_results().u} )
+            #    print("Initial guess saved")
 
         except ValueError:
             self.error = True
@@ -109,20 +115,22 @@ class Controller:
 
         t_mpc = time.time()
         self.t_mpc = t_mpc - t_measures
-        
+
         if not self.error:
             self.mpc_result, self.mpc_cost = self.mpc.get_latest_result()
 
-            #self.result.P = np.array(self.params.Kp_main.tolist() * 4)
-            self.result.P = np.array([5] * 3 + [0] * 3 + [5]*6)
-            #self.result.D = np.array(self.params.Kd_main.tolist() * 4)
-            self.result.D = np.array([0.3] * 3 + [0] * 3 + [0.3]*6)
+            # self.result.P = np.array(self.params.Kp_main.tolist() * 4)
+            self.result.P = np.array([5] * 3 + [1] * 3 + [5] * 6)
+            # self.result.D = np.array(self.params.Kd_main.tolist() * 4)
+            self.result.D = np.array([0.3] * 3 + [0.5] * 3 + [0.3] * 6)
             tauFF = self.mpc_result.u[0]
-            self.result.FF = self.params.Kff_main * np.array([0] * 3 + list(tauFF) + [0]*6) 
+            self.result.FF = self.params.Kff_main * np.array(
+                [0] * 3 + list(tauFF) + [0] * 6
+            )
 
             # Keep only the actuated joints and set the other to default values
-            self.mpc_result.q = np.array([self.pd.q0] * (self.pd.T + 1))[:, 7: 19]
-            self.mpc_result.v = np.array([self.pd.v0] * (self.pd.T +1 ))[:, 6: ]
+            self.mpc_result.q = np.array([self.pd.q0] * (self.pd.T + 1))[:, 7:19]
+            self.mpc_result.v = np.array([self.pd.v0] * (self.pd.T + 1))[:, 6:]
             self.mpc_result.q[:, 3:6] = np.array(self.mpc_result.x)[:, : self.pd.nq]
             self.mpc_result.v[:, 3:6] = np.array(self.mpc_result.x)[:, self.pd.nq :]
 
@@ -174,10 +182,10 @@ class Controller:
                 print(m["qj_m"])
                 print(np.abs(m["qj_m"]) > self.q_security)
                 self.error = True
-            elif (np.abs(m["vj_m"]) > 500 * np.pi/180).any():
+            elif (np.abs(m["vj_m"]) > 1000 * np.pi / 180).any():
                 print("-- VELOCITY TOO HIGH ERROR --")
                 print(m["vj_m"])
-                print(np.abs(m["vj_m"]) > 500 * np.pi/180)
+                print(np.abs(m["vj_m"]) > 500 * np.pi / 180)
                 self.error = True
             elif (np.abs(self.result.FF) > 3.2).any():
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")
@@ -259,12 +267,12 @@ class Controller:
         else:
             x_m = np.concatenate([qj_m[3:6], vj_m[3:6]])
 
-        return {'qj_m': qj_m, 'vj_m': vj_m, 'x_m': x_m}
+        return {"qj_m": qj_m, "vj_m": vj_m, "x_m": x_m}
 
     def interpolate_traj(self, device, q_des, v_des, ratio):
         measures = self.read_state(device)
-        qj_des_i = np.linspace(measures['qj_m'], q_des, ratio)
-        vj_des_i = np.linspace(measures['vj_m'], v_des, ratio)
+        qj_des_i = np.linspace(measures["qj_m"], q_des, ratio)
+        vj_des_i = np.linspace(measures["vj_m"], v_des, ratio)
 
         return qj_des_i, vj_des_i
 

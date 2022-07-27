@@ -8,8 +8,8 @@ class problemDataAbstract:
         self.dt_sim = 0.001
         self.dt_bldc = 0.0005
         self.r1 = int(self.dt / self.dt_sim)
-        self.init_steps = 0 # full stand phase
-        self.target_steps =  120 # manipulation steps
+        self.init_steps = 0
+        self.target_steps =  90
         self.T = self.init_steps + self.target_steps -1
 
         self.robot = erd.load("solo12")
@@ -113,11 +113,11 @@ class ProblemDataFull(problemDataAbstract):
 
         # Cost function weights
         self.mu = 0.7
-        self.foot_tracking_w = 1e2
+        self.foot_tracking_w = 1e3
         #self.friction_cone_w = 1e3 * 0
         self.control_bound_w = 1e3
-        self.control_reg_w = 1e1
-        self.state_reg_w = np.array([1e-3] * 3 + [3*1e-1]*3)
+        self.control_reg_w = 1e0
+        self.state_reg_w = np.array([1e-3] * 3 + [5*1e-1]*3)
         self.terminal_velocity_w = np.array([0] * 3 + [1e3] * 3 )
 
         self.q0_reduced = self.q0[10:13]
