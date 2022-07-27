@@ -122,7 +122,7 @@ class Controller:
             # self.result.P = np.array(self.params.Kp_main.tolist() * 4)
             self.result.P = np.array([5] * 3 + [1] * 3 + [5] * 6)
             # self.result.D = np.array(self.params.Kd_main.tolist() * 4)
-            self.result.D = np.array([0.3] * 3 + [0.5] * 3 + [0.3] * 6)
+            self.result.D = np.array([0.3] * 3 + [0.01] * 3 + [0.3] * 6)
             tauFF = self.mpc_result.u[0]
             self.result.FF = self.params.Kff_main * np.array(
                 [0] * 3 + list(tauFF) + [0] * 6
@@ -185,7 +185,7 @@ class Controller:
             elif (np.abs(m["vj_m"]) > 1000 * np.pi / 180).any():
                 print("-- VELOCITY TOO HIGH ERROR --")
                 print(m["vj_m"])
-                print(np.abs(m["vj_m"]) > 500 * np.pi / 180)
+                print(np.abs(m["vj_m"]) > 1000 * np.pi / 180)
                 self.error = True
             elif (np.abs(self.result.FF) > 3.2).any():
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")
