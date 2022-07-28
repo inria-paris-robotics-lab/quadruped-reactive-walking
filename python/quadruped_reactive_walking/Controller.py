@@ -44,7 +44,7 @@ class DummyDevice:
         def __init__(self):
             self.positions = np.zeros(12)
             self.velocities = np.zeros(12)
-
+90
 
 class Controller:
     def __init__(self, pd, target, params, q_init, t):
@@ -103,15 +103,15 @@ class Controller:
         if self.k % int(self.params.dt_mpc/self.params.dt_wbc) == 0:
             try:
                 # Closed-loop
-                # self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
+                self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
 
                 # Trajectory tracking
-                if self.initialized:
-                    self.mpc.solve(
-                        self.k, self.mpc_result.xs[1], self.xs_init, self.us_init)
-                else:
-                    self.mpc.solve(self.k, m["x_m"],
-                                   self.xs_init, self.us_init)
+                # if self.initialized:
+                    # self.mpc.solve(
+                        # self.k, self.mpc_result.xs[1], self.xs_init, self.us_init)
+                # else:
+                    # self.mpc.solve(self.k, m["x_m"],
+                                #    self.xs_init, self.us_init)
             except ValueError:
                 self.error = True
                 print("MPC Problem")
