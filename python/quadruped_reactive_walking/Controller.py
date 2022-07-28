@@ -153,7 +153,7 @@ class Controller:
         if self.error:
             self.set_null_control()
 
-        self.pyb_camera(device)
+        # self.pyb_camera(device)
 
         self.t_loop = time.time() - t_start
         self.k += 1

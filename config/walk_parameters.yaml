@@ -25,7 +25,7 @@ robot:
     dt_mpc: 0.0014  # Time step of the model predictive control
     type_MPC: 3  # Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
 #     Kp_main: [0.0, 0.0, 0.0]  # Proportional gains for the PD+
-    Kp_main: [3, 3, 3]  # Proportional gains for the PD+
+    Kp_main: [4, 4, 4]  # Proportional gains for the PD+
 #     Kd_main: [0., 0., 0.]  # Derivative gains for the PD+
     Kd_main: [0.3, 0.3, 0.3]  # Derivative gains for the PD+
 #     Kff_main: 0.0  # Feedforward torques multiplier for the PD+
