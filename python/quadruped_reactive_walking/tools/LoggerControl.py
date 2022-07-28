@@ -62,6 +62,10 @@ class LoggerControl:
         # MPC
         self.ocp_xs = np.zeros([size, pd.T + 1, pd.nx])
         self.ocp_us = np.zeros([size, pd.T, pd.nu])
+        self.ocp_K = np.zeros([size, self.pd.nu, self.pd.nx])
+        self.MPC_equivalent_Kp = np.zeros([size, 3])
+        self.MPC_equivalent_Kd = np.zeros([size, 3])
+
         self.target = np.zeros([size, 3])
 
         # Whole body control
@@ -110,10 +114,9 @@ class LoggerControl:
         # Logging from model predictive control
         self.ocp_xs[self.i] = np.array(controller.mpc_result.xs)
         self.ocp_us[self.i] = np.array(controller.mpc_result.us)
-
-        self.MPC_equivalent_Kp[self.i] = controller.mpc.ocp.results.K[0].diagonal()
-        self.MPC_equivalent_Kd[self.i] = controller.mpc.ocp.results.K[0].diagonal(3)
-        self.K[self.i] = controller.mpc.ocp.results.K[0]
+        self.ocp_K[self.i] = controller.mpc_result.K[0]
+        self.MPC_equivalent_Kp[self.i] = controller.mpc_result.K[0].diagonal()
+        self.MPC_equivalent_Kd[self.i] = controller.mpc_result.K[0].diagonal(3)
 
         self.t_measures[self.i] = controller.t_measures
         self.t_mpc[self.i] = controller.t_mpc
@@ -149,31 +152,19 @@ class LoggerControl:
     def plot(self, save=False, fileName="tmp/"):
         import matplotlib.pyplot as plt
 
-        x_mes = np.concatenate([self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis=1)
+        self.plot_states(save, fileName)
+        self.plot_torques(save, fileName)
+        self.plot_target(save, fileName)
+        self.plot_riccati_gains(0, save, fileName)
+        self.plot_controller_times()
+        # if not self.params.enable_multiprocessing:
+        #     self.plot_OCP_times()
+        #     self.plot_OCP_update_times()
 
-        x_mpc = [self.ocp_xs[0][0, :]]
-        [x_mpc.append(x[1, :]) for x in self.ocp_xs[:-1]]
-        x_mpc = np.array(x_mpc)
+        plt.show()
 
-        # Feet positions calcuilated by every ocp
-        all_ocp_feet_p_log = {
-            idx: [get_translation_array(self.pd, x, idx)[0] for x in self.ocp_xs]
-            for idx in self.pd.allContactIds
-        }
-        for foot in all_ocp_feet_p_log:
-            all_ocp_feet_p_log[foot] = np.array(all_ocp_feet_p_log[foot])
-
-        # Measured feet positions
-        m_feet_p_log = {
-            idx: get_translation_array(self.pd, x_mes, idx)[0]
-            for idx in self.pd.allContactIds
-        }
-
-        # Predicted feet positions
-        feet_p_log = {
-            idx: get_translation_array(self.pd, x_mpc, idx)[0]
-            for idx in self.pd.allContactIds
-        }
+    def plot_states(self, save = False, fileName = '/tmp'):
+        import matplotlib.pyplot as plt
 
         legend = ["Hip", "Shoulder", "Knee"]
         plt.figure(figsize=(12, 6), dpi=90)
@@ -208,6 +199,10 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/joint_velocities")
 
+    def plot_torques(self, save=False, fileName = '/tmp'):
+        import matplotlib.pyplot as plt
+
+        legend = ["Hip", "Shoulder", "Knee"]
         plt.figure(figsize=(12, 6), dpi=90)
         i = 0
         for i in range(4):
@@ -224,6 +219,35 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/joint_torques")
 
+    def plot_target(self, save=False, fileName='/tmp'):
+        import matplotlib.pyplot as plt
+
+        x_mes = np.concatenate([self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis=1)
+
+        x_mpc = [self.ocp_xs[0][0, :]]
+        [x_mpc.append(x[1, :]) for x in self.ocp_xs[:-1]]
+        x_mpc = np.array(x_mpc)
+
+        # Feet positions calcuilated by every ocp
+        all_ocp_feet_p_log = {
+            idx: [get_translation_array(self.pd, x, idx)[0] for x in self.ocp_xs]
+            for idx in self.pd.allContactIds
+        }
+        for foot in all_ocp_feet_p_log:
+            all_ocp_feet_p_log[foot] = np.array(all_ocp_feet_p_log[foot])
+
+        # Measured feet positions
+        m_feet_p_log = {
+            idx: get_translation_array(self.pd, x_mes, idx)[0]
+            for idx in self.pd.allContactIds
+        }
+
+        # Predicted feet positions
+        feet_p_log = {
+            idx: get_translation_array(self.pd, x_mpc, idx)[0]
+            for idx in self.pd.allContactIds
+        }
+
         # Target plot
         legend = ["x", "y", "z"]
         plt.figure(figsize=(12, 18), dpi=90)
@@ -236,6 +260,9 @@ class LoggerControl:
             plt.legend(["Target", "Measured", "Predicted"])
         if save:
             plt.savefig(fileName + "/target")
+
+    def plot_riccati_gains(self, n, save=False, fileName='/tmp'):
+        import matplotlib.pyplot as plt
 
         # Equivalent Stiffness Damping plots
         legend = ["Hip", "Shoulder", "Knee"]
@@ -251,21 +278,14 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/diagonal_Riccati_gains")
 
+
         # Riccati gains
         plt.figure(figsize=(12, 18), dpi = 90)
-        i = 0
-        plt.title("Riccati gains at step: " + str(i))
-        plt.imshow(self.K[i])
+        plt.title("Riccati gains at step: " + str(n))
+        plt.imshow(self.ocp_K[n])
         plt.colorbar()
         if save:
             plt.savefig(fileName + "/Riccati_gains")
-
-        self.plot_controller_times()
-        # if not self.params.enable_multiprocessing:
-        #     self.plot_OCP_times()
-        #     self.plot_OCP_update_times()
-
-        plt.show()
 
     def plot_controller_times(self):
         import matplotlib.pyplot as plt
@@ -283,7 +303,7 @@ class LoggerControl:
         plt.legend(lgd)
         plt.xlabel("Time [s]")
         plt.ylabel("Time [s]")
-
+        
     def plot_OCP_times(self):
         import matplotlib.pyplot as plt
 
@@ -328,6 +348,9 @@ class LoggerControl:
             name,
             ocp_xs=self.ocp_xs,
             ocp_us=self.ocp_us,
+            ocp_K = self.ocp_K,
+            MPC_equivalent_Kp = self.MPC_equivalent_Kp,
+            MPC_equivalent_Kd = self.MPC_equivalent_Kd,
             t_measures=self.t_measures,
             t_mpc=self.t_mpc,
             t_send=self.t_send,
@@ -399,6 +422,9 @@ class LoggerControl:
 
         self.ocp_xs = self.data["ocp_xs"]
         self.ocp_us = self.data["ocp_us"]
+        self.ocp_K = self.data["ocp_K"]
+        self.MPC_equivalent_Kp = self.data["self.MPC_equivalent_Kp"]
+        self.MPC_equivalent_Kd = self.data["self.MPC_equivalent_Kd"]
 
         self.t_measures = self.data["t_measures"]
         self.t_mpc = self.data["t_mpc"]
