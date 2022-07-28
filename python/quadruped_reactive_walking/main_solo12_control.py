@@ -209,12 +209,11 @@ def control_loop():
         cnt += 1
 
     # ****************************************************************
-    finished = t >= t_max
     damp_control(device, 12)
 
     if params.enable_multiprocessing:
         print("Stopping parallel process MPC")
-        controller.mpc_wrapper.stop_parallel_loop()
+        controller.mpc.stop_parallel_loop()
 
     # ****************************************************************
 

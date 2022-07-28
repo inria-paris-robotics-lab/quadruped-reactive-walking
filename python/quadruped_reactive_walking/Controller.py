@@ -82,7 +82,7 @@ class Controller:
             self.us_init = None
             print("No initial guess\n")
 
-        self.compute(device)
+        # self.compute(device)
 
     def compute(self, device, qc=None):
         """
@@ -118,16 +118,17 @@ class Controller:
         if not self.error:
             self.mpc_result = self.mpc.get_latest_result()
 
+
             ### ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARM-START THE INITIAL Problem ###
             # if not self.initialized:
             #    np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc_result.xs, "us": self.mpc_result.us} )
             #    print("Initial guess saved")
 
-            # self.result.P = np.array(self.params.Kp_main.tolist() * 4)
-            self.result.P = np.array([5] * 3 + [1] * 3 + [5] * 6)
-            # self.result.D = np.array(self.params.Kd_main.tolist() * 4)
-            self.result.D = np.array([0.3] * 3 + [0.01] * 3 + [0.3] * 6)
-            tauFF = self.mpc_result.u[0]
+            self.result.P = np.array(self.params.Kp_main.tolist() * 4)
+            # self.result.P = np.array([3] * 3 + [3] * 3 + [3] * 6)
+            self.result.D = np.array(self.params.Kd_main.tolist() * 4)
+            # self.result.D = np.array([0.3] * 3 + [0.01] * 3 + [0.3] * 6)
+            tauFF = self.mpc_result.us[0]
             self.result.FF = self.params.Kff_main * np.array(
                 [0] * 3 + list(tauFF) + [0] * 6
             )
@@ -135,15 +136,15 @@ class Controller:
             # Keep only the actuated joints and set the other to default values
             self.mpc_result.q = np.array([self.pd.q0] * (self.pd.T + 1))[:, 7:19]
             self.mpc_result.v = np.array([self.pd.v0] * (self.pd.T + 1))[:, 6:]
-            self.mpc_result.q[:, 3:6] = np.array(self.mpc_result.x)[:, : self.pd.nq]
-            self.mpc_result.v[:, 3:6] = np.array(self.mpc_result.x)[:, self.pd.nq :]
+            self.mpc_result.q[:, 3:6] = np.array(self.mpc_result.xs)[:, : self.pd.nq]
+            self.mpc_result.v[:, 3:6] = np.array(self.mpc_result.xs)[:, self.pd.nq :]
 
             self.result.q_des = self.mpc_result.q[1]
             self.result.v_des = self.mpc_result.v[1]
             self.result.tau_ff = np.zeros(12)
 
-            self.xs_init = self.mpc_result.x[1:] + [self.mpc_result.x[-1]]
-            self.us_init = self.mpc_result.u[1:] + [self.mpc_result.u[-1]]
+            self.xs_init = self.mpc_result.xs[1:] + [self.mpc_result.xs[-1]]
+            self.us_init = self.mpc_result.us[1:] + [self.mpc_result.us[-1]]
 
         t_send = time.time()
         self.t_send = t_send - t_mpc

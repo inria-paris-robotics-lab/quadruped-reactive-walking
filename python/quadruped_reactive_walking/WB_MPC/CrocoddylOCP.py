@@ -126,7 +126,7 @@ class OCP:
         return (
             self.ddp.xs.tolist().copy(),
             self.ddp.us.tolist().copy(),
-            self.ddp.K.copy(),
+            self.ddp.K.tolist().copy(),
             self.t_ddp,
         )
 
