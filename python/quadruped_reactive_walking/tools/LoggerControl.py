@@ -111,6 +111,10 @@ class LoggerControl:
         self.ocp_xs[self.i] = np.array(controller.mpc_result.xs)
         self.ocp_us[self.i] = np.array(controller.mpc_result.us)
 
+        self.MPC_equivalent_Kp[self.i] = controller.mpc.ocp.results.K[0].diagonal()
+        self.MPC_equivalent_Kd[self.i] = controller.mpc.ocp.results.K[0].diagonal(3)
+        self.K[self.i] = controller.mpc.ocp.results.K[0]
+
         self.t_measures[self.i] = controller.t_measures
         self.t_mpc[self.i] = controller.t_mpc
         self.t_send[self.i] = controller.t_send
@@ -220,6 +224,7 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/joint_torques")
 
+        # Target plot
         legend = ["x", "y", "z"]
         plt.figure(figsize=(12, 18), dpi=90)
         for p in range(3):
@@ -231,6 +236,29 @@ class LoggerControl:
             plt.legend(["Target", "Measured", "Predicted"])
         if save:
             plt.savefig(fileName + "/target")
+
+        # Equivalent Stiffness Damping plots
+        legend = ["Hip", "Shoulder", "Knee"]
+        plt.figure(figsize=(12, 18), dpi = 90)
+        for p in range(3):
+            plt.subplot(3,1, p+1)
+            plt.title('Joint:  ' + legend[p])
+            plt.plot(self.MPC_equivalent_Kp[:, p])
+            plt.plot(self.MPC_equivalent_Kd[:, p])
+            plt.legend(["Stiffness", "Damping"])
+            plt.ylabel("Gains")
+            plt.xlabel("t")
+        if save:
+            plt.savefig(fileName + "/diagonal_Riccati_gains")
+
+        # Riccati gains
+        plt.figure(figsize=(12, 18), dpi = 90)
+        i = 0
+        plt.title("Riccati gains at step: " + str(i))
+        plt.imshow(self.K[i])
+        plt.colorbar()
+        if save:
+            plt.savefig(fileName + "/Riccati_gains")
 
         self.plot_controller_times()
         # if not self.params.enable_multiprocessing:
