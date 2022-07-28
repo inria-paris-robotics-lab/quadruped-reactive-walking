@@ -62,13 +62,15 @@ class Controller:
         self.pd = pd
         self.target = target
         self.point_target = []
+        self.params = params
+        self.q_init = pd.q0
 
         self.k = 0
         self.error = False
         self.initialized = False
         self.result = Result(params)
-        self.params = params
-        self.q_init = pd.q0
+        self.q = self.pd.q0[7:].copy()
+        self.v = self.pd.v0[6:].copy()
 
         device = DummyDevice()
         device.joints.positions = q_init
@@ -128,18 +130,16 @@ class Controller:
             #    print("Initial guess saved")
 
             # Keep only the actuated joints and set the other to default values
-            self.q = self.pd.q0[7:].copy()
-            self.v = self.pd.v0[6:].copy()
+
             self.q[3:6] = np.array(self.mpc_result.xs)[1, :self.pd.nq]
             self.v[3:6] = np.array(self.mpc_result.xs)[1, self.pd.nq:]
 
-            self.result.P = np.array(self.params.Kp_main.tolist() * 4)
-            self.result.D = np.array(self.params.Kd_main.tolist() * 4)
-            self.result.FF = self.params.Kff_main * np.zeros(12)
+            # self.result.P = np.array(self.params.Kp_main.tolist() * 4)
+            # self.result.D = np.array(self.params.Kd_main.tolist() * 4)
+            # self.result.FF = self.params.Kff_main * np.ones(12)
             self.result.q_des = self.q
             self.result.v_des = self.v
-            self.result.tau_ff = np.array(
-                [0] * 3 + list(self.mpc_result.us[0]) + [0] * 6)
+            self.result.tau_ff = np.array([0] * 3 + list(self.mpc_result.us[0]) + [0] * 6)
 
             self.xs_init = self.mpc_result.xs[1:] + [self.mpc_result.xs[-1]]
             self.us_init = self.mpc_result.us[1:] + [self.mpc_result.us[-1]]
