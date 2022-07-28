@@ -147,7 +147,7 @@ def control_loop():
         qc = QualisysClient(ip="140.93.16.160", body_id=0)
 
     if params.LOGGING or params.PLOTTING:
-        loggerControl = LoggerControl(pd, log_size=params.N_SIMULATION-1)
+        loggerControl = LoggerControl(pd, params, log_size=params.N_SIMULATION-1)
 
     if params.SIMULATION:
         device.Init(
@@ -184,14 +184,12 @@ def control_loop():
         if t <= 10 * params.dt_wbc and check_position_error(device, controller):
             break
 
-        # Set desired quantities for the actuators
-        for k in range(controller.pd.r1):
-            device.joints.set_position_gains(controller.result.P)
-            device.joints.set_velocity_gains(controller.result.D)
-            device.joints.set_desired_positions(controller.result.q_des)
-            device.joints.set_desired_velocities(controller.result.v_des)
-            device.joints.set_torques(controller.result.FF)
-            device.send_command_and_wait_end_of_cycle(params.dt_wbc)
+        device.joints.set_position_gains(controller.result.P)
+        device.joints.set_velocity_gains(controller.result.D)
+        device.joints.set_desired_positions(controller.result.q_des)
+        device.joints.set_desired_velocities(controller.result.v_des)
+        device.joints.set_torques(controller.result.FF * controller.result.tau_ff.ravel())
+        device.send_command_and_wait_end_of_cycle(params.dt_wbc)
 
         if params.LOGGING or params.PLOTTING:
             loggerControl.sample(controller, device, qc)
@@ -209,12 +207,11 @@ def control_loop():
         cnt += 1
 
     # ****************************************************************
-    finished = t >= t_max
     damp_control(device, 12)
 
     if params.enable_multiprocessing:
         print("Stopping parallel process MPC")
-        controller.mpc_wrapper.stop_parallel_loop()
+        controller.mpc.stop_parallel_loop()
 
     # ****************************************************************
 

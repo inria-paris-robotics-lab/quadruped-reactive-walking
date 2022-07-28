@@ -5,13 +5,14 @@ from .kinematics_utils import get_translation, get_translation_array
 
 
 class LoggerControl:
-    def __init__(self, pd, log_size=60e3, loop_buffer=False, file=None):
+    def __init__(self, pd, params, log_size=60e3, loop_buffer=False, file=None):
         if file is not None:
             self.data = np.load(file, allow_pickle=True)
 
         self.log_size = np.int(log_size)
         self.i = 0
         self.loop_buffer = loop_buffer
+        self.params = params
 
         size = self.log_size
         self.pd = pd
@@ -59,13 +60,8 @@ class LoggerControl:
         self.t_ocp_update_terminal = np.zeros(size)
 
         # MPC
-        self.ocp_storage = {
-            "xs": np.zeros([size, pd.T + 1, pd.nx]),
-            "us": np.zeros([size, pd.T, pd.nu]),
-        }
-        self.MPC_equivalent_Kp = np.zeros([size, 3])
-        self.MPC_equivalent_Kd = np.zeros([size, 3])
-        self.K = np.zeros([size, 3, 6])
+        self.ocp_xs = np.zeros([size, pd.T + 1, pd.nx])
+        self.ocp_us = np.zeros([size, pd.T, pd.nu])
         self.target = np.zeros([size, 3])
 
         # Whole body control
@@ -106,14 +102,14 @@ class LoggerControl:
 
         # Controller timings: MPC time, ...
         self.target[self.i] = controller.point_target
-        self.t_mpc[self.i] = controller.mpc.ocp.results.solver_time
+        self.t_mpc[self.i] = controller.t_mpc
         self.t_send[self.i] = controller.t_send
         self.t_loop[self.i] = controller.t_loop
         self.t_measures[self.i] = controller.t_measures
 
         # Logging from model predictive control
-        self.ocp_storage["xs"][self.i] = np.array(controller.mpc.ocp.results.x)
-        self.ocp_storage["us"][self.i] = np.array(controller.mpc.ocp.results.u)
+        self.ocp_xs[self.i] = np.array(controller.mpc_result.xs)
+        self.ocp_us[self.i] = np.array(controller.mpc_result.us)
 
         self.MPC_equivalent_Kp[self.i] = controller.mpc.ocp.results.K[0].diagonal()
         self.MPC_equivalent_Kd[self.i] = controller.mpc.ocp.results.K[0].diagonal(3)
@@ -123,16 +119,19 @@ class LoggerControl:
         self.t_mpc[self.i] = controller.t_mpc
         self.t_send[self.i] = controller.t_send
         self.t_loop[self.i] = controller.t_loop
+        
+        self.t_ocp_ddp[self.i] = controller.mpc_result.solving_duration
+        if not self.params.enable_multiprocessing:
+            self.t_ocp_update[self.i] = controller.mpc.ocp.t_update
+            self.t_ocp_warm_start[self.i] = controller.mpc.ocp.t_warm_start
+            self.t_ocp_solve[self.i] = controller.mpc.ocp.t_solve
 
-        self.t_ocp_update[self.i] = controller.mpc.ocp.t_update
-        self.t_ocp_warm_start[self.i] = controller.mpc.ocp.t_warm_start
-        self.t_ocp_ddp[self.i] = controller.mpc.ocp.t_ddp
-        self.t_ocp_solve[self.i] = controller.mpc.ocp.t_solve
-
-        self.t_ocp_update_FK[self.i] = controller.mpc.ocp.t_FK
-        self.t_ocp_shift[self.i] = controller.mpc.ocp.t_shift
-        self.t_ocp_update_last[self.i] = controller.mpc.ocp.t_update_last_model
-        self.t_ocp_update_terminal[self.i] = controller.mpc.ocp.t_update_terminal_model
+            self.t_ocp_update_FK[self.i] = controller.mpc.ocp.t_FK
+            self.t_ocp_shift[self.i] = controller.mpc.ocp.t_shift
+            self.t_ocp_update_last[self.i] = controller.mpc.ocp.t_update_last_model
+            self.t_ocp_update_terminal[
+                self.i
+            ] = controller.mpc.ocp.t_update_terminal_model
 
         # Logging from whole body control
         self.wbc_P[self.i] = controller.result.P
@@ -150,18 +149,15 @@ class LoggerControl:
     def plot(self, save=False, fileName="tmp/"):
         import matplotlib.pyplot as plt
 
-        x_mes = np.concatenate([self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis = 1)
+        x_mes = np.concatenate([self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis=1)
 
-        x_mpc = [self.ocp_storage["xs"][0][0, :]]
-        [x_mpc.append(x[1, :]) for x in self.ocp_storage["xs"][:-1]]
+        x_mpc = [self.ocp_xs[0][0, :]]
+        [x_mpc.append(x[1, :]) for x in self.ocp_xs[:-1]]
         x_mpc = np.array(x_mpc)
 
         # Feet positions calcuilated by every ocp
         all_ocp_feet_p_log = {
-            idx: [
-                get_translation_array(self.pd, x, idx)[0]
-                for x in self.ocp_storage["xs"]
-            ]
+            idx: [get_translation_array(self.pd, x, idx)[0] for x in self.ocp_xs]
             for idx in self.pd.allContactIds
         }
         for foot in all_ocp_feet_p_log:
@@ -169,28 +165,15 @@ class LoggerControl:
 
         # Measured feet positions
         m_feet_p_log = {
-            idx: 
-                get_translation_array(self.pd, x_mes, idx)[0]
+            idx: get_translation_array(self.pd, x_mes, idx)[0]
             for idx in self.pd.allContactIds
         }
 
-        # Predicted eet positions
+        # Predicted feet positions
         feet_p_log = {
-            idx: 
-                get_translation_array(self.pd, x_mpc, idx)[0]
+            idx: get_translation_array(self.pd, x_mpc, idx)[0]
             for idx in self.pd.allContactIds
         }
-        
-        
-
-        # plt.figure(figsize=(12, 6), dpi=90)
-        # plt.title("Solver timings")
-        # plt.hist(self.ocp_timings, 30)
-        # plt.xlabel("timee [s]")
-        # plt.ylabel("Number of cases [#]")
-        # plt.draw()
-        # if save:
-        #     plt.savefig(fileName + "_solver_timings")
 
         legend = ["Hip", "Shoulder", "Knee"]
         plt.figure(figsize=(12, 6), dpi=90)
@@ -243,10 +226,10 @@ class LoggerControl:
 
         # Target plot
         legend = ["x", "y", "z"]
-        plt.figure(figsize=(12, 18), dpi = 90)
+        plt.figure(figsize=(12, 18), dpi=90)
         for p in range(3):
-            plt.subplot(3,1, p+1)
-            plt.title('Free foot on ' + legend[p])
+            plt.subplot(3, 1, p + 1)
+            plt.title("Free foot on " + legend[p])
             plt.plot(self.target[:, p])
             plt.plot(m_feet_p_log[self.pd.rfFootId][:, p])
             plt.plot(feet_p_log[self.pd.rfFootId][:, p])
@@ -278,8 +261,9 @@ class LoggerControl:
             plt.savefig(fileName + "/Riccati_gains")
 
         self.plot_controller_times()
-        # self.plot_OCP_times()
-        # self.plot_OCP_update_times()
+        # if not self.params.enable_multiprocessing:
+        #     self.plot_OCP_times()
+        #     self.plot_OCP_update_times()
 
         plt.show()
 
@@ -293,9 +277,9 @@ class LoggerControl:
         plt.plot(t_range, self.t_mpc, "g+")
         plt.plot(t_range, self.t_send, "b+")
         plt.plot(t_range, self.t_loop, "+", color="violet")
-        plt.axhline(y=0.001, color="grey", linestyle=":", lw=1.0)
-        plt.axhline(y=0.01, color="grey", linestyle=":", lw=1.0)
-        lgd = ["Measures", "MPC", "Send", "Whole-loop"]
+        plt.plot(t_range, self.t_ocp_ddp, "+", color="royalblue")
+        plt.axhline(y=self.params.dt_wbc, color="grey", linestyle=":", lw=1.0)
+        lgd = ["Measures", "MPC", "Send", "Whole-loop", "MPC solve"]
         plt.legend(lgd)
         plt.xlabel("Time [s]")
         plt.ylabel("Time [s]")
@@ -310,7 +294,7 @@ class LoggerControl:
         plt.plot(t_range, self.t_ocp_warm_start, "g+")
         plt.plot(t_range, self.t_ocp_ddp, "b+")
         plt.plot(t_range, self.t_ocp_solve, "+", color="violet")
-        plt.axhline(y=0.001, color="grey", linestyle=":", lw=1.0)
+        plt.axhline(y=self.params.dt_mpc, color="grey", linestyle=":", lw=1.0)
         lgd = ["t_ocp_update", "t_ocp_warm_start", "t_ocp_ddp", "t_ocp_solve"]
         plt.legend(lgd)
         plt.xlabel("Time [s]")
@@ -326,7 +310,7 @@ class LoggerControl:
         plt.plot(t_range, self.t_ocp_shift, "g+")
         plt.plot(t_range, self.t_ocp_update_last, "b+")
         plt.plot(t_range, self.t_ocp_update_terminal, "+", color="seagreen")
-        plt.axhline(y=0.001, color="grey", linestyle=":", lw=1.0)
+        plt.axhline(y=self.params.dt_mpc, color="grey", linestyle=":", lw=1.0)
         lgd = [
             "t_ocp_update_FK",
             "t_ocp_shift",
@@ -342,10 +326,8 @@ class LoggerControl:
 
         np.savez_compressed(
             name,
-            ocp_storage=self.ocp_storage,
-            MPC_equivalent_Kp = self.MPC_equivalent_Kp,
-            MPC_equivalent_Kd = self.MPC_equivalent_Kd,
-            K = self.K,
+            ocp_xs=self.ocp_xs,
+            ocp_us=self.ocp_us,
             t_measures=self.t_measures,
             t_mpc=self.t_mpc,
             t_send=self.t_send,
@@ -415,10 +397,8 @@ class LoggerControl:
         self.t_loop = self.data["t_loop"]
         self.t_measures = self.data["t_meausres"]
 
-        self.ocp_storage = self.data["ocp_storage"].item()
-        self.MPC_equivalent_Kp = self.data["self.MPC_equivalent_Kp"]
-        self.MPC_equivalent_Kd = self.data["self.MPC_equivalent_Kd"]
-        self.K = self.data["K"]
+        self.ocp_xs = self.data["ocp_xs"]
+        self.ocp_us = self.data["ocp_us"]
 
         self.t_measures = self.data["t_measures"]
         self.t_mpc = self.data["t_mpc"]
