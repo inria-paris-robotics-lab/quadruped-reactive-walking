@@ -23,7 +23,8 @@ def createProblem():
     x0 = pd.x0_reduced
 
     ocp = OCP(pd, target)
-    ocp.make_ocp(x0)
+    ocp.make_ocp()
+    ocp.x0 = x0
 
     xs = [x0] * (ocp.ddp.problem.T + 1)
     us = ocp.ddp.problem.quasiStatic([x0] * ocp.ddp.problem.T)
