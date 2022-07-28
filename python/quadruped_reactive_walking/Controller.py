@@ -99,49 +99,47 @@ class Controller:
         self.t_measures = t_measures - t_start
 
         self.point_target = self.target.evaluate_in_t(1)[self.pd.rfFootId]
-        try:
-            # Closed-loop
-            # self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
 
-            # Trajectory tracking
-            if self.initialized:
-                self.mpc.solve(self.k, self.mpc_result.xs[1], self.xs_init, self.us_init)
-            else:
-                self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
-        except ValueError:
-            self.error = True
-            print("MPC Problem")
+        if self.k % int(self.params.dt_mpc/self.params.dt_wbc) == 0:
+            try:
+                # Closed-loop
+                # self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
 
-        t_mpc = time.time()
-        self.t_mpc = t_mpc - t_measures
+                # Trajectory tracking
+                if self.initialized:
+                    self.mpc.solve(
+                        self.k, self.mpc_result.xs[1], self.xs_init, self.us_init)
+                else:
+                    self.mpc.solve(self.k, m["x_m"],
+                                   self.xs_init, self.us_init)
+            except ValueError:
+                self.error = True
+                print("MPC Problem")
+
+            t_mpc = time.time()
+            self.t_mpc = t_mpc - t_measures
 
         if not self.error:
             self.mpc_result = self.mpc.get_latest_result()
 
-
-            ### ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARM-START THE INITIAL Problem ###
+            # ## ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARM-START THE INITIAL Problem ###
             # if not self.initialized:
             #    np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc_result.xs, "us": self.mpc_result.us} )
             #    print("Initial guess saved")
 
-            self.result.P = np.array(self.params.Kp_main.tolist() * 4)
-            # self.result.P = np.array([3] * 3 + [3] * 3 + [3] * 6)
-            self.result.D = np.array(self.params.Kd_main.tolist() * 4)
-            # self.result.D = np.array([0.3] * 3 + [0.01] * 3 + [0.3] * 6)
-            tauFF = self.mpc_result.us[0]
-            self.result.FF = self.params.Kff_main * np.array(
-                [0] * 3 + list(tauFF) + [0] * 6
-            )
-
             # Keep only the actuated joints and set the other to default values
-            self.mpc_result.q = np.array([self.pd.q0] * (self.pd.T + 1))[:, 7:19]
-            self.mpc_result.v = np.array([self.pd.v0] * (self.pd.T + 1))[:, 6:]
-            self.mpc_result.q[:, 3:6] = np.array(self.mpc_result.xs)[:, : self.pd.nq]
-            self.mpc_result.v[:, 3:6] = np.array(self.mpc_result.xs)[:, self.pd.nq :]
+            self.q = self.pd.q0[7:].copy()
+            self.v = self.pd.v0[6:].copy()
+            self.q[3:6] = np.array(self.mpc_result.xs)[1, :self.pd.nq]
+            self.v[3:6] = np.array(self.mpc_result.xs)[1, self.pd.nq:]
 
-            self.result.q_des = self.mpc_result.q[1]
-            self.result.v_des = self.mpc_result.v[1]
-            self.result.tau_ff = np.zeros(12)
+            self.result.P = np.array(self.params.Kp_main.tolist() * 4)
+            self.result.D = np.array(self.params.Kd_main.tolist() * 4)
+            self.result.FF = self.params.Kff_main * np.zeros(12)
+            self.result.q_des = self.q
+            self.result.v_des = self.v
+            self.result.tau_ff = np.array(
+                [0] * 3 + list(self.mpc_result.us[0]) + [0] * 6)
 
             self.xs_init = self.mpc_result.xs[1:] + [self.mpc_result.xs[-1]]
             self.us_init = self.mpc_result.us[1:] + [self.mpc_result.us[-1]]
@@ -187,10 +185,10 @@ class Controller:
                 print(m["qj_m"])
                 print(np.abs(m["qj_m"]) > self.q_security)
                 self.error = True
-            elif (np.abs(m["vj_m"]) > 1000 * np.pi / 180).any():
+            elif (np.abs(m["vj_m"]) > 500 * np.pi / 180).any():
                 print("-- VELOCITY TOO HIGH ERROR --")
                 print(m["vj_m"])
-                print(np.abs(m["vj_m"]) > 1000 * np.pi / 180)
+                print(np.abs(m["vj_m"]) > 500 * np.pi / 180)
                 self.error = True
             elif (np.abs(self.result.FF) > 3.2).any():
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")
@@ -265,12 +263,12 @@ class Controller:
         device.parse_sensor_data()
         qj_m = device.joints.positions
         vj_m = device.joints.velocities
-        bp_m = self.tuple_to_array(device.baseState)
-        bv_m = self.tuple_to_array(device.baseVel)
-        if self.pd.useFixedBase == 0:
-            x_m = np.concatenate([bp_m, qj_m, bv_m, vj_m])
-        else:
-            x_m = np.concatenate([qj_m[3:6], vj_m[3:6]])
+        # bp_m = self.tuple_to_array(device.baseState)
+        # bv_m = self.tuple_to_array(device.baseVel)
+        # if self.pd.useFixedBase == 0:
+        #     x_m = np.concatenate([bp_m, qj_m, bv_m, vj_m])
+        # else:
+        x_m = np.concatenate([qj_m[3:6], vj_m[3:6]])
 
         return {"qj_m": qj_m, "vj_m": vj_m, "x_m": x_m}
 

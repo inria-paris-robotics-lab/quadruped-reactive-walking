@@ -16,6 +16,9 @@ class OCP:
         self.state = crocoddyl.StateMultibody(self.pd.model)
         self.initialized = False
         self.t_problem_update = 0
+        self.t_update_last_model = 0.
+        self.t_shift = 0.
+
         self.initialize_models()
 
         self.x0 = self.pd.x0_reduced
@@ -24,6 +27,7 @@ class OCP:
             self.x0, self.models, self.terminal_model
         )
         self.ddp = crocoddyl.SolverFDDP(self.problem)
+
 
     def initialize_models(self):
         self.nodes = []
@@ -77,7 +81,8 @@ class OCP:
 
         # If you need update terminal model
         t_update_terminal_model = time()
-        self.t_update_terminal_model = 0
+        self.t_update_terminal_model = 0.
+        # self.t_update_terminal_model = t_update_terminal_model - self.t_shift
 
         self.initialized = True
 

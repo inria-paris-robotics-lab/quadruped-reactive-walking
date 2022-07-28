@@ -12,7 +12,7 @@ class LoggerControl:
         self.log_size = np.int(log_size)
         self.i = 0
         self.loop_buffer = loop_buffer
-        self.multiprocess_mpc = params.enable_multiprocessing
+        self.params = params
 
         size = self.log_size
         self.pd = pd
@@ -117,7 +117,7 @@ class LoggerControl:
         self.t_loop[self.i] = controller.t_loop
         
         self.t_ocp_ddp[self.i] = controller.mpc_result.solving_duration
-        if not self.multiprocess_mpc:
+        if not self.params.enable_multiprocessing:
             self.t_ocp_update[self.i] = controller.mpc.ocp.t_update
             self.t_ocp_warm_start[self.i] = controller.mpc.ocp.t_warm_start
             self.t_ocp_solve[self.i] = controller.mpc.ocp.t_solve
@@ -233,7 +233,7 @@ class LoggerControl:
             plt.savefig(fileName + "/target")
 
         self.plot_controller_times()
-        if not self.multiprocess_mpc:
+        if not self.params.enable_multiprocessing:
             self.plot_OCP_times()
             self.plot_OCP_update_times()
 
@@ -250,8 +250,7 @@ class LoggerControl:
         plt.plot(t_range, self.t_send, "b+")
         plt.plot(t_range, self.t_loop, "+", color="violet")
         plt.plot(t_range, self.t_ocp_ddp, "+", color="royalblue")
-        plt.axhline(y=0.001, color="grey", linestyle=":", lw=1.0)
-        plt.axhline(y=0.01, color="grey", linestyle=":", lw=1.0)
+        plt.axhline(y=self.params.dt_wbc, color="grey", linestyle=":", lw=1.0)
         lgd = ["Measures", "MPC", "Send", "Whole-loop", "MPC solve"]
         plt.legend(lgd)
         plt.xlabel("Time [s]")
@@ -267,7 +266,7 @@ class LoggerControl:
         plt.plot(t_range, self.t_ocp_warm_start, "g+")
         plt.plot(t_range, self.t_ocp_ddp, "b+")
         plt.plot(t_range, self.t_ocp_solve, "+", color="violet")
-        plt.axhline(y=0.001, color="grey", linestyle=":", lw=1.0)
+        plt.axhline(y=self.params.dt_mpc, color="grey", linestyle=":", lw=1.0)
         lgd = ["t_ocp_update", "t_ocp_warm_start", "t_ocp_ddp", "t_ocp_solve"]
         plt.legend(lgd)
         plt.xlabel("Time [s]")
@@ -283,7 +282,7 @@ class LoggerControl:
         plt.plot(t_range, self.t_ocp_shift, "g+")
         plt.plot(t_range, self.t_ocp_update_last, "b+")
         plt.plot(t_range, self.t_ocp_update_terminal, "+", color="seagreen")
-        plt.axhline(y=0.001, color="grey", linestyle=":", lw=1.0)
+        plt.axhline(y=self.params.dt_mpc, color="grey", linestyle=":", lw=1.0)
         lgd = [
             "t_ocp_update_FK",
             "t_ocp_shift",
