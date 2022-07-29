@@ -62,9 +62,9 @@ class LoggerControl:
         # MPC
         self.ocp_xs = np.zeros([size, pd.T + 1, pd.nx])
         self.ocp_us = np.zeros([size, pd.T, pd.nu])
-        self.ocp_K = np.zeros([size, self.pd.nu, self.pd.nx])
-        self.MPC_equivalent_Kp = np.zeros([size, 3])
-        self.MPC_equivalent_Kd = np.zeros([size, 3])
+        self.ocp_K = np.zeros([size, self.pd.nu, self.pd.ndx])
+        self.MPC_equivalent_Kp = np.zeros([size, self.pd.nu])
+        self.MPC_equivalent_Kd = np.zeros([size, self.pd.nu])
 
         self.target = np.zeros([size, 3])
 
@@ -222,7 +222,7 @@ class LoggerControl:
     def plot_target(self, save=False, fileName='/tmp'):
         import matplotlib.pyplot as plt
 
-        x_mes = np.concatenate([self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis=1)
+        x_mes = np.concatenate([self.q_mes, self.v_mes], axis=1)
 
         x_mpc = [self.ocp_xs[0][0, :]]
         [x_mpc.append(x[1, :]) for x in self.ocp_xs[:-1]]

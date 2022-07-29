@@ -85,7 +85,7 @@ def check_position_error(device, controller):
         device (robot wrapper): a wrapper to communicate with the robot
         controller (array): the controller storing the desired position
     """
-    if np.max(np.abs(controller.result.q_des - device.joints.positions)) > 0.15:
+    if np.max(np.abs(controller.result.q_des - device.joints.positions)) > 15:
         print("DIFFERENCE: ", controller.result.q_des - device.joints.positions)
         print("q_des: ", controller.result.q_des)
         print("q_mes: ", device.joints.positions)
@@ -172,12 +172,9 @@ def control_loop():
     k_log_whole = 0
     T_whole = time.time()
     dT_whole = 0.0
-    cnt = 0
     while (not device.is_timeout) and (t < t_max) and (not controller.error):
         t_start_whole = time.time()
 
-        target.update(cnt)
-        target.shift_gait()
         if controller.compute(device, qc):
             break
 
@@ -204,7 +201,6 @@ def control_loop():
 
         t_log_whole[k_log_whole] = t_end_whole - t_start_whole
         k_log_whole += 1
-        cnt += 1
 
     # ****************************************************************
     damp_control(device, 12)

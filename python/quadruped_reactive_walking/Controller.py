@@ -66,8 +66,11 @@ class Controller:
         self.q_init = pd.q0
 
         self.k = 0
+        self.cnt_mpc = 0
+        self.cnt_wbc = 0
         self.error = False
         self.initialized = False
+        self.interpolated = False
         self.result = Result(params)
         self.q = self.pd.q0[7:].copy()
         self.v = self.pd.v0[6:].copy()
@@ -102,8 +105,13 @@ class Controller:
 
         self.point_target = self.target.evaluate_in_t(1)[self.pd.rfFootId]
 
-        if self.k % int(self.params.dt_mpc/self.params.dt_wbc) == 0:
+        if self.k % self.pd.r1 == 0:
             try:
+                self.target.update(self.cnt_mpc)
+                self.target.shift_gait()
+                self.interpolated = False
+                self.cnt_wbc = 0
+
                 # Closed-loop
                 self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
 
@@ -114,32 +122,39 @@ class Controller:
                 # else:
                     # self.mpc.solve(self.k, m["x_m"],
                                 #    self.xs_init, self.us_init)
+
+                self.cnt_mpc += 1        
             except ValueError:
                 self.error = True
                 print("MPC Problem")
 
-            t_mpc = time.time()
-            self.t_mpc = t_mpc - t_measures
+        t_mpc = time.time()
+        self.t_mpc = t_mpc - t_measures
 
         if not self.error:
             self.mpc_result = self.mpc.get_latest_result()
 
             # ## ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARM-START THE INITIAL Problem ###
-            # if not self.initialized:
-            #    np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc_result.xs, "us": self.mpc_result.us} )
-            #    print("Initial guess saved")
+            #if not self.initialized:
+            #   np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc_result.xs, "us": self.mpc_result.us} )
+            #   print("Initial guess saved")
 
             # Keep only the actuated joints and set the other to default values
-
-            self.q[3:6] = np.array(self.mpc_result.xs)[1, :self.pd.nq]
-            self.v[3:6] = np.array(self.mpc_result.xs)[1, self.pd.nq:]
+            if not self.interpolated:
+                self.q_interpolated, self.v_interpolated = self.interpolate_traj(device,\
+                                            np.array(self.mpc_result.xs)[1, :self.pd.nq], \
+                                            np.array(self.mpc_result.xs)[1, self.pd.nq:], self.pd.r1)
+            
+            self.q = self.q_interpolated[self.cnt_wbc]
+            self.v = self.v_interpolated[self.cnt_wbc]
 
             # self.result.P = np.array(self.params.Kp_main.tolist() * 4)
             # self.result.D = np.array(self.params.Kd_main.tolist() * 4)
-            # self.result.FF = self.params.Kff_main * np.ones(12)
+            self.result.FF = self.params.Kff_main * np.ones(12)
             self.result.q_des = self.q
             self.result.v_des = self.v
-            self.result.tau_ff = np.array([0] * 3 + list(self.mpc_result.us[0]) + [0] * 6)
+            self.result.tau_ff = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], 
+                                                                self.mpc.ocp.state.diff(m["x_m"],  self.mpc_result.xs[0]))
 
             self.xs_init = self.mpc_result.xs[1:] + [self.mpc_result.xs[-1]]
             self.us_init = self.mpc_result.us[1:] + [self.mpc_result.us[-1]]
@@ -147,8 +162,8 @@ class Controller:
         t_send = time.time()
         self.t_send = t_send - t_mpc
 
-        self.clamp_result(device)
-        self.security_check(m)
+        #self.clamp_result(device)
+        #self.security_check(m)
 
         if self.error:
             self.set_null_control()
@@ -157,6 +172,7 @@ class Controller:
 
         self.t_loop = time.time() - t_start
         self.k += 1
+        self.cnt_wbc += 1
         self.initialized = True
 
         return self.error
@@ -268,7 +284,7 @@ class Controller:
         # if self.pd.useFixedBase == 0:
         #     x_m = np.concatenate([bp_m, qj_m, bv_m, vj_m])
         # else:
-        x_m = np.concatenate([qj_m[3:6], vj_m[3:6]])
+        x_m = np.concatenate([qj_m, vj_m])
 
         return {"qj_m": qj_m, "vj_m": vj_m, "x_m": x_m}
 
@@ -276,6 +292,7 @@ class Controller:
         measures = self.read_state(device)
         qj_des_i = np.linspace(measures["qj_m"], q_des, ratio)
         vj_des_i = np.linspace(measures["vj_m"], v_des, ratio)
+        self.interpolated = True
 
         return qj_des_i, vj_des_i
 
