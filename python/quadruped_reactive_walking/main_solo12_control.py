@@ -85,7 +85,7 @@ def check_position_error(device, controller):
         device (robot wrapper): a wrapper to communicate with the robot
         controller (array): the controller storing the desired position
     """
-    if np.max(np.abs(controller.result.q_des - device.joints.positions)) > 0.15:
+    if np.max(np.abs(controller.result.q_des - device.joints.positions)) > 15:
         print("DIFFERENCE: ", controller.result.q_des - device.joints.positions)
         print("q_des: ", controller.result.q_des)
         print("q_mes: ", device.joints.positions)
@@ -147,7 +147,7 @@ def control_loop():
         qc = QualisysClient(ip="140.93.16.160", body_id=0)
 
     if params.LOGGING or params.PLOTTING:
-        loggerControl = LoggerControl(pd, params, log_size=params.N_SIMULATION-1)
+        loggerControl = LoggerControl(pd, params, log_size=params.N_SIMULATION)
 
     if params.SIMULATION:
         device.Init(

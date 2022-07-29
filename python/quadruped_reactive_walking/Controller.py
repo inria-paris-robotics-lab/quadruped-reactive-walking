@@ -145,18 +145,21 @@ class Controller:
                                             np.array(self.mpc_result.xs)[1, :self.pd.nq], \
                                             np.array(self.mpc_result.xs)[1, self.pd.nq:], self.pd.r1)
             
-            self.q = self.q_interpolated[self.cnt_wbc]
-            self.v = self.v_interpolated[self.cnt_wbc]
+            self.q[3:6] = self.q_interpolated[self.cnt_wbc]
+            self.v[3:6] = self.v_interpolated[self.cnt_wbc]
+            
+
 
             # self.result.P = np.array(self.params.Kp_main.tolist() * 4)
             # self.result.D = np.array(self.params.Kd_main.tolist() * 4)
             self.result.FF = self.params.Kff_main * np.ones(12)
             self.result.q_des = self.q
             self.result.v_des = self.v
-            self.result.tau_ff = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], 
+            actuated_tau_ff = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], 
                                                          np.concatenate([pin.difference(self.pd.model, m["x_m"][: self.pd.nq],
                                                                                         self.mpc_result.xs[0][: self.pd.nq]), 
                                                                         m["x_m"][self.pd.nq] -  self.mpc_result.xs[0][self.pd.nq:] ]) )
+            self.result.tau_ff = np.array([0] * 3 + list(actuated_tau_ff) + [0] * 6)
 
             self.xs_init = self.mpc_result.xs[1:] + [self.mpc_result.xs[-1]]
             self.us_init = self.mpc_result.us[1:] + [self.mpc_result.us[-1]]
@@ -164,8 +167,8 @@ class Controller:
         t_send = time.time()
         self.t_send = t_send - t_mpc
 
-        self.clamp_result(device)
-        self.security_check(m)
+        #self.clamp_result(device)
+        #self.security_check(m)
 
         if self.error:
             self.set_null_control()
@@ -286,14 +289,14 @@ class Controller:
         # if self.pd.useFixedBase == 0:
         #     x_m = np.concatenate([bp_m, qj_m, bv_m, vj_m])
         # else:
-        x_m = np.concatenate([qj_m, vj_m])
+        x_m = np.concatenate([qj_m[3:6], vj_m[3:6]])
 
         return {"qj_m": qj_m, "vj_m": vj_m, "x_m": x_m}
 
     def interpolate_traj(self, device, q_des, v_des, ratio):
         measures = self.read_state(device)
-        qj_des_i = np.linspace(measures["qj_m"], q_des, ratio)
-        vj_des_i = np.linspace(measures["vj_m"], v_des, ratio)
+        qj_des_i = np.linspace(measures["qj_m"][3:6], q_des, ratio)
+        vj_des_i = np.linspace(measures["vj_m"][3:6], v_des, ratio)
         self.interpolated = True
 
         return qj_des_i, vj_des_i

@@ -8,7 +8,7 @@ class problemDataAbstract:
         self.dt_sim = param.dt_wbc
         self.r1 = int(self.dt / self.dt_sim)
         self.init_steps = 0
-        self.target_steps =  15
+        self.target_steps =  90
         self.T = self.init_steps + self.target_steps -1
 
         self.robot = erd.load("solo12")
@@ -102,28 +102,26 @@ class ProblemData(problemDataAbstract):
 
 class ProblemDataFull(problemDataAbstract):
     def __init__(self, param):
-        frozen_names = ["root_joint"]
+        frozen_names = ["root_joint", "FL_HAA", "FL_HFE", "FL_KFE",
+                        "HL_HAA", "HL_HFE", "HL_KFE",
+                        "HR_HAA", "HR_HFE", "HR_KFE" ]
+
 
         super().__init__(param, frozen_names)
         
         self.useFixedBase = 1
 
         # Cost function weights
+        # Cost function weights
         self.mu = 0.7
         self.foot_tracking_w = 1e3
         #self.friction_cone_w = 1e3 * 0
         self.control_bound_w = 1e3
         self.control_reg_w = 1e0
-        self.state_reg_w = np.array([1e2] * 3 \
-                            + [1e-3] * 3\
-                            + [1e2] * 6
-                            + [1e1] * 3 \
-                            + [1e0] * 3\
-                            + [1e1] * 6 
-                            ) 
-        self.terminal_velocity_w = np.array([0] * 12 + [1e3] * 12 )
+        self.state_reg_w = np.array([1e-5] * 3 + [ 3* 1e-1]*3)
+        self.terminal_velocity_w = np.array([0] * 3 + [1e3] * 3 )
 
-        self.q0_reduced = self.q0[7 :]
+        self.q0_reduced = self.q0[10 : 13]
         self.v0_reduced = np.zeros(self.nq)
         self.x0_reduced = np.concatenate([self.q0_reduced, self.v0_reduced])
 

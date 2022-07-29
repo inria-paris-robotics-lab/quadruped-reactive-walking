@@ -222,7 +222,9 @@ class LoggerControl:
     def plot_target(self, save=False, fileName='/tmp'):
         import matplotlib.pyplot as plt
 
-        x_mes = np.concatenate([self.q_mes, self.v_mes], axis=1)
+        x_mes = np.concatenate([self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis=1)
+
+        horizon = self.ocp_xs.shape[0]
 
         x_mpc = [self.ocp_xs[0][0, :]]
         [x_mpc.append(x[1, :]) for x in self.ocp_xs[:-1]]
@@ -260,6 +262,20 @@ class LoggerControl:
             plt.legend(["Target", "Measured", "Predicted"])
         if save:
             plt.savefig(fileName + "/target")
+
+
+        """ legend = ['x', 'y', 'z']
+        plt.figure(figsize=(12, 18), dpi = 90)
+        for p in range(3):
+            plt.subplot(3,1, p+1)
+            plt.title('Free foot on ' + legend[p])
+            for i in range(horizon-1):
+                t = np.linspace(i*self.pd.dt, (self.pd.T+ i)*self.pd.dt, self.pd.T+1)
+                y = all_ocp_feet_p_log[self.pd.rfFootId][i+1][:,p]
+                for j in range(len(y) - 1):
+                    plt.plot(t[j:j+2], y[j:j+2], color='royalblue', linewidth = 3, marker='o' ,alpha=max([1 - j/len(y), 0]))
+            plt.plot(self.target[:, p]) """
+
 
     def plot_riccati_gains(self, n, save=False, fileName='/tmp'):
         import matplotlib.pyplot as plt
