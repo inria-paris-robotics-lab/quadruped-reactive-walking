@@ -8,7 +8,7 @@ class problemDataAbstract:
         self.dt_sim = param.dt_wbc
         self.r1 = int(self.dt / self.dt_sim)
         self.init_steps = 0
-        self.target_steps =  20
+        self.target_steps =  50
         self.T = self.init_steps + self.target_steps -1
 
         self.robot = erd.load("solo12")
