@@ -118,7 +118,7 @@ class ProblemDataFull(problemDataAbstract):
                             + [1e-3] * 3\
                             + [1e2] * 6
                             + [1e1] * 3 \
-                            + [3* 1e-1] * 3\
+                            + [1e0] * 3\
                             + [1e1] * 6 
                             ) 
         self.terminal_velocity_w = np.array([0] * 12 + [1e3] * 12 )

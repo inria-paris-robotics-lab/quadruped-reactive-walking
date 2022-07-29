@@ -154,7 +154,9 @@ class Controller:
             self.result.q_des = self.q
             self.result.v_des = self.v
             self.result.tau_ff = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], 
-                                                                self.mpc.ocp.state.diff(m["x_m"],  self.mpc_result.xs[0]))
+                                                         np.concatenate([pin.difference(self.pd.model, m["x_m"][: self.pd.nq],
+                                                                                        self.mpc_result.xs[0][: self.pd.nq]), 
+                                                                        m["x_m"][self.pd.nq] -  self.mpc_result.xs[0][self.pd.nq:] ]) )
 
             self.xs_init = self.mpc_result.xs[1:] + [self.mpc_result.xs[-1]]
             self.us_init = self.mpc_result.us[1:] + [self.mpc_result.us[-1]]
@@ -162,8 +164,8 @@ class Controller:
         t_send = time.time()
         self.t_send = t_send - t_mpc
 
-        #self.clamp_result(device)
-        #self.security_check(m)
+        self.clamp_result(device)
+        self.security_check(m)
 
         if self.error:
             self.set_null_control()

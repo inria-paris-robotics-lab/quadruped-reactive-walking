@@ -85,7 +85,7 @@ def check_position_error(device, controller):
         device (robot wrapper): a wrapper to communicate with the robot
         controller (array): the controller storing the desired position
     """
-    if np.max(np.abs(controller.result.q_des - device.joints.positions)) > 15:
+    if np.max(np.abs(controller.result.q_des - device.joints.positions)) > 0.15:
         print("DIFFERENCE: ", controller.result.q_des - device.joints.positions)
         print("q_des: ", controller.result.q_des)
         print("q_mes: ", device.joints.positions)
