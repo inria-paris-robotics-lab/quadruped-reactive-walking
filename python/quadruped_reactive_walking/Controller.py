@@ -163,7 +163,7 @@ class Controller:
             if self.params.interpolate_mpc:
                 q, v = self.interpolate_x(self.cnt_wbc * self.pd.dt_wbc)
             else:
-                q, v = self.integrate_x()
+                q, v = self.integrate_x(m)
 
             self.q[3:6] = q
             self.v[3:6] = v
@@ -323,13 +323,13 @@ class Controller:
 
         return q_t, v_t
 
-    def integrate_x(self):
+    def integrate_x(self, m):
         """
         Integrate the position and velocity using the acceleration computed from the
         feedforward torque
         """
-        q0 = self.result.q_des[3:6]
-        v0 = self.result.v_des[3:6]
+        q0 = m["qj_m"][3:6]
+        v0 = m["vj_m"][3:6]
 
         a = pin.aba(self.pd.model, self.pd.rdata, q0, v0, self.result.tau_ff[3:6])
 
