@@ -154,7 +154,7 @@ class Controller:
                             m["x_m"][: self.pd.nq],
                             self.mpc_result.xs[0][: self.pd.nq],
                         ),
-                        m["x_m"][self.pd.nq] - self.mpc_result.xs[0][self.pd.nq :],
+                        m["x_m"][self.pd.nq :] - self.mpc_result.xs[0][self.pd.nq :],
                     ]
                 ),
             )
