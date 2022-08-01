@@ -140,15 +140,9 @@ class Controller:
             #   print("Initial guess saved")
 
             # Keep only the actuated joints and set the other to default values
-            if not self.interpolated:
-                self.q_interpolated, self.v_interpolated = self.interpolate_traj(device,\
-                                            np.array(self.mpc_result.xs)[1, :self.pd.nq], \
-                                            np.array(self.mpc_result.xs)[1, self.pd.nq:], self.pd.r1)
-            
-            self.q[3:6] = self.q_interpolated[self.cnt_wbc]
-            self.v[3:6] = self.v_interpolated[self.cnt_wbc]
-            
-
+            q_interpolated, v_interpolated = self.interpolate_x(self.cnt_wbc * self.pd.dt_wbc)
+            self.q[3:6] = q_interpolated
+            self.v[3:6] = v_interpolated
 
             # self.result.P = np.array(self.params.Kp_main.tolist() * 4)
             # self.result.D = np.array(self.params.Kd_main.tolist() * 4)
@@ -293,13 +287,27 @@ class Controller:
 
         return {"qj_m": qj_m, "vj_m": vj_m, "x_m": x_m}
 
-    def interpolate_traj(self, device, q_des, v_des, ratio):
-        measures = self.read_state(device)
-        qj_des_i = np.linspace(measures["qj_m"][3:6], q_des, ratio)
-        vj_des_i = np.linspace(measures["vj_m"][3:6], v_des, ratio)
-        self.interpolated = True
+    def interpolate_x(self, t):
+        q = np.array(self.mpc_result.xs)[:, : self.pd.nq]
+        v = np.array(self.mpc_result.xs)[:, self.pd.nq :]
+        v0 = v[0, :]
+        q0 = q[0, :]
+        v1 = v[1, :]
+        q1 = q[1, :]
+    
+        if (q1-q0 == 0).any():
+            alpha = np.zeros(len(q0))
+        else:
+            alpha = (v1**2 - v0**2)/(q1 - q0)
 
-        return qj_des_i, vj_des_i
+        beta = v0
+        gamma = q0
+
+        v_t = beta + alpha * t
+        q_t = gamma + beta *t + 1/2 * alpha * t**2
+
+        return q_t, v_t
+        
 
     def tuple_to_array(self, tup):
         a = np.array([element for tupl in tup for element in tupl])

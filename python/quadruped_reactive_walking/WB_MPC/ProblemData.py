@@ -5,8 +5,8 @@ import pinocchio as pin
 class problemDataAbstract:
     def __init__(self, param, frozen_names = []):
         self.dt = param.dt_mpc # OCP dt
-        self.dt_sim = param.dt_wbc
-        self.r1 = int(self.dt / self.dt_sim)
+        self.dt_wbc = param.dt_wbc
+        self.r1 = int(self.dt / self.dt_wbc)
         self.init_steps = 0
         self.target_steps =  50
         self.T = self.init_steps + self.target_steps -1
