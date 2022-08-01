@@ -8,9 +8,9 @@ class Target:
         self.pd = pd
         self.dt = pd.dt
 
-        self.gait = ([] + \
-                    [[0, 0, 0, 0]] * pd.init_steps + \
-                    [[0, 0, 0, 0]] * pd.target_steps )
+        self.gait = ([] +
+                     [[0, 0, 0, 0]] * pd.init_steps +
+                     [[0, 0, 0, 0]] * pd.target_steps)
 
         self.T = pd.T
         self.contactSequence = [self.patternToId(p) for p in self.gait]
@@ -23,7 +23,7 @@ class Target:
         self.FR_foot0 = pd.rdata.oMf[pd.rfFootId].translation.copy()
         self.A = np.array([0, 0.03, 0.03])
         self.offset = np.array([0.05, -0.02, 0.06])
-        self.freq = np.array([0, 0.5*0 , 0.5*0 ])
+        self.freq = np.array([0, 0.5 * 0, 0.5 * 0])
         self.phase = np.array([0, np.pi / 2, 0])
 
     def patternToId(self, gait):
