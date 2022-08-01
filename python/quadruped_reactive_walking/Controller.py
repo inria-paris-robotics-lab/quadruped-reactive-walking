@@ -225,7 +225,7 @@ class Controller:
             actuated_tau_ff = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0],
                                                              np.concatenate([pin.difference(self.pd.model, m["x_m"][: self.pd.nq],
                                                                                             self.mpc_result.xs[0][: self.pd.nq]),
-                                                                             m["x_m"][self.pd.nq] - self.mpc_result.xs[0][self.pd.nq:]]))
+                                                                             m["x_m"][self.pd.nq :] - self.mpc_result.xs[0][self.pd.nq:]]))
             self.result.tau_ff = np.array(
                 [0] * 3 + list(actuated_tau_ff) + [0] * 6)
 
