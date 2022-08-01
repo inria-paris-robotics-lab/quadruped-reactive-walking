@@ -26,6 +26,7 @@ struct ParamsVisitor : public bp::def_visitor<ParamsVisitor<Params>> {
         .def_readwrite("type_MPC", &Params::type_MPC)
         .def_readwrite("use_flat_plane", &Params::use_flat_plane)
         .def_readwrite("predefined_vel", &Params::predefined_vel)
+        .def_readwrite("interpolate_mpc", &Params::interpolate_mpc)
         .def_readwrite("kf_enabled", &Params::kf_enabled)
         .def_readwrite("Kp_main", &Params::Kp_main)
         .def_readwrite("Kd_main", &Params::Kd_main)

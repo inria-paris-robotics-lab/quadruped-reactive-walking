@@ -44,7 +44,10 @@ class DummyDevice:
         def __init__(self):
             self.positions = np.zeros(12)
             self.velocities = np.zeros(12)
+
+
 90
+
 
 class Controller:
     def __init__(self, pd, target, params, q_init, t):
@@ -105,7 +108,7 @@ class Controller:
 
         self.point_target = self.target.evaluate_in_t(1)[self.pd.rfFootId]
 
-        if self.k % self.pd.r1 == 0:
+        if self.k % int(self.params.dt_mpc / self.params.dt_wbc) == 0:
             try:
                 self.target.update(self.cnt_mpc)
                 self.target.shift_gait()
@@ -117,13 +120,13 @@ class Controller:
 
                 # Trajectory tracking
                 # if self.initialized:
-                    # self.mpc.solve(
-                        # self.k, self.mpc_result.xs[1], self.xs_init, self.us_init)
+                # self.mpc.solve(
+                # self.k, self.mpc_result.xs[1], self.xs_init, self.us_init)
                 # else:
-                    # self.mpc.solve(self.k, m["x_m"],
-                                #    self.xs_init, self.us_init)
+                # self.mpc.solve(self.k, m["x_m"],
+                #    self.xs_init, self.us_init)
 
-                self.cnt_mpc += 1        
+                self.cnt_mpc += 1
             except ValueError:
                 self.error = True
                 print("MPC Problem")
@@ -135,25 +138,37 @@ class Controller:
             self.mpc_result = self.mpc.get_latest_result()
 
             # ## ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARM-START THE INITIAL Problem ###
-            #if not self.initialized:
+            # if not self.initialized:
             #   np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc_result.xs, "us": self.mpc_result.us} )
             #   print("Initial guess saved")
 
             # Keep only the actuated joints and set the other to default values
-            q_interpolated, v_interpolated = self.interpolate_x(self.cnt_wbc * self.pd.dt_wbc)
-            self.q[3:6] = q_interpolated
-            self.v[3:6] = v_interpolated
 
-            # self.result.P = np.array(self.params.Kp_main.tolist() * 4)
-            # self.result.D = np.array(self.params.Kd_main.tolist() * 4)
             self.result.FF = self.params.Kff_main * np.ones(12)
+            actuated_tau_ff = self.mpc_result.us[0] + np.dot(
+                self.mpc_result.K[0],
+                np.concatenate(
+                    [
+                        pin.difference(
+                            self.pd.model,
+                            m["x_m"][: self.pd.nq],
+                            self.mpc_result.xs[0][: self.pd.nq],
+                        ),
+                        m["x_m"][self.pd.nq] - self.mpc_result.xs[0][self.pd.nq :],
+                    ]
+                ),
+            )
+            self.result.tau_ff = np.array([0] * 3 + list(actuated_tau_ff) + [0] * 6)
+
+            if self.params.interpolate_mpc:
+                q, v = self.interpolate_x(self.cnt_wbc * self.pd.dt_wbc)
+            else:
+                q, v = self.integrate_x()
+
+            self.q[3:6] = q
+            self.v[3:6] = v
             self.result.q_des = self.q
             self.result.v_des = self.v
-            actuated_tau_ff = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], 
-                                                         np.concatenate([pin.difference(self.pd.model, m["x_m"][: self.pd.nq],
-                                                                                        self.mpc_result.xs[0][: self.pd.nq]), 
-                                                                        m["x_m"][self.pd.nq] -  self.mpc_result.xs[0][self.pd.nq:] ]) )
-            self.result.tau_ff = np.array([0] * 3 + list(actuated_tau_ff) + [0] * 6)
 
             self.xs_init = self.mpc_result.xs[1:] + [self.mpc_result.xs[-1]]
             self.us_init = self.mpc_result.us[1:] + [self.mpc_result.us[-1]]
@@ -161,8 +176,8 @@ class Controller:
         t_send = time.time()
         self.t_send = t_send - t_mpc
 
-        #self.clamp_result(device)
-        #self.security_check(m)
+        # self.clamp_result(device)
+        # self.security_check(m)
 
         if self.error:
             self.set_null_control()
@@ -294,20 +309,34 @@ class Controller:
         q0 = q[0, :]
         v1 = v[1, :]
         q1 = q[1, :]
-    
-        if (q1-q0 == 0).any():
+
+        if (q1 - q0 == 0).any():
             alpha = np.zeros(len(q0))
         else:
-            alpha = (v1**2 - v0**2)/(q1 - q0)
+            alpha = (v1**2 - v0**2) / (q1 - q0)
 
         beta = v0
         gamma = q0
 
         v_t = beta + alpha * t
-        q_t = gamma + beta *t + 1/2 * alpha * t**2
+        q_t = gamma + beta * t + 1 / 2 * alpha * t**2
 
         return q_t, v_t
-        
+
+    def integrate_x(self):
+        """
+        Integrate the position and velocity using the acceleration computed from the
+        feedforward torque
+        """
+        q0 = self.result.q_des[3:6]
+        v0 = self.result.v_des[3:6]
+
+        a = pin.aba(self.pd.model, self.pd.rdata, q0, v0, self.result.tau_ff[3:6])
+
+        v = v0 + a * self.params.dt_wbc
+        q = q0 + v * self.params.dt_wbc
+
+        return q, v
 
     def tuple_to_array(self, tup):
         a = np.array([element for tupl in tup for element in tupl])

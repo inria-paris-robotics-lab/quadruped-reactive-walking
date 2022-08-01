@@ -24,6 +24,7 @@ robot:
     dt_wbc: 0.001  # Time step of the whole body control
     dt_mpc: 0.015  # Time step of the model predictive control
     type_MPC: 3  # Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
+    interpolate_mpc: false # true to interpolate the impedance quantities between nodes of the MPC
 #     Kp_main: [0.0, 0.0, 0.0]  # Proportional gains for the PD+
     Kp_main: [3,3,3]  # Proportional gains for the PD+
 #     Kd_main: [0., 0., 0.]  # Derivative gains for the PD+
