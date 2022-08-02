@@ -47,23 +47,30 @@ class Interpolation:
         # q_t = gamma + beta * t + alpha * t**2
 
         # Linear
+        beta = self.v1
+        gamma = self.q0
+
+        v_t = beta
+        q_t = gamma + beta * t
+
+        # Linear Wrong
         # beta = self.v1
         # gamma = self.q0
 
-        # v_t = beta
-        # q_t = gamma + beta * t
+        # v_t = self.v0 + self.v1*(self.v1 - self.v0)/(self.q1 - self.q0) * t
+        # q_t = self.q0 + self.v1 * t
 
         # Quadratic
-        if (self.q1-self.q0 == 0).any():
-            alpha = np.zeros(len(self.q0))
-        else:
-            alpha = self.v1*(self.v1 - self.v0)/(self.q1 - self.q0)
+        # if (self.q1-self.q0 == 0).any():
+        #     alpha = np.zeros(len(self.q0))
+        # else:
+        #     alpha = self.v1*(self.v1 - self.v0)/(self.q1 - self.q0)
 
-        beta = self.v0
-        gamma = self.q0
+        # beta = self.v0
+        # gamma = self.q0
 
-        v_t = beta + alpha * t
-        q_t = gamma + beta * t + 1/2 * alpha * t**2
+        # v_t = beta + alpha * t
+        # q_t = gamma + beta * t + 1/2 * alpha * t**2
 
         return q_t, v_t
 
@@ -225,7 +232,7 @@ class Controller:
             actuated_tau_ff = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0],
                                                              np.concatenate([pin.difference(self.pd.model, m["x_m"][: self.pd.nq],
                                                                                             self.mpc_result.xs[0][: self.pd.nq]),
-                                                                             m["x_m"][self.pd.nq :] - self.mpc_result.xs[0][self.pd.nq:]]))
+                                                                             m["x_m"][self.pd.nq:] - self.mpc_result.xs[0][self.pd.nq:]]))
             self.result.tau_ff = np.array(
                 [0] * 3 + list(actuated_tau_ff) + [0] * 6)
 
