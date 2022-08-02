@@ -23,6 +23,79 @@ class Result:
         self.tau_ff = np.zeros(12)
 
 
+class Interpolation:
+    def __init__(self):
+        pass
+
+    def load_data(self, q, v):
+        self.v0 = v[0, :]
+        self.q0 = q[0, :]
+        self.v1 = v[1, :]
+        self.q1 = q[1, :]
+
+    def interpolate(self, t):
+        # Perfect match, but wrong
+        # if (self.q1-self.q0 == 0).any():
+        # alpha = np.zeros(len(self.q0))
+        # else:
+        # alpha = 2 * 1/2* (self.v1**2 - self.v0**2)/(self.q1 - self.q0)
+
+        # beta = self.v0
+        # gamma = self.q0
+
+        # v_t = beta + alpha * t
+        # q_t = gamma + beta * t + alpha * t**2
+
+        # Linear
+        beta = self.v1
+        gamma = self.q0
+
+        v_t = beta
+        q_t = gamma + beta * t
+
+        # Linear Wrong
+        # beta = self.v1
+        # gamma = self.q0
+
+        # v_t = self.v0 + self.v1*(self.v1 - self.v0)/(self.q1 - self.q0) * t
+        # q_t = self.q0 + self.v1 * t
+
+        # Quadratic
+        # if (self.q1-self.q0 == 0).any():
+        #     alpha = np.zeros(len(self.q0))
+        # else:
+        #     alpha = self.v1*(self.v1 - self.v0)/(self.q1 - self.q0)
+
+        # beta = self.v0
+        # gamma = self.q0
+
+        # v_t = beta + alpha * t
+        # q_t = gamma + beta * t + 1/2 * alpha * t**2
+
+        return q_t, v_t
+
+    def plot_interpolation(self, n, dt):
+        import matplotlib.pyplot as plt
+        plt.style.use("seaborn")
+        t = np.linspace(0, n*dt, n + 1)
+        q_t = np.array([self.interpolate((i) * dt)[0] for i in range(n+1)])
+        v_t = np.array([self.interpolate((i) * dt)[1] for i in range(n+1)])
+        for i in range(3):
+            plt.subplot(3, 2, (i*2) + 1)
+            plt.title("Position interpolation")
+            plt.plot(t, q_t[:, i])
+            plt.scatter(y=self.q0[i], x=t[0], color="violet", marker="+")
+            plt.scatter(y=self.q1[i], x=t[-1], color="violet", marker="+")
+
+            plt.subplot(3, 2, (i*2) + 2)
+            plt.title("Velocity interpolation")
+            plt.plot(t, v_t[:, i])
+            plt.scatter(y=self.v0[i], x=t[0], color="violet", marker="+")
+            plt.scatter(y=self.v1[i], x=t[-1], color="violet", marker="+")
+
+        plt.show()
+
+
 class DummyDevice:
     def __init__(self):
         self.imu = self.IMU()
@@ -45,8 +118,6 @@ class DummyDevice:
             self.positions = np.zeros(12)
             self.velocities = np.zeros(12)
 
-
-90
 
 
 class Controller:
@@ -73,6 +144,7 @@ class Controller:
         self.cnt_wbc = 0
         self.error = False
         self.initialized = False
+        self.interpolator = Interpolation()
         self.result = Result(params)
         self.result.q_des = self.pd.q0[7:].copy()
         self.result.v_des = self.pd.v0[6:].copy()
@@ -134,7 +206,14 @@ class Controller:
             self.result.tau_ff = np.array([0] * 3 + list(actuated_tau_ff) + [0] * 6)
 
             if self.params.interpolate_mpc:
-                q, v = self.interpolate_x(self.cnt_wbc * self.pd.dt_wbc)
+                # load the data to be interpolated only once per mpc solution
+                if self.cnt_wbc == 0:
+                    x = np.array(self.mpc_result.xs)
+                    self.interpolator.load_data(
+                        x[:, : self.pd.nq], x[:, self.pd.nq:])
+                    
+                q, v = self.interpolator.interpolate((self.cnt_wbc +1) * self.pd.dt_wbc)
+                #self.interpolator.plot_interpolation(self.pd.r1, self.pd.dt_wbc)
             else:
                 q, v = self.integrate_x(m)
 
@@ -147,8 +226,8 @@ class Controller:
         t_send = time.time()
         self.t_send = t_send - t_mpc
 
-        # self.clamp_result(device)
-        # self.security_check(m)
+        self.clamp_result(device)
+        self.security_check(m)
 
         if self.error:
             self.set_null_control()
@@ -186,10 +265,10 @@ class Controller:
                 print(m["qj_m"])
                 print(np.abs(m["qj_m"]) > self.q_security)
                 self.error = True
-            elif (np.abs(m["vj_m"]) > 500 * np.pi / 180).any():
+            elif (np.abs(m["vj_m"]) > 1000 * np.pi / 180).any():
                 print("-- VELOCITY TOO HIGH ERROR --")
                 print(m["vj_m"])
-                print(np.abs(m["vj_m"]) > 500 * np.pi / 180)
+                print(np.abs(m["vj_m"]) > 1000 * np.pi / 180)
                 self.error = True
             elif (np.abs(self.result.FF) > 3.2).any():
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")
@@ -284,27 +363,6 @@ class Controller:
         )
         tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
         return tau
-
-    def interpolate_x(self, t):
-        q = np.array(self.mpc_result.xs)[:, : self.pd.nq]
-        v = np.array(self.mpc_result.xs)[:, self.pd.nq :]
-        v0 = v[0, :]
-        q0 = q[0, :]
-        v1 = v[1, :]
-        q1 = q[1, :]
-
-        if (q1 - q0 == 0).any():
-            alpha = np.zeros(len(q0))
-        else:
-            alpha = (v1**2 - v0**2) / (q1 - q0)
-
-        beta = v0
-        gamma = q0
-
-        v_t = beta + alpha * t
-        q_t = gamma + beta * t + 1 / 2 * alpha * t**2
-
-        return q_t, v_t
 
     def integrate_x(self, m):
         """

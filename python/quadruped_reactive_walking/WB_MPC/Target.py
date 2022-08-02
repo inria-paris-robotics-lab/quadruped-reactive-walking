@@ -8,9 +8,9 @@ class Target:
         self.pd = pd
         self.dt = pd.dt
 
-        self.gait = ([] + \
-                    [[0, 0, 0, 0]] * pd.init_steps + \
-                    [[0, 0, 0, 0]] * pd.target_steps )
+        self.gait = ([] +
+                     [[0, 0, 0, 0]] * pd.init_steps +
+                     [[0, 0, 0, 0]] * pd.target_steps)
 
         self.T = pd.T
         self.contactSequence = [self.patternToId(p) for p in self.gait]

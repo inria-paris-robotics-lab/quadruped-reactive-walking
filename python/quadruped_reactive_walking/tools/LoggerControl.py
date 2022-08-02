@@ -122,7 +122,7 @@ class LoggerControl:
         self.t_mpc[self.i] = controller.t_mpc
         self.t_send[self.i] = controller.t_send
         self.t_loop[self.i] = controller.t_loop
-        
+
         self.t_ocp_ddp[self.i] = controller.mpc_result.solving_duration
         if not self.params.enable_multiprocessing:
             self.t_ocp_update[self.i] = controller.mpc.ocp.t_update
@@ -163,7 +163,7 @@ class LoggerControl:
 
         plt.show()
 
-    def plot_states(self, save = False, fileName = '/tmp'):
+    def plot_states(self, save=False, fileName='/tmp'):
         import matplotlib.pyplot as plt
 
         legend = ["Hip", "Shoulder", "Knee"]
@@ -199,7 +199,7 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/joint_velocities")
 
-    def plot_torques(self, save=False, fileName = '/tmp'):
+    def plot_torques(self, save=False, fileName='/tmp'):
         import matplotlib.pyplot as plt
 
         legend = ["Hip", "Shoulder", "Knee"]
@@ -209,7 +209,8 @@ class LoggerControl:
             plt.subplot(2, 2, i + 1)
             plt.title("Joint torques of " + str(i))
             [
-                plt.plot(np.array(self.torquesFromCurrentMeasurment)[:, (3 * i + jj)])
+                plt.plot(np.array(self.torquesFromCurrentMeasurment)
+                         [:, (3 * i + jj)])
                 for jj in range(3)
             ]
             plt.ylabel("Torque [Nm]")
@@ -222,9 +223,11 @@ class LoggerControl:
     def plot_target(self, save=False, fileName='/tmp'):
         import matplotlib.pyplot as plt
 
-        x_mes = np.concatenate([self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis=1)
+        x_mes = np.concatenate(
+            [self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis=1)
 
-        horizon = self.ocp_xs.shape[0]
+        horizon = int(self.ocp_xs.shape[0] / self.pd.r1)
+        t_scale = np.linspace(0, (horizon)*self.pd.dt, (horizon)*self.pd.r1)
 
         x_mpc = [self.ocp_xs[0][0, :]]
         [x_mpc.append(x[1, :]) for x in self.ocp_xs[:-1]]
@@ -232,7 +235,8 @@ class LoggerControl:
 
         # Feet positions calcuilated by every ocp
         all_ocp_feet_p_log = {
-            idx: [get_translation_array(self.pd, x, idx)[0] for x in self.ocp_xs]
+            idx: [get_translation_array(self.pd, self.ocp_xs[i * self.pd.r1], idx)[0]
+                  for i in range(horizon)]
             for idx in self.pd.allContactIds
         }
         for foot in all_ocp_feet_p_log:
@@ -263,28 +267,28 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/target")
 
-
-        """ legend = ['x', 'y', 'z']
-        plt.figure(figsize=(12, 18), dpi = 90)
-        for p in range(3):
-            plt.subplot(3,1, p+1)
-            plt.title('Free foot on ' + legend[p])
-            for i in range(horizon-1):
-                t = np.linspace(i*self.pd.dt, (self.pd.T+ i)*self.pd.dt, self.pd.T+1)
-                y = all_ocp_feet_p_log[self.pd.rfFootId][i+1][:,p]
-                for j in range(len(y) - 1):
-                    plt.plot(t[j:j+2], y[j:j+2], color='royalblue', linewidth = 3, marker='o' ,alpha=max([1 - j/len(y), 0]))
-            plt.plot(self.target[:, p]) """
-
+        # legend = ['x', 'y', 'z']
+        # plt.figure(figsize=(12, 18), dpi = 90)
+        # for p in range(3):
+        #     plt.subplot(3,1, p+1)
+        #     plt.title('Free foot on ' + legend[p])
+        #     plt.plot(t_scale, self.target[:, p], color="tomato")
+        #     plt.plot(t_scale, m_feet_p_log[self.pd.rfFootId][:, p], color="lightgreen")
+        #     for i in range(horizon-1):
+        #         t = np.linspace(i*self.pd.dt, (self.pd.T+ i)*self.pd.dt, self.pd.T+1)
+        #         y = all_ocp_feet_p_log[self.pd.rfFootId][i][:,p]
+        #         for j in range(len(y) - 1):
+        #             plt.plot(t[j:j+2], y[j:j+2], color='royalblue', linewidth = 3, marker='o' ,alpha=max([1 - j/len(y), 0]))
+            
 
     def plot_riccati_gains(self, n, save=False, fileName='/tmp'):
         import matplotlib.pyplot as plt
 
         # Equivalent Stiffness Damping plots
         legend = ["Hip", "Shoulder", "Knee"]
-        plt.figure(figsize=(12, 18), dpi = 90)
+        plt.figure(figsize=(12, 18), dpi=90)
         for p in range(3):
-            plt.subplot(3,1, p+1)
+            plt.subplot(3, 1, p+1)
             plt.title('Joint:  ' + legend[p])
             plt.plot(self.MPC_equivalent_Kp[:, p])
             plt.plot(self.MPC_equivalent_Kd[:, p])
@@ -294,9 +298,8 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/diagonal_Riccati_gains")
 
-
         # Riccati gains
-        plt.figure(figsize=(12, 18), dpi = 90)
+        plt.figure(figsize=(12, 18), dpi=90)
         plt.title("Riccati gains at step: " + str(n))
         plt.imshow(self.ocp_K[n])
         plt.colorbar()
@@ -306,7 +309,8 @@ class LoggerControl:
     def plot_controller_times(self):
         import matplotlib.pyplot as plt
 
-        t_range = np.array([k * self.pd.dt for k in range(self.tstamps.shape[0])])
+        t_range = np.array(
+            [k * self.pd.dt for k in range(self.tstamps.shape[0])])
 
         plt.figure()
         plt.plot(t_range, self.t_measures, "r+")
@@ -319,11 +323,12 @@ class LoggerControl:
         plt.legend(lgd)
         plt.xlabel("Time [s]")
         plt.ylabel("Time [s]")
-        
+
     def plot_OCP_times(self):
         import matplotlib.pyplot as plt
 
-        t_range = np.array([k * self.pd.dt for k in range(self.tstamps.shape[0])])
+        t_range = np.array(
+            [k * self.pd.dt for k in range(self.tstamps.shape[0])])
 
         plt.figure()
         plt.plot(t_range, self.t_ocp_update, "r+")
@@ -339,7 +344,8 @@ class LoggerControl:
     def plot_OCP_update_times(self):
         import matplotlib.pyplot as plt
 
-        t_range = np.array([k * self.pd.dt for k in range(self.tstamps.shape[0])])
+        t_range = np.array(
+            [k * self.pd.dt for k in range(self.tstamps.shape[0])])
 
         plt.figure()
         plt.plot(t_range, self.t_ocp_update_FK, "r+")
@@ -364,9 +370,9 @@ class LoggerControl:
             name,
             ocp_xs=self.ocp_xs,
             ocp_us=self.ocp_us,
-            ocp_K = self.ocp_K,
-            MPC_equivalent_Kp = self.MPC_equivalent_Kp,
-            MPC_equivalent_Kd = self.MPC_equivalent_Kd,
+            ocp_K=self.ocp_K,
+            MPC_equivalent_Kp=self.MPC_equivalent_Kp,
+            MPC_equivalent_Kd=self.MPC_equivalent_Kd,
             t_measures=self.t_measures,
             t_mpc=self.t_mpc,
             t_send=self.t_send,
