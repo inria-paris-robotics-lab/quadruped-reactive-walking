@@ -274,10 +274,10 @@ class Controller:
                 print(m["qj_m"])
                 print(np.abs(m["qj_m"]) > self.q_security)
                 self.error = True
-            elif (np.abs(m["vj_m"]) > 500 * np.pi / 180).any():
+            elif (np.abs(m["vj_m"]) > 1000 * np.pi / 180).any():
                 print("-- VELOCITY TOO HIGH ERROR --")
                 print(m["vj_m"])
-                print(np.abs(m["vj_m"]) > 500 * np.pi / 180)
+                print(np.abs(m["vj_m"]) > 1000 * np.pi / 180)
                 self.error = True
             elif (np.abs(self.result.FF) > 3.2).any():
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")

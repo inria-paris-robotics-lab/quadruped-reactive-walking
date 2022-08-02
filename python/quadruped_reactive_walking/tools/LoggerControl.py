@@ -267,18 +267,19 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/target")
 
-        legend = ['x', 'y', 'z']
-        plt.figure(figsize=(12, 18), dpi = 90)
-        for p in range(3):
-            plt.subplot(3,1, p+1)
-            plt.title('Free foot on ' + legend[p])
-            for i in range(horizon-1):
-                t = np.linspace(i*self.pd.dt, (self.pd.T+ i)*self.pd.dt, self.pd.T+1)
-                y = all_ocp_feet_p_log[self.pd.rfFootId][i][:,p]
-                for j in range(len(y) - 1):
-                    plt.plot(t[j:j+2], y[j:j+2], color='royalblue', linewidth = 3, marker='o' ,alpha=max([1 - j/len(y), 0]))
-            plt.plot(t_scale, self.target[:, p], color="tomato")
-            plt.plot(t_scale, m_feet_p_log[self.pd.rfFootId][:, p], color="lightgreen")
+        # legend = ['x', 'y', 'z']
+        # plt.figure(figsize=(12, 18), dpi = 90)
+        # for p in range(3):
+        #     plt.subplot(3,1, p+1)
+        #     plt.title('Free foot on ' + legend[p])
+        #     plt.plot(t_scale, self.target[:, p], color="tomato")
+        #     plt.plot(t_scale, m_feet_p_log[self.pd.rfFootId][:, p], color="lightgreen")
+        #     for i in range(horizon-1):
+        #         t = np.linspace(i*self.pd.dt, (self.pd.T+ i)*self.pd.dt, self.pd.T+1)
+        #         y = all_ocp_feet_p_log[self.pd.rfFootId][i][:,p]
+        #         for j in range(len(y) - 1):
+        #             plt.plot(t[j:j+2], y[j:j+2], color='royalblue', linewidth = 3, marker='o' ,alpha=max([1 - j/len(y), 0]))
+            
 
     def plot_riccati_gains(self, n, save=False, fileName='/tmp'):
         import matplotlib.pyplot as plt

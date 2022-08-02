@@ -11,7 +11,7 @@ robot:
     envID: 0  # Identifier of the environment to choose in which one the simulation will happen
     use_flat_plane: true  # If True the ground is flat, otherwise it has bumps
     predefined_vel: true  # If we are using a predefined reference velocity (True) or a joystick (False)
-    N_SIMULATION: 10000  # Number of simulated wbc time steps
+    N_SIMULATION: 5000  # Number of simulated wbc time steps
     enable_corba_viewer: false  # Enable/disable Corba Viewer
     enable_multiprocessing: false  # Enable/disable running the MPC in another process in parallel of the main loop
     perfect_estimator: true  # Enable/disable perfect estimator by using data directly from PyBullet
@@ -27,7 +27,7 @@ robot:
 #     Kp_main: [0.0, 0.0, 0.0]  # Proportional gains for the PD+
     Kp_main: [3,3,3]  # Proportional gains for the PD+
 #     Kd_main: [0., 0., 0.]  # Derivative gains for the PD+
-    Kd_main: [0.2, 0.2, 0.2]  # Derivative gains for the PD+
+    Kd_main: [0.1, 0.1, 0.1]  # Derivative gains for the PD+
 #     Kff_main: 0.0  # Feedforward torques multiplier for the PD+
     Kff_main: 1.0  # Feedforward torques multiplier for the PD+
 
