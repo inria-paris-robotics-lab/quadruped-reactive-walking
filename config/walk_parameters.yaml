@@ -11,7 +11,7 @@ robot:
     envID: 0  # Identifier of the environment to choose in which one the simulation will happen
     use_flat_plane: true  # If True the ground is flat, otherwise it has bumps
     predefined_vel: true  # If we are using a predefined reference velocity (True) or a joystick (False)
-    N_SIMULATION: 10000  # Number of simulated wbc time steps
+    N_SIMULATION: 5000  # Number of simulated wbc time steps
     enable_corba_viewer: false  # Enable/disable Corba Viewer
     enable_multiprocessing: false  # Enable/disable running the MPC in another process in parallel of the main loop
     perfect_estimator: true  # Enable/disable perfect estimator by using data directly from PyBullet
@@ -22,13 +22,13 @@ robot:
     # q_init: [0.0, 0.764, -1.407, 0.0, 0.76407, -1.4, 0.0, 0.76407, -1.407, 0.0, 0.764, -1.407]  # h_com = 0.218
     q_init: [0.0, 0.7, -1.4, 0.0, 0.7, -1.4, 0.0, -0.7, 1.4, 0.0, -0.7, 1.4]  # Initial articular positions
     dt_wbc: 0.001  # Time step of the whole body control
-    dt_mpc: 0.015  # Time step of the model predictive control
+    dt_mpc: 0.001  # Time step of the model predictive control
     type_MPC: 3  # Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
     interpolate_mpc: false # true to interpolate the impedance quantities between nodes of the MPC
 #     Kp_main: [0.0, 0.0, 0.0]  # Proportional gains for the PD+
-    Kp_main: [3,3,3]  # Proportional gains for the PD+
+    Kp_main: [1, 1, 1]  # Proportional gains for the PD+
 #     Kd_main: [0., 0., 0.]  # Derivative gains for the PD+
-    Kd_main: [0.2, 0.2, 0.2]  # Derivative gains for the PD+
+    Kd_main: [0.1, 0.1, 0.1]  # Derivative gains for the PD+
 #     Kff_main: 0.0  # Feedforward torques multiplier for the PD+
     Kff_main: 1.0  # Feedforward torques multiplier for the PD+
 

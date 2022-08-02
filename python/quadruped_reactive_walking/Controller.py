@@ -73,10 +73,9 @@ class Controller:
         self.cnt_wbc = 0
         self.error = False
         self.initialized = False
-        self.interpolated = False
         self.result = Result(params)
-        self.q = self.pd.q0[7:].copy()
-        self.v = self.pd.v0[6:].copy()
+        self.result.q_des = self.pd.q0[7:].copy()
+        self.result.v_des = self.pd.v0[6:].copy()
 
         device = DummyDevice()
         device.joints.positions = q_init
@@ -89,8 +88,6 @@ class Controller:
             self.xs_init = None
             self.us_init = None
             print("No initial guess\n")
-
-        # self.compute(device)
 
     def compute(self, device, qc=None):
         """
@@ -107,24 +104,13 @@ class Controller:
         self.t_measures = t_measures - t_start
 
         self.point_target = self.target.evaluate_in_t(1)[self.pd.rfFootId]
-
         if self.k % int(self.params.dt_mpc / self.params.dt_wbc) == 0:
             try:
                 self.target.update(self.cnt_mpc)
                 self.target.shift_gait()
-                self.interpolated = False
                 self.cnt_wbc = 0
 
-                # Closed-loop
                 self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
-
-                # Trajectory tracking
-                # if self.initialized:
-                # self.mpc.solve(
-                # self.k, self.mpc_result.xs[1], self.xs_init, self.us_init)
-                # else:
-                # self.mpc.solve(self.k, m["x_m"],
-                #    self.xs_init, self.us_init)
 
                 self.cnt_mpc += 1
             except ValueError:
@@ -143,21 +129,8 @@ class Controller:
             #   print("Initial guess saved")
 
             # Keep only the actuated joints and set the other to default values
-
             self.result.FF = self.params.Kff_main * np.ones(12)
-            actuated_tau_ff = self.mpc_result.us[0] + np.dot(
-                self.mpc_result.K[0],
-                np.concatenate(
-                    [
-                        pin.difference(
-                            self.pd.model,
-                            m["x_m"][: self.pd.nq],
-                            self.mpc_result.xs[0][: self.pd.nq],
-                        ),
-                        m["x_m"][self.pd.nq :] - self.mpc_result.xs[0][self.pd.nq :],
-                    ]
-                ),
-            )
+            actuated_tau_ff = self.compute_torque(m)
             self.result.tau_ff = np.array([0] * 3 + list(actuated_tau_ff) + [0] * 6)
 
             if self.params.interpolate_mpc:
@@ -165,10 +138,8 @@ class Controller:
             else:
                 q, v = self.integrate_x(m)
 
-            self.q[3:6] = q
-            self.v[3:6] = v
-            self.result.q_des = self.q
-            self.result.v_des = self.v
+            self.result.q_des[3:6] = q[:]
+            self.result.v_des[3:6] = v[:]
 
             self.xs_init = self.mpc_result.xs[1:] + [self.mpc_result.xs[-1]]
             self.us_init = self.mpc_result.us[1:] + [self.mpc_result.us[-1]]
@@ -293,14 +264,26 @@ class Controller:
         device.parse_sensor_data()
         qj_m = device.joints.positions
         vj_m = device.joints.velocities
-        # bp_m = self.tuple_to_array(device.baseState)
-        # bv_m = self.tuple_to_array(device.baseVel)
-        # if self.pd.useFixedBase == 0:
-        #     x_m = np.concatenate([bp_m, qj_m, bv_m, vj_m])
-        # else:
         x_m = np.concatenate([qj_m[3:6], vj_m[3:6]])
 
         return {"qj_m": qj_m, "vj_m": vj_m, "x_m": x_m}
+
+    def compute_torque(self, m):
+        """
+        Compute the feedforward torque using ricatti gains
+        """
+        x_diff = np.concatenate(
+            [
+                pin.difference(
+                    self.pd.model,
+                    m["x_m"][: self.pd.nq],
+                    self.mpc_result.xs[0][: self.pd.nq],
+                ),
+                m["x_m"][self.pd.nq :] - self.mpc_result.xs[0][self.pd.nq :],
+            ]
+        )
+        tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
+        return tau
 
     def interpolate_x(self, t):
         q = np.array(self.mpc_result.xs)[:, : self.pd.nq]
@@ -328,10 +311,11 @@ class Controller:
         Integrate the position and velocity using the acceleration computed from the
         feedforward torque
         """
-        q0 = m["qj_m"][3:6]
-        v0 = m["vj_m"][3:6]
+        q0 = m["qj_m"][3:6].copy()
+        v0 = m["vj_m"][3:6].copy()
+        tau = self.result.tau_ff[3:6].copy()
 
-        a = pin.aba(self.pd.model, self.pd.rdata, q0, v0, self.result.tau_ff[3:6])
+        a = pin.aba(self.pd.model, self.pd.rdata, q0, v0, tau)
 
         v = v0 + a * self.params.dt_wbc
         q = q0 + v * self.params.dt_wbc

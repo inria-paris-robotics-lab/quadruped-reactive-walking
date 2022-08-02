@@ -12,6 +12,7 @@ class OCP:
     def __init__(self, pd: ProblemData, target: Target):
         self.pd = pd
         self.target = target
+        self.max_iter=100
 
         self.state = crocoddyl.StateMultibody(self.pd.model)
         self.initialized = False
@@ -108,7 +109,7 @@ class OCP:
         self.t_warm_start = t_warm_start - t_update
 
         # self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
-        self.ddp.solve(xs, us, 1, False)
+        self.ddp.solve(xs, us, self.max_iter, False)
 
         t_ddp = time()
         self.t_ddp = t_ddp - t_warm_start
