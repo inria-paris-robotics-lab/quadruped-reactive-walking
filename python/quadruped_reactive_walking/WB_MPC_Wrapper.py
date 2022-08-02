@@ -17,6 +17,8 @@ class Result:
         self.us = list(np.zeros((pd.T, pd.nu)))
         self.K = list(np.zeros([pd.T, pd.nu, pd.nx]))
         self.solving_duration = 0.0
+        self.new_result = False
+        
 
 
 class MPC_Wrapper:
@@ -80,6 +82,7 @@ class MPC_Wrapper:
                     self.last_available_result.K,
                     self.last_available_result.solving_duration,
                 ) = self.decompress_dataOut()
+                self.last_available_result.new_result = True
         else:
             self.initialized = True
         return self.last_available_result
@@ -93,7 +96,7 @@ class MPC_Wrapper:
             self.last_available_result.xs,
             self.last_available_result.us,
             self.last_available_result.K,
-            self.last_available_result.solving_duration,
+            self.last_available_result.solving_duration
         ) = self.ocp.get_results()
 
     def run_MPC_asynchronous(self, k, x0, xs, us):
@@ -104,7 +107,7 @@ class MPC_Wrapper:
             self.last_available_result.xs = [x0 for _ in range (self.pd.T + 1)]
             p = Process(target=self.MPC_asynchronous)
             p.start()
-
+        self.last_available_result.new_result = False
         self.add_new_data(k, x0, xs, us)
 
     def MPC_asynchronous(self):
@@ -125,7 +128,6 @@ class MPC_Wrapper:
             loop_ocp.solve(x0, xs, us)
             xs, us, K, solving_time = loop_ocp.get_results()
             self.compress_dataOut(xs, us, K, solving_time)
-
             self.new_result.value = True
 
     def add_new_data(self, k, x0, xs, us):

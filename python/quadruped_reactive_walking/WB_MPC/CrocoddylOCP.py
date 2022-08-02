@@ -12,7 +12,7 @@ class OCP:
     def __init__(self, pd: ProblemData, target: Target):
         self.pd = pd
         self.target = target
-        self.max_iter=1
+        self.max_iter=1000
 
         self.state = crocoddyl.StateMultibody(self.pd.model)
         self.initialized = False

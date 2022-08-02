@@ -197,7 +197,13 @@ class Controller:
 
         if not self.error:
             self.mpc_result = self.mpc.get_latest_result()
+            if self.params.enable_multiprocessing:
+                if self.mpc_result.new_result:
+                    print("new result! at iter: ", str(self.cnt_wbc))
+                    print(self.mpc_result.xs[1], "\n")
+                    self.cnt_wbc = 0
 
+            
             # ## ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARM-START THE INITIAL Problem ###
             # if not self.initialized:
             #   np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc_result.xs, "us": self.mpc_result.us} )
@@ -219,7 +225,7 @@ class Controller:
                 q, v = self.interpolator.interpolate(
                     (self.cnt_wbc + 1) * self.pd.dt_wbc)
 
-                self.interpolator.plot_interpolation(self.pd.r1, self.pd.dt_wbc)
+                #self.interpolator.plot_interpolation(self.pd.r1, self.pd.dt_wbc)
             else:
                 q, v = self.integrate_x(m)
 
@@ -232,8 +238,8 @@ class Controller:
         t_send = time.time()
         self.t_send = t_send - t_mpc
 
-        self.clamp_result(device)
-        self.security_check(m)
+        # self.clamp_result(device)
+        # self.security_check(m)
 
         if self.error:
             self.set_null_control()
