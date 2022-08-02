@@ -93,6 +93,7 @@ class Params {
   int N_periods;                // Number of gait periods in the MPC prediction horizon
   int type_MPC;                 // Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
   bool interpolate_mpc;         // true to interpolate the impedance quantities, otherwise integrate
+  int interpolation_type;         // true to interpolate the impedance quantities, otherwise integrate
   bool kf_enabled;              // Use complementary filter (False) or kalman filter (True) for the estimator
   std::vector<double> Kp_main;  // Proportional gains for the PD+
   std::vector<double> Kd_main;  // Derivative gains for the PD+

@@ -24,8 +24,8 @@ class Result:
 
 
 class Interpolation:
-    def __init__(self):
-        pass
+    def __init__(self, params):
+        self.params = params
 
     def load_data(self, q, v):
         self.v0 = v[0, :]
@@ -34,43 +34,47 @@ class Interpolation:
         self.q1 = q[1, :]
 
     def interpolate(self, t):
-        # Perfect match, but wrong
-        # if (self.q1-self.q0 == 0).any():
-        # alpha = np.zeros(len(self.q0))
-        # else:
-        # alpha = 2 * 1/2* (self.v1**2 - self.v0**2)/(self.q1 - self.q0)
-
-        # beta = self.v0
-        # gamma = self.q0
-
-        # v_t = beta + alpha * t
-        # q_t = gamma + beta * t + alpha * t**2
-
         # Linear
-        beta = self.v1
-        gamma = self.q0
+        if self.params.interpolation_type == 0:
+            beta = self.v1
+            gamma = self.q0
 
-        v_t = beta
-        q_t = gamma + beta * t
+            v_t = beta
+            q_t = gamma + beta * t
 
         # Linear Wrong
-        # beta = self.v1
-        # gamma = self.q0
+        if self.params.interpolation_type == 1:
+            beta = self.v1
+            gamma = self.q0
 
-        # v_t = self.v0 + self.v1*(self.v1 - self.v0)/(self.q1 - self.q0) * t
-        # q_t = self.q0 + self.v1 * t
+            v_t = beta
+            q_t = gamma + beta * t
+
+        # Perfect match, but wrong
+        if self.params.interpolation_type == 2:
+            if (self.q1-self.q0 == 0).any():
+                alpha = np.zeros(len(self.q0))
+            else:
+                alpha = (self.v1**2 - self.v0**2)/(self.q1 - self.q0)
+
+            beta = self.v0
+            gamma = self.q0
+
+            v_t = beta + alpha * t
+            q_t = gamma + beta * t + alpha * t**2     
 
         # Quadratic
-        # if (self.q1-self.q0 == 0).any():
-        #     alpha = np.zeros(len(self.q0))
-        # else:
-        #     alpha = self.v1*(self.v1 - self.v0)/(self.q1 - self.q0)
+        if self.params.interpolation_type == 3:
+            if (self.q1-self.q0 == 0).any():
+                alpha = np.zeros(len(self.q0))
+            else:
+                alpha = self.v1 *(self.v1- self.v0)/(self.q1 - self.q0)
 
-        # beta = self.v0
-        # gamma = self.q0
+            beta = self.v0
+            gamma = self.q0
 
-        # v_t = beta + alpha * t
-        # q_t = gamma + beta * t + 1/2 * alpha * t**2
+            v_t = beta + alpha * t
+            q_t = gamma + beta * t + 1/2 * alpha * t**2
 
         return q_t, v_t
 
@@ -119,7 +123,6 @@ class DummyDevice:
             self.velocities = np.zeros(12)
 
 
-
 class Controller:
     def __init__(self, pd, target, params, q_init, t):
         """Function that runs a simulation scenario based on a reference velocity profile, an environment and
@@ -144,7 +147,7 @@ class Controller:
         self.cnt_wbc = 0
         self.error = False
         self.initialized = False
-        self.interpolator = Interpolation()
+        self.interpolator = Interpolation(params)
         self.result = Result(params)
         self.result.q_des = self.pd.q0[7:].copy()
         self.result.v_des = self.pd.v0[6:].copy()
@@ -203,7 +206,8 @@ class Controller:
             # Keep only the actuated joints and set the other to default values
             self.result.FF = self.params.Kff_main * np.ones(12)
             actuated_tau_ff = self.compute_torque(m)
-            self.result.tau_ff = np.array([0] * 3 + list(actuated_tau_ff) + [0] * 6)
+            self.result.tau_ff = np.array(
+                [0] * 3 + list(actuated_tau_ff) + [0] * 6)
 
             if self.params.interpolate_mpc:
                 # load the data to be interpolated only once per mpc solution
@@ -211,9 +215,11 @@ class Controller:
                     x = np.array(self.mpc_result.xs)
                     self.interpolator.load_data(
                         x[:, : self.pd.nq], x[:, self.pd.nq:])
-                    
-                q, v = self.interpolator.interpolate((self.cnt_wbc +1) * self.pd.dt_wbc)
-                #self.interpolator.plot_interpolation(self.pd.r1, self.pd.dt_wbc)
+
+                q, v = self.interpolator.interpolate(
+                    (self.cnt_wbc + 1) * self.pd.dt_wbc)
+
+                self.interpolator.plot_interpolation(self.pd.r1, self.pd.dt_wbc)
             else:
                 q, v = self.integrate_x(m)
 
@@ -358,7 +364,7 @@ class Controller:
                     m["x_m"][: self.pd.nq],
                     self.mpc_result.xs[0][: self.pd.nq],
                 ),
-                m["x_m"][self.pd.nq :] - self.mpc_result.xs[0][self.pd.nq :],
+                m["x_m"][self.pd.nq:] - self.mpc_result.xs[0][self.pd.nq:],
             ]
         )
         tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)

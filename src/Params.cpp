@@ -24,6 +24,7 @@ Params::Params()
       N_periods(0),
       type_MPC(0),
       interpolate_mpc(true),
+      interpolation_type(0),
       kf_enabled(false),
       Kp_main(3, 0.0),
       Kd_main(3, 0.0),
@@ -141,6 +142,9 @@ void Params::initialize(const std::string& file_path) {
 
   assert_yaml_parsing(robot_node, "robot", "interpolate_mpc");
   interpolate_mpc = robot_node["interpolate_mpc"].as<bool>();
+
+  assert_yaml_parsing(robot_node, "robot", "interpolation_type");
+  interpolation_type = robot_node["interpolation_type"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "Kp_main");
   Kp_main = robot_node["Kp_main"].as<std::vector<double> >();
