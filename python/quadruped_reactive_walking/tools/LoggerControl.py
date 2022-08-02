@@ -226,7 +226,8 @@ class LoggerControl:
         x_mes = np.concatenate(
             [self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis=1)
 
-        horizon = self.ocp_xs.shape[0]
+        horizon = int(self.ocp_xs.shape[0] / self.pd.r1)
+        t_scale = np.linspace(0, (horizon)*self.pd.dt, (horizon)*self.pd.r1)
 
         x_mpc = [self.ocp_xs[0][0, :]]
         [x_mpc.append(x[1, :]) for x in self.ocp_xs[:-1]]
@@ -234,8 +235,8 @@ class LoggerControl:
 
         # Feet positions calcuilated by every ocp
         all_ocp_feet_p_log = {
-            idx: [get_translation_array(self.pd, x, idx)[0]
-                  for x in self.ocp_xs]
+            idx: [get_translation_array(self.pd, self.ocp_xs[i * self.pd.r1], idx)[0]
+                  for i in range(horizon)]
             for idx in self.pd.allContactIds
         }
         for foot in all_ocp_feet_p_log:
@@ -266,17 +267,18 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/target")
 
-        """ legend = ['x', 'y', 'z']
+        legend = ['x', 'y', 'z']
         plt.figure(figsize=(12, 18), dpi = 90)
         for p in range(3):
             plt.subplot(3,1, p+1)
             plt.title('Free foot on ' + legend[p])
             for i in range(horizon-1):
                 t = np.linspace(i*self.pd.dt, (self.pd.T+ i)*self.pd.dt, self.pd.T+1)
-                y = all_ocp_feet_p_log[self.pd.rfFootId][i+1][:,p]
+                y = all_ocp_feet_p_log[self.pd.rfFootId][i][:,p]
                 for j in range(len(y) - 1):
                     plt.plot(t[j:j+2], y[j:j+2], color='royalblue', linewidth = 3, marker='o' ,alpha=max([1 - j/len(y), 0]))
-            plt.plot(self.target[:, p]) """
+            plt.plot(t_scale, self.target[:, p], color="tomato")
+            plt.plot(t_scale, m_feet_p_log[self.pd.rfFootId][:, p], color="lightgreen")
 
     def plot_riccati_gains(self, n, save=False, fileName='/tmp'):
         import matplotlib.pyplot as plt
