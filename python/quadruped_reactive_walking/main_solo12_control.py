@@ -175,6 +175,7 @@ def control_loop():
     while (not device.is_timeout) and (t < t_max) and (not controller.error):
         t_start_whole = time.time()
 
+        device.parse_sensor_data()
         if controller.compute(device, qc):
             break
 

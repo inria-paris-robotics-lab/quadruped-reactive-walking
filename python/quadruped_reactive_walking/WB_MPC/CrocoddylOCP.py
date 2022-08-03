@@ -12,13 +12,13 @@ class OCP:
     def __init__(self, pd: ProblemData, target: Target):
         self.pd = pd
         self.target = target
-        self.max_iter=5
+        self.max_iter = 10
 
         self.state = crocoddyl.StateMultibody(self.pd.model)
         self.initialized = False
         self.t_problem_update = 0
-        self.t_update_last_model = 0.
-        self.t_shift = 0.
+        self.t_update_last_model = 0.0
+        self.t_shift = 0.0
 
         self.initialize_models()
 
@@ -65,9 +65,9 @@ class OCP:
             task = self.make_task(
                 self.target.evaluate_in_t(self.pd.T - 1),
                 self.target.contactSequence[self.pd.T - 1],
-            )  # model without contact for this task
-            self.nodes[0].update_model(
-                self.target.contactSequence[self.pd.T - 1], task)
+            )
+
+            self.nodes[0].update_model(self.target.contactSequence[self.pd.T - 1], task)
 
             t_update_last_model = time()
             self.t_update_last_model = t_update_last_model - t_FK
@@ -82,7 +82,7 @@ class OCP:
 
         # If you need update terminal model
         t_update_terminal_model = time()
-        self.t_update_terminal_model = 0.
+        self.t_update_terminal_model = 0.0
         # self.t_update_terminal_model = t_update_terminal_model - self.t_shift
 
         self.initialized = True
@@ -166,8 +166,7 @@ class OCP:
 
     def get_croco_acc(self):
         acc = []
-        [acc.append(m.differential.xout)
-         for m in self.ddp.problem.runningDatas]
+        [acc.append(m.differential.xout) for m in self.ddp.problem.runningDatas]
         return acc
 
 
@@ -183,8 +182,7 @@ class Node:
             self.actuation = crocoddyl.ActuationModelFloatingBase(self.state)
         else:
             self.actuation = crocoddyl.ActuationModelFull(self.state)
-        self.control = crocoddyl.ControlParametrizationModelPolyZero(
-            self.actuation.nu)
+        self.control = crocoddyl.ControlParametrizationModelPolyZero(self.actuation.nu)
         self.nu = self.actuation.nu
 
         self.createStandardModel(supportFootIds)
@@ -206,8 +204,7 @@ class Node:
         self.contactModel = crocoddyl.ContactModelMultiple(self.state, self.nu)
         for i in supportFootIds:
             supportContactModel = crocoddyl.ContactModel3D(
-                self.state, i, np.array(
-                    [0.0, 0.0, 0.0]), self.nu, np.array([0.0, 0.0])
+                self.state, i, np.array([0.0, 0.0, 0.0]), self.nu, np.array([0.0, 0.0])
             )
             self.contactModel.addContact(
                 self.pd.model.frames[i].name + "_contact", supportContactModel
@@ -216,8 +213,7 @@ class Node:
         # Creating the cost model for a contact phase
         costModel = crocoddyl.CostModelSum(self.state, self.nu)
 
-        stateResidual = crocoddyl.ResidualModelState(
-            self.state, self.pd.xref, self.nu)
+        stateResidual = crocoddyl.ResidualModelState(self.state, self.pd.xref, self.nu)
         stateActivation = crocoddyl.ActivationModelWeightedQuad(
             self.pd.state_reg_w**2
         )
@@ -240,8 +236,7 @@ class Node:
         self.contactModel = crocoddyl.ContactModelMultiple(self.state, self.nu)
         for i in supportFootIds:
             supportContactModel = crocoddyl.ContactModel3D(
-                self.state, i, np.array(
-                    [0.0, 0.0, 0.0]), self.nu, np.array([0.0, 0.0])
+                self.state, i, np.array([0.0, 0.0, 0.0]), self.nu, np.array([0.0, 0.0])
             )
             self.dmodel.contacts.addContact(
                 self.pd.model.frames[i].name + "_contact", supportContactModel
@@ -249,8 +244,7 @@ class Node:
 
     def make_terminal_model(self):
         self.isTerminal = True
-        stateResidual = crocoddyl.ResidualModelState(
-            self.state, self.pd.xref, self.nu)
+        stateResidual = crocoddyl.ResidualModelState(self.state, self.pd.xref, self.nu)
         stateActivation = crocoddyl.ActivationModelWeightedQuad(
             self.pd.terminal_velocity_w**2
         )
@@ -281,17 +275,14 @@ class Node:
         ctrlReg = crocoddyl.CostModelResidual(self.state, ctrlResidual)
         self.costModel.addCost("ctrlReg", ctrlReg, self.pd.control_reg_w)
 
-        ctrl_bound_residual = crocoddyl.ResidualModelControl(
-            self.state, self.nu)
+        ctrl_bound_residual = crocoddyl.ResidualModelControl(self.state, self.nu)
         ctrl_bound_activation = crocoddyl.ActivationModelQuadraticBarrier(
-            crocoddyl.ActivationBounds(-self.pd.effort_limit,
-                                       self.pd.effort_limit)
+            crocoddyl.ActivationBounds(-self.pd.effort_limit, self.pd.effort_limit)
         )
         ctrl_bound = crocoddyl.CostModelResidual(
             self.state, ctrl_bound_activation, ctrl_bound_residual
         )
-        self.costModel.addCost("ctrlBound", ctrl_bound,
-                               self.pd.control_bound_w)
+        self.costModel.addCost("ctrlBound", ctrl_bound, self.pd.control_bound_w)
 
         self.tracking_cost(swingFootTask)
 

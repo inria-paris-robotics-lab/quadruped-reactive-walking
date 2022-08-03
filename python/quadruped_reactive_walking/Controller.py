@@ -46,16 +46,17 @@ class Interpolation:
         if self.params.interpolation_type == 1:
             beta = self.v1
             gamma = self.q0
+            alpha = 1/2 * self.v1 * (self.v1 - self.v0) / (self.q1 - self.q0)
 
             v_t = beta
             q_t = gamma + beta * t
 
         # Perfect match, but wrong
         if self.params.interpolation_type == 2:
-            if (self.q1-self.q0 == 0).any():
+            if (self.q1 - self.q0 == 0).any():
                 alpha = np.zeros(len(self.q0))
             else:
-                alpha = (self.v1**2 - self.v0**2)/(self.q1 - self.q0)
+                alpha = (self.v1**2 - self.v0**2) / (self.q1 - self.q0)
 
             beta = self.v0
             gamma = self.q0
@@ -65,33 +66,34 @@ class Interpolation:
 
         # Quadratic
         if self.params.interpolation_type == 3:
-            if (self.q1-self.q0 == 0).any():
+            if (self.q1 - self.q0 == 0).any():
                 alpha = np.zeros(len(self.q0))
             else:
-                alpha = self.v1 * (self.v1 - self.v0)/(self.q1 - self.q0)
+                alpha = self.v1 * (self.v1 - self.v0) / (self.q1 - self.q0)
 
             beta = self.v0
             gamma = self.q0
 
             v_t = beta + alpha * t
-            q_t = gamma + beta * t + 1/2 * alpha * t**2
+            q_t = gamma + beta * t + 1 / 2 * alpha * t**2
 
         return q_t, v_t
 
     def plot_interpolation(self, n, dt):
         import matplotlib.pyplot as plt
+
         plt.style.use("seaborn")
-        t = np.linspace(0, n*dt, n + 1)
-        q_t = np.array([self.interpolate((i) * dt)[0] for i in range(n+1)])
-        v_t = np.array([self.interpolate((i) * dt)[1] for i in range(n+1)])
+        t = np.linspace(0, n * dt, n + 1)
+        q_t = np.array([self.interpolate((i) * dt)[0] for i in range(n + 1)])
+        v_t = np.array([self.interpolate((i) * dt)[1] for i in range(n + 1)])
         for i in range(3):
-            plt.subplot(3, 2, (i*2) + 1)
+            plt.subplot(3, 2, (i * 2) + 1)
             plt.title("Position interpolation")
             plt.plot(t, q_t[:, i])
             plt.scatter(y=self.q0[i], x=t[0], color="violet", marker="+")
             plt.scatter(y=self.q1[i], x=t[-1], color="violet", marker="+")
 
-            plt.subplot(3, 2, (i*2) + 2)
+            plt.subplot(3, 2, (i * 2) + 2)
             plt.title("Velocity interpolation")
             plt.plot(t, v_t[:, i])
             plt.scatter(y=self.v0[i], x=t[0], color="violet", marker="+")
@@ -152,9 +154,6 @@ class Controller:
         self.result = Result(params)
         self.result.q_des = self.pd.q0[7:].copy()
         self.result.v_des = self.pd.v0[6:].copy()
-
-        device = DummyDevice()
-        device.joints.positions = q_init
         try:
             file = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
             self.xs_init = list(file["xs"])
@@ -164,6 +163,10 @@ class Controller:
             self.xs_init = None
             self.us_init = None
             print("No initial guess\n")
+
+        device = DummyDevice()
+        device.joints.positions = q_init
+        self.compute(device)
 
     def compute(self, device, qc=None):
         """
@@ -184,10 +187,10 @@ class Controller:
             try:
                 self.target.update(self.cnt_mpc)
                 self.target.shift_gait()
-                #self.cnt_wbc = 0
+                if not self.params.enable_multiprocessing:
+                    self.cnt_wbc = 0
 
                 self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
-                if self.k == 0: time.sleep(1)
 
                 self.cnt_mpc += 1
             except ValueError:
@@ -202,12 +205,16 @@ class Controller:
             if self.params.enable_multiprocessing:
                 if self.mpc_result.new_result:
                     print("new result! at iter: ", str(self.cnt_wbc))
-                    #self.cnt_wbc = 0
+                    self.cnt_wbc = 0
 
-
-            print("MPC iter: ", self.cnt_mpc,
-                  " / Counter value: ", self.cnt_wbc,
-                  " / k value: ", self.k )
+            print(
+                "MPC iter: ",
+                self.cnt_mpc,
+                " / Counter value: ",
+                self.cnt_wbc,
+                " / k value: ",
+                self.k,
+            )
             # ## ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARM-START THE INITIAL Problem ###
             # if not self.initialized:
             #   np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc_result.xs, "us": self.mpc_result.us} )
@@ -217,20 +224,19 @@ class Controller:
             self.result.FF = self.params.Kff_main * np.ones(12)
 
             actuated_tau_ff = self.compute_torque(m)
-            self.result.tau_ff = np.array(
-                [0] * 3 + list(actuated_tau_ff) + [0] * 6)
+            self.result.tau_ff = np.array([0] * 3 + list(actuated_tau_ff) + [0] * 6)
 
             if self.params.interpolate_mpc:
                 # load the data to be interpolated only once per mpc solution
                 if self.cnt_wbc == 0:
                     x = np.array(self.mpc_result.xs)
-                    self.interpolator.load_data(
-                        x[:, : self.pd.nq], x[:, self.pd.nq:])
+                    self.interpolator.load_data(x[:, : self.pd.nq], x[:, self.pd.nq :])
 
                 q, v = self.interpolator.interpolate(
-                    (self.cnt_wbc + 1) * self.pd.dt_wbc)
+                    (self.k % int(self.params.dt_mpc / self.params.dt_wbc) + self.cnt_wbc + 1) * self.pd.dt_wbc
+                )
 
-                #self.interpolator.plot_interpolation(self.pd.r1, self.pd.dt_wbc)
+                # self.interpolator.plot_interpolation(self.pd.r1, self.pd.dt_wbc)
             else:
                 q, v = self.integrate_x(m)
 
@@ -357,7 +363,6 @@ class Controller:
         self.result.tau_ff[:] = np.zeros(12)
 
     def read_state(self, device):
-        device.parse_sensor_data()
         qj_m = device.joints.positions
         vj_m = device.joints.velocities
         x_m = np.concatenate([qj_m[3:6], vj_m[3:6]])
@@ -368,16 +373,17 @@ class Controller:
         """
         Compute the feedforward torque using ricatti gains
         """
-        x_diff = np.concatenate(
-            [
-                pin.difference(
-                    self.pd.model,
-                    m["x_m"][: self.pd.nq],
-                    self.mpc_result.xs[0][: self.pd.nq],
-                ),
-                m["x_m"][self.pd.nq:] - self.mpc_result.xs[0][self.pd.nq:],
-            ]
-        )
+        # x_diff = np.concatenate(
+        #     [
+        #         pin.difference(
+        #             self.pd.model,
+        #             m["x_m"][: self.pd.nq],
+        #             self.mpc_result.xs[0][: self.pd.nq],
+        #         ),
+        #         m["x_m"][self.pd.nq :] - self.mpc_result.xs[0][self.pd.nq :],
+        #     ]
+        # )
+        x_diff = m["x_m"] - self.mpc_result.xs[0]
         tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
         return tau
 

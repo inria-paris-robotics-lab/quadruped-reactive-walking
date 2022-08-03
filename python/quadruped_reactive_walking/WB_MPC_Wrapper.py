@@ -83,6 +83,7 @@ class MPC_Wrapper:
                     self.last_available_result.solving_duration,
                 ) = self.decompress_dataOut()
                 self.last_available_result.new_result = True
+                
 
             elif self.multiprocessing and not self.new_result.value:
                 self.last_available_result.new_result = False
