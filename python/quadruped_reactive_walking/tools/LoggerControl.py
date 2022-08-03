@@ -105,7 +105,7 @@ class LoggerControl:
             self.mocapOrientationQuat[self.i] = device.baseState[1]
 
         # Controller timings: MPC time, ...
-        self.target[self.i] = controller.point_target
+        self.target[self.i] = controller.target.evaluate_in_t(1)[self.pd.rfFootId]
         self.t_mpc[self.i] = controller.t_mpc
         self.t_send[self.i] = controller.t_send
         self.t_loop[self.i] = controller.t_loop
@@ -163,7 +163,7 @@ class LoggerControl:
 
         plt.show()
 
-    def plot_states(self, save=False, fileName='/tmp'):
+    def plot_states(self, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
         legend = ["Hip", "Shoulder", "Knee"]
@@ -199,7 +199,7 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/joint_velocities")
 
-    def plot_torques(self, save=False, fileName='/tmp'):
+    def plot_torques(self, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
         legend = ["Hip", "Shoulder", "Knee"]
@@ -209,8 +209,7 @@ class LoggerControl:
             plt.subplot(2, 2, i + 1)
             plt.title("Joint torques of " + str(i))
             [
-                plt.plot(np.array(self.torquesFromCurrentMeasurment)
-                         [:, (3 * i + jj)])
+                plt.plot(np.array(self.torquesFromCurrentMeasurment)[:, (3 * i + jj)])
                 for jj in range(3)
             ]
             plt.ylabel("Torque [Nm]")
@@ -220,14 +219,15 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/joint_torques")
 
-    def plot_target(self, save=False, fileName='/tmp'):
+    def plot_target(self, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
-        x_mes = np.concatenate(
-            [self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis=1)
+        x_mes = np.concatenate([self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis=1)
 
-        horizon = int(self.ocp_xs.shape[0] / self.pd.r1)
-        t_scale = np.linspace(0, (horizon)*self.pd.dt, (horizon)*self.pd.r1)
+        horizon = int(self.ocp_xs.shape[0] / self.pd.mpc_wbc_ratio)
+        t_scale = np.linspace(
+            0, (horizon) * self.pd.dt, (horizon) * self.pd.mpc_wbc_ratio
+        )
 
         x_mpc = [self.ocp_xs[0][0, :]]
         [x_mpc.append(x[1, :]) for x in self.ocp_xs[:-1]]
@@ -235,8 +235,12 @@ class LoggerControl:
 
         # Feet positions calcuilated by every ocp
         all_ocp_feet_p_log = {
-            idx: [get_translation_array(self.pd, self.ocp_xs[i * self.pd.r1], idx)[0]
-                  for i in range(horizon)]
+            idx: [
+                get_translation_array(
+                    self.pd, self.ocp_xs[i * self.pd.mpc_wbc_ratio], idx
+                )[0]
+                for i in range(horizon)
+            ]
             for idx in self.pd.allContactIds
         }
         for foot in all_ocp_feet_p_log:
@@ -279,17 +283,16 @@ class LoggerControl:
         #         y = all_ocp_feet_p_log[self.pd.rfFootId][i][:,p]
         #         for j in range(len(y) - 1):
         #             plt.plot(t[j:j+2], y[j:j+2], color='royalblue', linewidth = 3, marker='o' ,alpha=max([1 - j/len(y), 0]))
-            
 
-    def plot_riccati_gains(self, n, save=False, fileName='/tmp'):
+    def plot_riccati_gains(self, n, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
         # Equivalent Stiffness Damping plots
         legend = ["Hip", "Shoulder", "Knee"]
         plt.figure(figsize=(12, 18), dpi=90)
         for p in range(3):
-            plt.subplot(3, 1, p+1)
-            plt.title('Joint:  ' + legend[p])
+            plt.subplot(3, 1, p + 1)
+            plt.title("Joint:  " + legend[p])
             plt.plot(self.MPC_equivalent_Kp[:, p])
             plt.plot(self.MPC_equivalent_Kd[:, p])
             plt.legend(["Stiffness", "Damping"])
@@ -309,8 +312,7 @@ class LoggerControl:
     def plot_controller_times(self):
         import matplotlib.pyplot as plt
 
-        t_range = np.array(
-            [k * self.pd.dt for k in range(self.tstamps.shape[0])])
+        t_range = np.array([k * self.pd.dt for k in range(self.tstamps.shape[0])])
 
         plt.figure()
         plt.plot(t_range, self.t_measures, "r+")
@@ -327,8 +329,7 @@ class LoggerControl:
     def plot_OCP_times(self):
         import matplotlib.pyplot as plt
 
-        t_range = np.array(
-            [k * self.pd.dt for k in range(self.tstamps.shape[0])])
+        t_range = np.array([k * self.pd.dt for k in range(self.tstamps.shape[0])])
 
         plt.figure()
         plt.plot(t_range, self.t_ocp_update, "r+")
@@ -344,8 +345,7 @@ class LoggerControl:
     def plot_OCP_update_times(self):
         import matplotlib.pyplot as plt
 
-        t_range = np.array(
-            [k * self.pd.dt for k in range(self.tstamps.shape[0])])
+        t_range = np.array([k * self.pd.dt for k in range(self.tstamps.shape[0])])
 
         plt.figure()
         plt.plot(t_range, self.t_ocp_update_FK, "r+")

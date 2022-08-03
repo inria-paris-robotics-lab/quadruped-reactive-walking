@@ -23,6 +23,7 @@ Params::Params()
       dt_mpc(0.0),
       N_periods(0),
       type_MPC(0),
+      save_guess(false),
       interpolate_mpc(true),
       interpolation_type(0),
       kf_enabled(false),
@@ -139,6 +140,9 @@ void Params::initialize(const std::string& file_path) {
 
   assert_yaml_parsing(robot_node, "robot", "perfect_estimator");
   perfect_estimator = robot_node["perfect_estimator"].as<bool>();
+
+  assert_yaml_parsing(robot_node, "robot", "save_guess");
+  save_guess = robot_node["save_guess"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "interpolate_mpc");
   interpolate_mpc = robot_node["interpolate_mpc"].as<bool>();

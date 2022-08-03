@@ -12,7 +12,7 @@ class OCP:
     def __init__(self, pd: ProblemData, target: Target):
         self.pd = pd
         self.target = target
-        self.max_iter = 10
+        self.max_iter = 1
 
         self.state = crocoddyl.StateMultibody(self.pd.model)
         self.initialized = False
@@ -107,9 +107,7 @@ class OCP:
 
         t_warm_start = time()
         self.t_warm_start = t_warm_start - t_update
-        print("CROCODDYL START")
-        print("CROCODDYL INITIAL POINT: ", x0)
-        self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
+        # self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
         self.ddp.solve(xs, us, self.max_iter, False)
 
         t_ddp = time()

@@ -18,7 +18,6 @@ class Result:
         self.K = list(np.zeros([pd.T, pd.nu, pd.nx]))
         self.solving_duration = 0.0
         self.new_result = False
-        
 
 
 class MPC_Wrapper:
@@ -28,7 +27,6 @@ class MPC_Wrapper:
     """
 
     def __init__(self, pd, target, params):
-        self.initialized = False
         self.params = params
         self.pd = pd
         self.target = target
@@ -37,7 +35,6 @@ class MPC_Wrapper:
 
         if self.multiprocessing:
             self.new_data = Value("b", False)
-            self.new_result = Value("b", False)
             self.running = Value("b", True)
             self.in_k = Value("i", 0)
             self.in_x0 = Array("d", [0] * pd.nx)
@@ -52,6 +49,7 @@ class MPC_Wrapper:
             self.ocp = OCP(pd, target)
 
         self.last_available_result = Result(pd)
+        self.new_result = Value("b", False)
 
     def solve(self, k, x0, xs=None, us=None):
         """
@@ -73,23 +71,20 @@ class MPC_Wrapper:
         If a new result is available, return the new result.
         Otherwise return the old result again.
         """
-        if self.initialized:
-            if self.multiprocessing and self.new_result.value:
-                self.new_result.value = False
+        if self.new_result.value:
+            if self.multiprocessing:
                 (
                     self.last_available_result.xs,
                     self.last_available_result.us,
                     self.last_available_result.K,
                     self.last_available_result.solving_duration,
                 ) = self.decompress_dataOut()
-                self.last_available_result.new_result = True
-                
 
-            elif self.multiprocessing and not self.new_result.value:
-                self.last_available_result.new_result = False
-                
+            self.last_available_result.new_result = True
+            self.new_result.value = False
         else:
-            self.initialized = True
+            self.last_available_result.new_result = False
+
         return self.last_available_result
 
     def run_MPC_synchronous(self, x0, xs, us):
@@ -101,8 +96,9 @@ class MPC_Wrapper:
             self.last_available_result.xs,
             self.last_available_result.us,
             self.last_available_result.K,
-            self.last_available_result.solving_duration
+            self.last_available_result.solving_duration,
         ) = self.ocp.get_results()
+        self.new_result.value = True
 
     def run_MPC_asynchronous(self, k, x0, xs, us):
         """
@@ -110,7 +106,7 @@ class MPC_Wrapper:
         """
         print("Call to solve")
         if k == 0:
-            self.last_available_result.xs = [x0 for _ in range (self.pd.T + 1)]
+            self.last_available_result.xs = [x0 for _ in range(self.pd.T + 1)]
             p = Process(target=self.MPC_asynchronous)
             p.start()
         self.add_new_data(k, x0, xs, us)
@@ -211,7 +207,6 @@ class MPC_Wrapper:
                 [self.pd.T, self.pd.nu, self.pd.nx]
             )[:, :, :] = np.array(K)
         self.out_solving_time.value = solving_time
-
 
     def decompress_dataOut(self):
         """

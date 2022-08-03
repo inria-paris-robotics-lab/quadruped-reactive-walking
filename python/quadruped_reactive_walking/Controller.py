@@ -23,81 +23,75 @@ class Result:
         self.tau_ff = np.zeros(12)
 
 
-class Interpolation:
+class Interpolator:
     def __init__(self, params):
-        self.params = params
+        self.dt = params.dt_mpc
+        self.type = params.interpolation_type
 
-    def load_data(self, q, v):
-        self.v0 = v[0, :]
-        self.q0 = q[0, :]
-        self.v1 = v[1, :]
-        self.q1 = q[1, :]
+        self.q0 = np.zeros(3)
+        self.q1 = np.zeros(3)
+        self.v0 = np.zeros(3)
+        self.v1 = np.zeros(3)
+        self.alpha = np.zeros(3)
+        self.beta = np.zeros(3)
+        self.gamma = np.zeros(3)
+        self.delta = 1.0
+
+    def update(self, x0, x1):
+        self.q0 = x0[:3]
+        self.q1 = x1[:3]
+        self.v0 = x0[3:]
+        self.v1 = x1[3:]
+        if self.type == 0:  # Linear
+            self.alpha = 0.0
+            self.beta = self.v1
+            self.gamma = self.q0
+        elif self.type == 1:  # Quadratic fixed velocity
+            self.alpha = 2 * (self.q1 - self.q0 - self.v0 * self.dt) / self.dt**2
+            self.beta = self.v0
+            self.gamma = self.q0
+        elif self.type == 2:  # Quadratic time variable
+            for i in range(3):
+                q0 = self.q0[i]
+                v0 = self.v0[i]
+                q1 = self.q1[i]
+                v1 = self.v1[i]
+                if (q1 == q0) or (v1 == -v0):
+                    self.alpha[i] = 0.0
+                    self.beta[i] = 0.0
+                    self.gamma[i] = q1
+                    self.delta = 1.0
+                else:
+                    self.alpha[i] = (v1**2 - v0**2) / (2 * (q1 - q0))
+                    self.beta[i] = v0
+                    self.gamma[i] = q0
+                    self.delta = 2 * (q1 - q0) / (v1 + v0) / self.dt
 
     def interpolate(self, t):
-        # Linear
-        if self.params.interpolation_type == 0:
-            beta = self.v1
-            gamma = self.q0
+        if self.type == 2:
+            t *= self.delta
+        q = 1 / 2 * self.alpha * t**2 + self.beta * t + self.gamma
+        v = self.v1 if self.type == 2 else self.alpha * t + self.beta
 
-            v_t = beta
-            q_t = gamma + beta * t
+        return q, v
 
-        # Linear Wrong
-        if self.params.interpolation_type == 1:
-            beta = self.v1
-            gamma = self.q0
-            alpha = 1/2 * self.v1 * (self.v1 - self.v0) / (self.q1 - self.q0)
-
-            v_t = beta
-            q_t = gamma + beta * t
-
-        # Perfect match, but wrong
-        if self.params.interpolation_type == 2:
-            if (self.q1 - self.q0 == 0).any():
-                alpha = np.zeros(len(self.q0))
-            else:
-                alpha = (self.v1**2 - self.v0**2) / (self.q1 - self.q0)
-
-            beta = self.v0
-            gamma = self.q0
-
-            v_t = beta + alpha * t
-            q_t = gamma + beta * t + alpha * t**2
-
-        # Quadratic
-        if self.params.interpolation_type == 3:
-            if (self.q1 - self.q0 == 0).any():
-                alpha = np.zeros(len(self.q0))
-            else:
-                alpha = self.v1 * (self.v1 - self.v0) / (self.q1 - self.q0)
-
-            beta = self.v0
-            gamma = self.q0
-
-            v_t = beta + alpha * t
-            q_t = gamma + beta * t + 1 / 2 * alpha * t**2
-
-        return q_t, v_t
-
-    def plot_interpolation(self, n, dt):
+    def plot(self, n, dt):
         import matplotlib.pyplot as plt
 
+        t = np.linspace(0.0, 2 * self.dt, 2 * n + 1)
         plt.style.use("seaborn")
-        t = np.linspace(0, n * dt, n + 1)
-        q_t = np.array([self.interpolate((i) * dt)[0] for i in range(n + 1)])
-        v_t = np.array([self.interpolate((i) * dt)[1] for i in range(n + 1)])
         for i in range(3):
             plt.subplot(3, 2, (i * 2) + 1)
             plt.title("Position interpolation")
-            plt.plot(t, q_t[:, i])
-            plt.scatter(y=self.q0[i], x=t[0], color="violet", marker="+")
-            plt.scatter(y=self.q1[i], x=t[-1], color="violet", marker="+")
+            plt.plot(t, [self.compute_q(t * dt / n)[i] for t in range(n + 1)])
+            plt.scatter(y=self.q0[i], x=0.0, color="violet", marker="+")
+            plt.scatter(y=self.q1[i], x=self.dt, color="violet", marker="+")
 
             plt.subplot(3, 2, (i * 2) + 2)
             plt.title("Velocity interpolation")
-            plt.plot(t, v_t[:, i])
-            plt.scatter(y=self.v0[i], x=t[0], color="violet", marker="+")
-            plt.scatter(y=self.v1[i], x=t[-1], color="violet", marker="+")
+            plt.plot(t, [self.compute_v(t * dt / n)[i] for t in range(n + 1)])
+            plt.scatter(y=self.v0[i], x=0.0, color="violet", marker="+")
+            plt.scatter(y=self.v1[i], x=self.dt, color="violet", marker="+")
 
         plt.show()
 
@@ -127,8 +121,8 @@ class DummyDevice:
 
 class Controller:
     def __init__(self, pd, target, params, q_init, t):
-        """Function that runs a simulation scenario based on a reference velocity profile, an environment and
-        various parameters to define the gait
+        """
+        Function that computes the reference control (tau, q_des, v_des and gains)
 
         Args:
             params (Params object): store parameters
@@ -137,23 +131,25 @@ class Controller:
         """
         self.q_security = np.array([1.2, 2.1, 3.14] * 4)
 
-        self.mpc = WB_MPC_Wrapper.MPC_Wrapper(pd, target, params)
         self.pd = pd
         self.target = target
-        self.point_target = []
         self.params = params
         self.q_init = pd.q0
 
         self.k = 0
-        self.cnt_mpc = 0
-        self.cnt_wbc = 0
         self.error = False
         self.initialized = False
-        self.first_step = False
-        self.interpolator = Interpolation(params)
+
         self.result = Result(params)
         self.result.q_des = self.pd.q0[7:].copy()
         self.result.v_des = self.pd.v0[6:].copy()
+
+        self.mpc = WB_MPC_Wrapper.MPC_Wrapper(pd, target, params)
+        self.mpc_solved = False
+        self.k_result = 0
+        self.k_solve = 0
+        if self.params.interpolate_mpc:
+            self.interpolator = Interpolator(params)
         try:
             file = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
             self.xs_init = list(file["xs"])
@@ -178,21 +174,18 @@ class Controller:
         t_start = time.time()
 
         m = self.read_state(device)
-
         t_measures = time.time()
         self.t_measures = t_measures - t_start
 
-        self.point_target = self.target.evaluate_in_t(1)[self.pd.rfFootId]
-        if self.k % int(self.params.dt_mpc / self.params.dt_wbc) == 0:
+        if self.k % self.pd.mpc_wbc_ratio == 0:
+            if self.mpc_solved:
+                self.k_solve = self.k
+                self.mpc_solved = False
+
+            self.target.update(self.k // self.pd.mpc_wbc_ratio)
+            self.target.shift_gait()
             try:
-                self.target.update(self.cnt_mpc)
-                self.target.shift_gait()
-                if not self.params.enable_multiprocessing:
-                    self.cnt_wbc = 0
-
                 self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
-
-                self.cnt_mpc += 1
             except ValueError:
                 self.error = True
                 print("MPC Problem")
@@ -202,41 +195,24 @@ class Controller:
 
         if not self.error:
             self.mpc_result = self.mpc.get_latest_result()
-            if self.params.enable_multiprocessing:
-                if self.mpc_result.new_result:
-                    print("new result! at iter: ", str(self.cnt_wbc))
-                    self.cnt_wbc = 0
+            if self.mpc_result.new_result:
+                self.mpc_solved = True
+                self.k_new = self.k
+                print(f"MPC solved in {self.k - self.k_solve} iterations")
 
-            print(
-                "MPC iter: ",
-                self.cnt_mpc,
-                " / Counter value: ",
-                self.cnt_wbc,
-                " / k value: ",
-                self.k,
-            )
-            # ## ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARM-START THE INITIAL Problem ###
-            # if not self.initialized:
-            #   np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc_result.xs, "us": self.mpc_result.us} )
-            #   print("Initial guess saved")
+            if not self.initialized and self.params.save_guess:
+                self.save_guess()
 
-            # Keep only the actuated joints and set the other to default values
             self.result.FF = self.params.Kff_main * np.ones(12)
-
-            actuated_tau_ff = self.compute_torque(m)
-            self.result.tau_ff = np.array([0] * 3 + list(actuated_tau_ff) + [0] * 6)
+            self.result.tau_ff[3:6] = self.compute_torque(m)[:]
 
             if self.params.interpolate_mpc:
-                # load the data to be interpolated only once per mpc solution
-                if self.cnt_wbc == 0:
-                    x = np.array(self.mpc_result.xs)
-                    self.interpolator.load_data(x[:, : self.pd.nq], x[:, self.pd.nq :])
+                if self.mpc_result.new_result:
+                    self.interpolator.update(self.mpc_result.xs[0], self.mpc_result.xs[1])
+                    # self.interpolator.plot(self.pd.mpc_wbc_ratio, self.pd.dt_wbc)
 
-                q, v = self.interpolator.interpolate(
-                    (self.k % int(self.params.dt_mpc / self.params.dt_wbc) + self.cnt_wbc + 1) * self.pd.dt_wbc
-                )
-
-                # self.interpolator.plot_interpolation(self.pd.r1, self.pd.dt_wbc)
+                t = (self.k - self.k_solve + 1) * self.pd.dt_wbc
+                q, v = self.interpolator.interpolate(t)
             else:
                 q, v = self.integrate_x(m)
 
@@ -259,7 +235,6 @@ class Controller:
 
         self.t_loop = time.time() - t_start
         self.k += 1
-        self.cnt_wbc += 1
         self.initialized = True
 
         return self.error
@@ -362,11 +337,20 @@ class Controller:
         self.result.v_des[:] = np.zeros(12)
         self.result.tau_ff[:] = np.zeros(12)
 
+    def save_guess(self):
+        """
+        Save the result of the MPC in a file called /tmp/init_guess.npy
+        """
+        np.save(
+            open("/tmp/init_guess.npy", "wb"),
+            {"xs": self.mpc_result.xs, "us": self.mpc_result.us},
+        )
+        print("Initial guess saved")
+
     def read_state(self, device):
         qj_m = device.joints.positions
         vj_m = device.joints.velocities
         x_m = np.concatenate([qj_m[3:6], vj_m[3:6]])
-
         return {"qj_m": qj_m, "vj_m": vj_m, "x_m": x_m}
 
     def compute_torque(self, m):
@@ -402,7 +386,3 @@ class Controller:
         q = q0 + v * self.params.dt_wbc
 
         return q, v
-
-    def tuple_to_array(self, tup):
-        a = np.array([element for tupl in tup for element in tupl])
-        return a
