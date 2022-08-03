@@ -13,7 +13,7 @@ robot:
     predefined_vel: true  # If we are using a predefined reference velocity (True) or a joystick (False)
     N_SIMULATION: 5000  # Number of simulated wbc time steps
     enable_corba_viewer: false  # Enable/disable Corba Viewer
-    enable_multiprocessing: false  # Enable/disable running the MPC in another process in parallel of the main loop
+    enable_multiprocessing: true  # Enable/disable running the MPC in another process in parallel of the main loop
     perfect_estimator: true  # Enable/disable perfect estimator by using data directly from PyBullet
 
     # General control parameters

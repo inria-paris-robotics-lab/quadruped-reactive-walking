@@ -104,7 +104,6 @@ class MPC_Wrapper:
         """
         Run the MPC (asynchronous version)
         """
-        print("Call to solve")
         if k == 0:
             self.last_available_result.xs = [x0 for _ in range(self.pd.T + 1)]
             p = Process(target=self.MPC_asynchronous)

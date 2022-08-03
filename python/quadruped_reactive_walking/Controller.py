@@ -24,22 +24,14 @@ class Result:
 
 
 class Interpolator:
-    def __init__(self, params):
+    def __init__(self, params, x0):
         self.dt = params.dt_mpc
         self.type = params.interpolation_type
 
-        self.q0 = np.zeros(3)
-        self.q1 = np.zeros(3)
-        self.v0 = np.zeros(3)
-        self.v1 = np.zeros(3)
-
         if self.type == 3:
             self.ts = np.repeat(np.linspace(0, 2 * self.dt, 3), 2)
-        else:
-            self.alpha = np.zeros(3)
-            self.beta = np.zeros(3)
-            self.gamma = np.zeros(3)
-            self.delta = 1.0
+
+        self.update(x0, x0)
 
     def update(self, x0, x1, x2=None):
         self.q0 = x0[:3]
@@ -70,7 +62,7 @@ class Interpolator:
                     self.beta[i] = v0
                     self.gamma[i] = q0
                     self.delta = 2 * (q1 - q0) / (v1 + v0) / self.dt
-        elif self.type == 3: # Spline interpolation
+        elif self.type == 3:  # Spline interpolation
             from scipy.interpolate import KroghInterpolator
 
             if x2 is not None:
@@ -173,7 +165,9 @@ class Controller:
         self.k_result = 0
         self.k_solve = 0
         if self.params.interpolate_mpc:
-            self.interpolator = Interpolator(params)
+            self.interpolator = Interpolator(
+                params, np.concatenate([self.result.q_des[3:6], self.result.v_des[3:6]])
+            )
         try:
             file = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
             self.xs_init = list(file["xs"])
