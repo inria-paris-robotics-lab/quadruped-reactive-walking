@@ -32,12 +32,16 @@ class Interpolator:
         self.q1 = np.zeros(3)
         self.v0 = np.zeros(3)
         self.v1 = np.zeros(3)
-        self.alpha = np.zeros(3)
-        self.beta = np.zeros(3)
-        self.gamma = np.zeros(3)
-        self.delta = 1.0
 
-    def update(self, x0, x1):
+        if self.type == 3:
+            self.ts = np.repeat(np.linspace(0, 2 * self.dt, 3), 2)
+        else:
+            self.alpha = np.zeros(3)
+            self.beta = np.zeros(3)
+            self.gamma = np.zeros(3)
+            self.delta = 1.0
+
+    def update(self, x0, x1, x2=None):
         self.q0 = x0[:3]
         self.q1 = x1[:3]
         self.v0 = x0[3:]
@@ -66,8 +70,24 @@ class Interpolator:
                     self.beta[i] = v0
                     self.gamma[i] = q0
                     self.delta = 2 * (q1 - q0) / (v1 + v0) / self.dt
+        elif self.type == 3: # Spline interpolation
+            from scipy.interpolate import KroghInterpolator
+
+            if x2 is not None:
+                self.q2 = x2[:3]
+                self.v2 = x2[3:]
+                self.y = [self.q0, self.v0, self.q1, self.v1, self.q2, self.v2]
+                self.krog = KroghInterpolator(self.ts, np.array(self.y))
+            else:
+                self.y = [self.q0, self.v0, self.q1, self.v1]
+                self.krog = KroghInterpolator(self.ts[:4], np.array(self.y))
 
     def interpolate(self, t):
+        if self.type == 3:
+            q = self.krog(t)
+            v = self.krog.derivative(t)
+            return q, v
+
         if self.type == 2:
             t *= self.delta
         q = 1 / 2 * self.alpha * t**2 + self.beta * t + self.gamma
@@ -78,20 +98,24 @@ class Interpolator:
     def plot(self, n, dt):
         import matplotlib.pyplot as plt
 
-        t = np.linspace(0.0, 2 * self.dt, 2 * n + 1)
+        ts = np.linspace(0.0, 2 * self.dt, 2 * n + 1)
         plt.style.use("seaborn")
         for i in range(3):
             plt.subplot(3, 2, (i * 2) + 1)
             plt.title("Position interpolation")
-            plt.plot(t, [self.compute_q(t * dt / n)[i] for t in range(n + 1)])
+            plt.plot(ts, [self.interpolate(t)[0][i] for t in ts])
             plt.scatter(y=self.q0[i], x=0.0, color="violet", marker="+")
             plt.scatter(y=self.q1[i], x=self.dt, color="violet", marker="+")
+            if self.type == 3 and self.q2 is not None:
+                plt.scatter(y=self.q2[i], x=2 * self.dt, color="violet", marker="+")
 
             plt.subplot(3, 2, (i * 2) + 2)
             plt.title("Velocity interpolation")
-            plt.plot(t, [self.compute_v(t * dt / n)[i] for t in range(n + 1)])
+            plt.plot(ts, [self.interpolate(t)[1][i] for t in ts])
             plt.scatter(y=self.v0[i], x=0.0, color="violet", marker="+")
             plt.scatter(y=self.v1[i], x=self.dt, color="violet", marker="+")
+            if self.type == 3 and self.v2 is not None:
+                plt.scatter(y=self.v2[i], x=2 * self.dt, color="violet", marker="+")
 
         plt.show()
 
@@ -195,6 +219,7 @@ class Controller:
 
         if not self.error:
             self.mpc_result = self.mpc.get_latest_result()
+            xs = self.mpc_result.xs
             if self.mpc_result.new_result:
                 self.mpc_solved = True
                 self.k_new = self.k
@@ -208,7 +233,8 @@ class Controller:
 
             if self.params.interpolate_mpc:
                 if self.mpc_result.new_result:
-                    self.interpolator.update(self.mpc_result.xs[0], self.mpc_result.xs[1])
+                    if self.params.interpolation_type == 3:
+                        self.interpolator.update(xs[0], xs[1], xs[2])
                     # self.interpolator.plot(self.pd.mpc_wbc_ratio, self.pd.dt_wbc)
 
                 t = (self.k - self.k_solve + 1) * self.pd.dt_wbc

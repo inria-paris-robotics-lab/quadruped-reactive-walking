@@ -9,7 +9,7 @@ class problemDataAbstract:
         self.dt_wbc = param.dt_wbc
         self.mpc_wbc_ratio = int(self.dt / self.dt_wbc)
         self.init_steps = 0
-        self.target_steps = 150
+        self.target_steps = 60
         self.T = self.init_steps + self.target_steps - 1
 
         self.robot = erd.load("solo12")
