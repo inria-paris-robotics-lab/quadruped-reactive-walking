@@ -61,14 +61,14 @@ class Interpolation:
             gamma = self.q0
 
             v_t = beta + alpha * t
-            q_t = gamma + beta * t + alpha * t**2     
+            q_t = gamma + beta * t + alpha * t**2
 
         # Quadratic
         if self.params.interpolation_type == 3:
             if (self.q1-self.q0 == 0).any():
                 alpha = np.zeros(len(self.q0))
             else:
-                alpha = self.v1 *(self.v1- self.v0)/(self.q1 - self.q0)
+                alpha = self.v1 * (self.v1 - self.v0)/(self.q1 - self.q0)
 
             beta = self.v0
             gamma = self.q0
@@ -147,6 +147,7 @@ class Controller:
         self.cnt_wbc = 0
         self.error = False
         self.initialized = False
+        self.first_step = False
         self.interpolator = Interpolation(params)
         self.result = Result(params)
         self.result.q_des = self.pd.q0[7:].copy()
@@ -183,9 +184,10 @@ class Controller:
             try:
                 self.target.update(self.cnt_mpc)
                 self.target.shift_gait()
-                self.cnt_wbc = 0
+                #self.cnt_wbc = 0
 
                 self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
+                if self.k == 0: time.sleep(1)
 
                 self.cnt_mpc += 1
             except ValueError:
@@ -200,10 +202,12 @@ class Controller:
             if self.params.enable_multiprocessing:
                 if self.mpc_result.new_result:
                     print("new result! at iter: ", str(self.cnt_wbc))
-                    print(self.mpc_result.xs[1], "\n")
-                    self.cnt_wbc = 0
+                    #self.cnt_wbc = 0
 
-            
+
+            print("MPC iter: ", self.cnt_mpc,
+                  " / Counter value: ", self.cnt_wbc,
+                  " / k value: ", self.k )
             # ## ONLY IF YOU WANT TO STORE THE FIRST SOLUTION TO WARM-START THE INITIAL Problem ###
             # if not self.initialized:
             #   np.save(open('/tmp/init_guess.npy', "wb"), {"xs": self.mpc_result.xs, "us": self.mpc_result.us} )
@@ -211,6 +215,7 @@ class Controller:
 
             # Keep only the actuated joints and set the other to default values
             self.result.FF = self.params.Kff_main * np.ones(12)
+
             actuated_tau_ff = self.compute_torque(m)
             self.result.tau_ff = np.array(
                 [0] * 3 + list(actuated_tau_ff) + [0] * 6)

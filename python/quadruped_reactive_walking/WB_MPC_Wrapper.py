@@ -2,7 +2,7 @@ import ctypes
 from ctypes import Structure
 from enum import Enum
 from multiprocessing import Process, Value, Array
-from time import time
+from time import time, sleep
 
 import numpy as np
 
@@ -83,6 +83,10 @@ class MPC_Wrapper:
                     self.last_available_result.solving_duration,
                 ) = self.decompress_dataOut()
                 self.last_available_result.new_result = True
+
+            elif self.multiprocessing and not self.new_result.value:
+                self.last_available_result.new_result = False
+                
         else:
             self.initialized = True
         return self.last_available_result
@@ -103,11 +107,11 @@ class MPC_Wrapper:
         """
         Run the MPC (asynchronous version)
         """
+        print("Call to solve")
         if k == 0:
             self.last_available_result.xs = [x0 for _ in range (self.pd.T + 1)]
             p = Process(target=self.MPC_asynchronous)
             p.start()
-        self.last_available_result.new_result = False
         self.add_new_data(k, x0, xs, us)
 
     def MPC_asynchronous(self):

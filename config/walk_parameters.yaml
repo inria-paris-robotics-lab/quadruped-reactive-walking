@@ -22,7 +22,7 @@ robot:
     # q_init: [0.0, 0.764, -1.407, 0.0, 0.76407, -1.4, 0.0, 0.76407, -1.407, 0.0, 0.764, -1.407]  # h_com = 0.218
     q_init: [0.0, 0.7, -1.4, 0.0, 0.7, -1.4, 0.0, -0.7, 1.4, 0.0, -0.7, 1.4]  # Initial articular positions
     dt_wbc: 0.001  # Time step of the whole body control
-    dt_mpc: 0.015  # Time step of the model predictive control
+    dt_mpc: 0.01  # Time step of the model predictive control
     type_MPC: 3  # Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
     interpolate_mpc: true # true to interpolate the impedance quantities between nodes of the MPC
     interpolation_type: 0 # 0,1,2,3 decide which kind of interpolation is used
