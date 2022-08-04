@@ -6,6 +6,8 @@ import pybullet as pyb
 
 from . import WB_MPC_Wrapper
 
+COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c"]
+
 
 class Result:
     """
@@ -83,7 +85,7 @@ class Interpolator:
         if self.type == 2:
             t *= self.delta
         q = 1 / 2 * self.alpha * t**2 + self.beta * t + self.gamma
-        v = self.v1 if self.type == 2 else self.alpha * t + self.beta
+        v = self.v1 if self.type == 1 else self.alpha * t + self.beta
 
         return q, v
 
@@ -180,6 +182,7 @@ class Controller:
 
         device = DummyDevice()
         device.joints.positions = q_init
+        self.axs = None
         self.compute(device)
 
     def compute(self, device, qc=None):
@@ -217,7 +220,8 @@ class Controller:
             if self.mpc_result.new_result:
                 self.mpc_solved = True
                 self.k_new = self.k
-                print(f"MPC solved in {self.k - self.k_solve} iterations")
+                # print(f"MPC solved in {self.k - self.k_solve} iterations")
+                self.axs = self.plot_mpc()
 
             if not self.initialized and self.params.save_guess:
                 self.save_guess()
@@ -239,6 +243,16 @@ class Controller:
             self.result.q_des[3:6] = q[:]
             self.result.v_des[3:6] = v[:]
 
+            if self.axs is not None:
+                [
+                    self.axs[2].scatter(
+                        y=self.result.tau_ff[3 + i],
+                        x=(self.k - self.k_solve + 1) * self.pd.dt_wbc,
+                        marker="+",
+                        color=COLORS[i],
+                    )
+                    for i in range(3)
+                ]
             self.xs_init = self.mpc_result.xs[1:] + [self.mpc_result.xs[-1]]
             self.us_init = self.mpc_result.us[1:] + [self.mpc_result.us[-1]]
 
@@ -387,7 +401,7 @@ class Controller:
         #         m["x_m"][self.pd.nq :] - self.mpc_result.xs[0][self.pd.nq :],
         #     ]
         # )
-        x_diff = m["x_m"] - self.mpc_result.xs[0]
+        x_diff = self.mpc_result.xs[0] - m["x_m"]
         tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
         return tau
 
@@ -406,3 +420,21 @@ class Controller:
         q = q0 + v * self.params.dt_wbc
 
         return q, v
+
+    def plot_mpc(self):
+        import matplotlib.pyplot as plt
+
+        plt.show()
+
+        legend = ["Hip", "Shoulder", "Knee"]
+        fig, axs = plt.subplots(3)
+        [axs[0].plot(np.array(self.mpc_result.xs)[:, joint]) for joint in range(3)]
+        axs[0].legend(legend)
+
+        [axs[1].plot(np.array(self.mpc_result.xs)[:, 3 + joint]) for joint in range(3)]
+        axs[1].legend(legend)
+
+        [axs[2].plot(np.array(self.mpc_result.us)[:, joint]) for joint in range(3)]
+        axs[2].legend(legend)
+
+        return axs

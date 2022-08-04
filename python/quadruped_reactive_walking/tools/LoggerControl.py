@@ -155,11 +155,11 @@ class LoggerControl:
         self.plot_states(save, fileName)
         self.plot_torques(save, fileName)
         self.plot_target(save, fileName)
-        self.plot_riccati_gains(0, save, fileName)
+        # self.plot_riccati_gains(0, save, fileName)
         self.plot_controller_times()
-        # if not self.params.enable_multiprocessing:
-        #     self.plot_OCP_times()
-        #     self.plot_OCP_update_times()
+        if not self.params.enable_multiprocessing:
+            self.plot_OCP_times()
+            self.plot_OCP_update_times()
 
         plt.show()
 
