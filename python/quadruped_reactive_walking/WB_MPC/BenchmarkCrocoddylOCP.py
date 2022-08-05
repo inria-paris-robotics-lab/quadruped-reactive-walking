@@ -18,7 +18,6 @@ def createProblem():
     params = qrw.Params()
     pd = ProblemDataFull(params)
     target = Target(pd)
-    target.update(0)
 
     x0 = pd.x0_reduced
 

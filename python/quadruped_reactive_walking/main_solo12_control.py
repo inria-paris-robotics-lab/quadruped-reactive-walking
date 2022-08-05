@@ -9,13 +9,10 @@ import quadruped_reactive_walking as qrw
 from .Controller import Controller
 from .tools.LoggerControl import LoggerControl
 from .WB_MPC.ProblemData import ProblemData, ProblemDataFull
-from .WB_MPC.Target import Target
 
 
 params = qrw.Params()  # Object that holds all controller parameters
 pd = ProblemDataFull(params)
-target = Target(pd)
-target.update(0)
 
 repo = git.Repo(search_parent_directories=True)
 sha = repo.head.object.hexsha
@@ -137,7 +134,7 @@ def control_loop():
 
     # Default position after calibration
     q_init = np.array(params.q_init.tolist())
-    controller = Controller(pd, target, params, q_init, 0.0)
+    controller = Controller(pd, params, q_init, 0.0)
 
     if params.SIMULATION:
         device = PyBulletSimulator()
@@ -186,7 +183,9 @@ def control_loop():
         device.joints.set_velocity_gains(controller.result.D)
         device.joints.set_desired_positions(controller.result.q_des)
         device.joints.set_desired_velocities(controller.result.v_des)
-        device.joints.set_torques(controller.result.FF * controller.result.tau_ff.ravel())
+        device.joints.set_torques(
+            controller.result.FF * controller.result.tau_ff.ravel()
+        )
         device.send_command_and_wait_end_of_cycle(params.dt_wbc)
 
         if params.LOGGING or params.PLOTTING:
@@ -224,7 +223,7 @@ def control_loop():
         log_path = Path("/tmp") / "logs" / date_str
         log_path.mkdir(parents=True)
         loggerControl.save(str(log_path))
-        with open(str(log_path / 'readme.txt'), 'w') as f:
+        with open(str(log_path / "readme.txt"), "w") as f:
             f.write(msg)
 
         if params.PLOTTING:

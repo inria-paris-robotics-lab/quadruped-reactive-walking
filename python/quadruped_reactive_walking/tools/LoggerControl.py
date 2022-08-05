@@ -54,11 +54,6 @@ class LoggerControl:
         self.t_ocp_ddp = np.zeros(size)
         self.t_ocp_solve = np.zeros(size)
 
-        self.t_ocp_update_FK = np.zeros(size)
-        self.t_ocp_shift = np.zeros(size)
-        self.t_ocp_update_last = np.zeros(size)
-        self.t_ocp_update_terminal = np.zeros(size)
-
         # MPC
         self.ocp_xs = np.zeros([size, pd.T + 1, pd.nx])
         self.ocp_us = np.zeros([size, pd.T, pd.nu])
@@ -105,7 +100,7 @@ class LoggerControl:
             self.mocapOrientationQuat[self.i] = device.baseState[1]
 
         # Controller timings: MPC time, ...
-        self.target[self.i] = controller.target.evaluate_in_t(1)[self.pd.rfFootId]
+        self.target[self.i] = controller.target.evaluate_circle(0)
         self.t_mpc[self.i] = controller.t_mpc
         self.t_send[self.i] = controller.t_send
         self.t_loop[self.i] = controller.t_loop
@@ -128,13 +123,6 @@ class LoggerControl:
             self.t_ocp_update[self.i] = controller.mpc.ocp.t_update
             self.t_ocp_warm_start[self.i] = controller.mpc.ocp.t_warm_start
             self.t_ocp_solve[self.i] = controller.mpc.ocp.t_solve
-
-            self.t_ocp_update_FK[self.i] = controller.mpc.ocp.t_FK
-            self.t_ocp_shift[self.i] = controller.mpc.ocp.t_shift
-            self.t_ocp_update_last[self.i] = controller.mpc.ocp.t_update_last_model
-            self.t_ocp_update_terminal[
-                self.i
-            ] = controller.mpc.ocp.t_update_terminal_model
 
         # Logging from whole body control
         self.wbc_P[self.i] = controller.result.P
@@ -342,27 +330,6 @@ class LoggerControl:
         plt.xlabel("Time [s]")
         plt.ylabel("Time [s]")
 
-    def plot_OCP_update_times(self):
-        import matplotlib.pyplot as plt
-
-        t_range = np.array([k * self.pd.dt for k in range(self.tstamps.shape[0])])
-
-        plt.figure()
-        plt.plot(t_range, self.t_ocp_update_FK, "r+")
-        plt.plot(t_range, self.t_ocp_shift, "g+")
-        plt.plot(t_range, self.t_ocp_update_last, "b+")
-        plt.plot(t_range, self.t_ocp_update_terminal, "+", color="seagreen")
-        plt.axhline(y=self.params.dt_mpc, color="grey", linestyle=":", lw=1.0)
-        lgd = [
-            "t_ocp_update_FK",
-            "t_ocp_shift",
-            "t_ocp_update_last",
-            "t_ocp_update_terminal",
-        ]
-        plt.legend(lgd)
-        plt.xlabel("Time [s]")
-        plt.ylabel("Time [s]")
-
     def save(self, fileName="data"):
         name = fileName + "/data.npz"
 
@@ -381,10 +348,6 @@ class LoggerControl:
             t_ocp_warm_start=self.t_ocp_warm_start,
             t_ocp_ddp=self.t_ocp_ddp,
             t_ocp_solve=self.t_ocp_solve,
-            t_ocp_update_FK=self.t_ocp_update_FK,
-            t_ocp_shift=self.t_ocp_shift,
-            t_ocp_update_last=self.t_ocp_update_last,
-            t_ocp_update_terminal=self.t_ocp_update_terminal,
             wbc_P=self.wbc_P,
             wbc_D=self.wbc_D,
             wbc_q_des=self.wbc_q_des,

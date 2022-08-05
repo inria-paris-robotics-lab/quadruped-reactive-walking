@@ -5,6 +5,7 @@ import pinocchio as pin
 import pybullet as pyb
 
 from . import WB_MPC_Wrapper
+from .WB_MPC.Target import Target
 
 COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c"]
 
@@ -138,7 +139,7 @@ class DummyDevice:
 
 
 class Controller:
-    def __init__(self, pd, target, params, q_init, t):
+    def __init__(self, pd, params, q_init, t):
         """
         Function that computes the reference control (tau, q_des, v_des and gains)
 
@@ -150,8 +151,8 @@ class Controller:
         self.q_security = np.array([1.2, 2.1, 3.14] * 4)
 
         self.pd = pd
-        self.target = target
         self.params = params
+        self.gait = np.repeat(np.array([0, 0, 0, 0]).reshape((1, 4)), self.pd.T, axis=0)
         self.q_init = pd.q0
 
         self.k = 0
@@ -162,7 +163,9 @@ class Controller:
         self.result.q_des = self.pd.q0[7:].copy()
         self.result.v_des = self.pd.v0[6:].copy()
 
-        self.mpc = WB_MPC_Wrapper.MPC_Wrapper(pd, target, params)
+        self.target = Target(pd)
+        footsteps = [self.target.footstep(t) for t in range(pd.T)]
+        self.mpc = WB_MPC_Wrapper.MPC_Wrapper(pd, params, footsteps, self.gait)
         self.mpc_solved = False
         self.k_result = 0
         self.k_solve = 0
@@ -199,14 +202,32 @@ class Controller:
         self.t_measures = t_measures - t_start
 
         if self.k % self.pd.mpc_wbc_ratio == 0:
+            self.target.shift()
             if self.mpc_solved:
                 self.k_solve = self.k
                 self.mpc_solved = False
 
-            self.target.update(self.k // self.pd.mpc_wbc_ratio)
-            self.target.shift_gait()
             try:
-                self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
+                footstep = self.target.footstep(self.pd.T)
+                # self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
+                if self.initialized:
+                    self.mpc.solve(
+                        self.k,
+                        self.mpc_result.xs[1],
+                        footstep,
+                        self.gait,
+                        self.xs_init,
+                        self.us_init,
+                    )
+                else:
+                    self.mpc.solve(
+                        self.k,
+                        m["x_m"],
+                        footstep,
+                        self.gait,
+                        self.xs_init,
+                        self.us_init,
+                    )
             except ValueError:
                 self.error = True
                 print("MPC Problem")
@@ -221,7 +242,7 @@ class Controller:
                 self.mpc_solved = True
                 self.k_new = self.k
                 # print(f"MPC solved in {self.k - self.k_solve} iterations")
-                self.axs = self.plot_mpc()
+                # self.axs = self.plot_mpc()
 
             if not self.initialized and self.params.save_guess:
                 self.save_guess()

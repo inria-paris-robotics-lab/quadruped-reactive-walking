@@ -26,10 +26,12 @@ class MPC_Wrapper:
     a parallel process
     """
 
-    def __init__(self, pd, target, params):
+    def __init__(self, pd, params, footsteps, gait):
         self.params = params
         self.pd = pd
-        self.target = target
+
+        self.footsteps_plan = footsteps
+        self.initial_gait = gait
 
         self.multiprocessing = params.enable_multiprocessing
 
@@ -41,17 +43,19 @@ class MPC_Wrapper:
             self.in_warm_start = Value("b", False)
             self.in_xs = Array("d", [0] * ((pd.T + 1) * pd.nx))
             self.in_us = Array("d", [0] * (pd.T * pd.nu))
+            self.in_footstep = Array("d", [0] * 12)
+            self.in_gait = Array("d", [0] * (pd.T * 4))
             self.out_xs = Array("d", [0] * ((pd.T + 1) * pd.nx))
             self.out_us = Array("d", [0] * (pd.T * pd.nu))
             self.out_k = Array("d", [0] * (pd.T * pd.nu * pd.nx))
             self.out_solving_time = Value("d", 0.0)
         else:
-            self.ocp = OCP(pd, target)
+            self.ocp = OCP(pd, footsteps, gait)
 
         self.last_available_result = Result(pd)
         self.new_result = Value("b", False)
 
-    def solve(self, k, x0, xs=None, us=None):
+    def solve(self, k, x0, footstep, gait, xs=None, us=None):
         """
         Call either the asynchronous MPC or the synchronous MPC depending on the value
         of multiprocessing during the creation of the wrapper
@@ -60,9 +64,9 @@ class MPC_Wrapper:
             k (int): Number of inv dynamics iterations since the start of the simulation
         """
         if self.multiprocessing:
-            self.run_MPC_asynchronous(k, x0, xs, us)
+            self.run_MPC_asynchronous(k, x0, footstep, gait, xs, us)
         else:
-            self.run_MPC_synchronous(x0, xs, us)
+            self.run_MPC_synchronous(x0, footstep, gait, xs, us)
 
     def get_latest_result(self):
         """
@@ -87,11 +91,11 @@ class MPC_Wrapper:
 
         return self.last_available_result
 
-    def run_MPC_synchronous(self, x0, xs, us):
+    def run_MPC_synchronous(self, x0, footstep, gait, xs, us):
         """
         Run the MPC (synchronous version)
         """
-        self.ocp.solve(x0, xs, us)
+        self.ocp.solve(x0, footstep, gait, xs, us)
         (
             self.last_available_result.xs,
             self.last_available_result.us,
@@ -100,7 +104,7 @@ class MPC_Wrapper:
         ) = self.ocp.get_results()
         self.new_result.value = True
 
-    def run_MPC_asynchronous(self, k, x0, xs, us):
+    def run_MPC_asynchronous(self, k, x0, footstep, gait, xs, us):
         """
         Run the MPC (asynchronous version)
         """
@@ -108,7 +112,7 @@ class MPC_Wrapper:
             self.last_available_result.xs = [x0 for _ in range(self.pd.T + 1)]
             p = Process(target=self.MPC_asynchronous)
             p.start()
-        self.add_new_data(k, x0, xs, us)
+        self.add_new_data(k, x0, footstep, gait, xs, us)
 
     def MPC_asynchronous(self):
         """
@@ -120,27 +124,27 @@ class MPC_Wrapper:
 
             self.new_data.value = False
 
-            k, x0, xs, us = self.decompress_dataIn()
+            k, x0, footstep, gait, xs, us = self.decompress_dataIn()
 
             if k == 0:
-                loop_ocp = OCP(self.pd, self.target)
+                loop_ocp = OCP(self.pd, self.footsteps_plan, self.initial_gait)
 
-            loop_ocp.solve(x0, xs, us)
+            loop_ocp.solve(x0, footstep, gait, xs, us)
             xs, us, K, solving_time = loop_ocp.get_results()
             self.compress_dataOut(xs, us, K, solving_time)
             self.new_result.value = True
 
-    def add_new_data(self, k, x0, xs, us):
+    def add_new_data(self, k, x0, footstep, gait, xs, us):
         """
         Compress data in a C-type structure that belongs to the shared memory to send
         data from the main control loop to the asynchronous MPC and notify the process
         that there is a new data
         """
 
-        self.compress_dataIn(k, x0, xs, us)
+        self.compress_dataIn(k, x0, footstep, gait, xs, us)
         self.new_data.value = True
 
-    def compress_dataIn(self, k, x0, xs, us):
+    def compress_dataIn(self, k, x0, footstep, gait, xs, us):
         """
         Decompress data from a C-type structure that belongs to the shared memory to
         retrieve data from the main control loop in the asynchronous MPC
@@ -150,6 +154,10 @@ class MPC_Wrapper:
             self.in_k.value = k
         with self.in_x0.get_lock():
             np.frombuffer(self.in_x0.get_obj()).reshape(self.pd.nx)[:] = x0
+        with self.in_footstep.get_lock():
+            np.frombuffer(self.in_footstep.get_obj()).reshape((3, 4))[:, :] = footstep
+        with self.in_gait.get_lock():
+            np.frombuffer(self.in_gait.get_obj()).reshape((self.pd.T, 4))[:, :] = gait
 
         if xs is None or us is None:
             self.in_warm_start.value = False
@@ -173,9 +181,13 @@ class MPC_Wrapper:
             k = self.in_k.value
         with self.in_x0.get_lock():
             x0 = np.frombuffer(self.in_x0.get_obj()).reshape(self.pd.nx)
+        with self.in_footstep.get_lock():
+            footstep = np.frombuffer(self.in_footstep.get_obj()).reshape((3, 4))
+        with self.in_gait.get_lock():
+            gait = np.frombuffer(self.in_gait.get_obj()).reshape((self.pd.T, 4))
 
         if not self.in_warm_start.value:
-            return k, x0, None, None
+            return k, x0, footstep, gait, None, None
 
         with self.in_xs.get_lock():
             xs = list(
@@ -186,7 +198,7 @@ class MPC_Wrapper:
                 np.frombuffer(self.in_us.get_obj()).reshape((self.pd.T, self.pd.nu))
             )
 
-        return k, x0, xs, us
+        return k, x0, footstep, gait, xs, us
 
     def compress_dataOut(self, xs, us, K, solving_time):
         """

@@ -9,9 +9,8 @@ from time import time
 
 
 class OCP:
-    def __init__(self, pd: ProblemData, target: Target):
+    def __init__(self, pd: ProblemData, footsteps, gait):
         self.pd = pd
-        self.target = target
         self.max_iter = 1
 
         self.state = crocoddyl.StateMultibody(self.pd.model)
@@ -20,7 +19,7 @@ class OCP:
         self.t_update_last_model = 0.0
         self.t_shift = 0.0
 
-        self.initialize_models()
+        self.initialize_models(gait, footsteps)
 
         self.x0 = self.pd.x0_reduced
 
@@ -29,71 +28,23 @@ class OCP:
         )
         self.ddp = crocoddyl.SolverFDDP(self.problem)
 
-    def initialize_models(self):
+    def initialize_models(self, gait, footsteps):
         self.nodes = []
-        for t in range(self.pd.T):
-            task = self.make_task(
-                self.target.evaluate_in_t(t), self.target.contactSequence[t]
-            )
-            self.nodes.append(
-                Node(self.pd, self.state, self.target.contactSequence[t], task)
-            )
-        self.terminal_node = Node(
-            self.pd, self.state, self.target.contactSequence[self.pd.T], isTerminal=True
-        )
+        for t, step in enumerate(gait):
+            task = self.make_task(footsteps[t])
+            support_feet = [self.pd.allContactIds[i] for i in np.nonzero(step == 1)[0]]
+            self.nodes.append(Node(self.pd, self.state, support_feet, task))
+
+        support_feet = [self.pd.allContactIds[i] for i in np.nonzero(gait[-1] == 1)[0]]
+        self.terminal_node = Node(self.pd, self.state, support_feet, isTerminal=True)
 
         self.models = [node.model for node in self.nodes]
         self.terminal_model = self.terminal_node.model
 
-    def make_ocp(self):
-        """
-        Create a shooting problem for a simple walking gait.
-
-        :param x0: initial state
-        """
+    def solve(self, x0, footstep, gait, xs_init=None, us_init=None):
         t_start = time()
-
-        # Compute the current foot positions
-        q0 = self.x0[: self.pd.nq]
-        pin.forwardKinematics(self.pd.model, self.pd.rdata, q0)
-        pin.updateFramePlacements(self.pd.model, self.pd.rdata)
-
-        t_FK = time()
-        self.t_FK = t_FK - t_start
-
-        if self.initialized:
-            task = self.make_task(
-                self.target.evaluate_in_t(self.pd.T - 1),
-                self.target.contactSequence[self.pd.T - 1],
-            )
-
-            self.nodes[0].update_model(self.target.contactSequence[self.pd.T - 1], task)
-
-            t_update_last_model = time()
-            self.t_update_last_model = t_update_last_model - t_FK
-
-            self.problem.circularAppend(
-                self.nodes[0].model, self.nodes[0].model.createData()
-            )
-            t_shift = time()
-            self.t_shift = t_shift - t_update_last_model
-
-        self.problem.x0 = self.x0
-
-        # If you need update terminal model
-        t_update_terminal_model = time()
-        self.t_update_terminal_model = 0.0
-        # self.t_update_terminal_model = t_update_terminal_model - self.t_shift
-
-        self.initialized = True
-
-    def solve(self, x0, xs_init=None, us_init=None):
-
         self.x0 = x0
-
-        t_start = time()
-
-        self.make_ocp()
+        self.make_ocp(footstep, gait)
 
         t_update = time()
         self.t_update = t_update - t_start
@@ -107,6 +58,7 @@ class OCP:
 
         t_warm_start = time()
         self.t_warm_start = t_warm_start - t_update
+
         # self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
         self.ddp.solve(xs, us, self.max_iter, False)
 
@@ -115,17 +67,35 @@ class OCP:
 
         self.t_solve = time() - t_start
 
-    def make_task(self, target, contactIds):
-        swingFootTask = []
-        for i in self.freeIds_from_contactIds(contactIds):
-            try:
-                swingFootTask += [[i, target[i]]]
-            except:
-                pass
-        return swingFootTask
+    def make_ocp(self, footstep, gait):
+        """
+        Create a shooting problem for a simple walking gait.
 
-    def freeIds_from_contactIds(self, contactIds):
-        return [idf for idf in self.pd.allContactIds if idf not in contactIds]
+        :param x0: initial state
+        """
+        pin.forwardKinematics(self.pd.model, self.pd.rdata, self.x0[: self.pd.nq])
+        pin.updateFramePlacements(self.pd.model, self.pd.rdata)
+
+        if self.initialized:
+            task = self.make_task(np.reshape(footstep, (3, 4), order="F"))
+            support_feet = [self.pd.allContactIds[i] for i in np.nonzero(gait[-1] == 1)[0]]
+
+            self.nodes[0].update_model(support_feet, task)
+
+            self.problem.circularAppend(
+                self.nodes[0].model, self.nodes[0].model.createData()
+            )
+
+        self.problem.x0 = self.x0
+
+        self.initialized = True
+
+    def make_task(self, footstep):
+        task = []
+        for foot in range(4):
+            if footstep[:, foot].any():
+                task += [[self.pd.allContactIds[foot], footstep[:, foot]]]
+        return task
 
     def get_results(self):
         return (
@@ -301,32 +271,29 @@ class Node:
         for c in allContacts:
             self.dmodel.contacts.removeContact(c)
 
-    def tracking_cost(self, swingFootTask):
-
-        if swingFootTask is not None:
-            for i in swingFootTask:
+    def tracking_cost(self, task):
+        if task is not None:
+            for (id, pose) in task:
                 frameTranslationResidual = crocoddyl.ResidualModelFrameTranslation(
-                    self.state, i[0], i[1], self.nu
+                    self.state, id, pose, self.nu
                 )
                 footTrack = crocoddyl.CostModelResidual(
                     self.state, frameTranslationResidual
                 )
                 if (
-                    self.pd.model.frames[i[0]].name + "_footTrack"
+                    self.pd.model.frames[id].name + "_footTrack"
                     in self.dmodel.costs.active.tolist()
                 ):
                     self.dmodel.costs.removeCost(
-                        self.pd.model.frames[i[0]].name + "_footTrack"
+                        self.pd.model.frames[id].name + "_footTrack"
                     )
                 self.costModel.addCost(
-                    self.pd.model.frames[i[0]].name + "_footTrack",
+                    self.pd.model.frames[id].name + "_footTrack",
                     footTrack,
                     self.pd.foot_tracking_w,
                 )
 
-    def update_model(self, supportFootIds=[], swingFootTask=[]):
-        if self.isTerminal:
-            self.update_contact_model(supportFootIds)
-        else:
-            self.update_contact_model(supportFootIds)
-            self.tracking_cost(swingFootTask)
+    def update_model(self, support_feet=[], task=[]):
+        self.update_contact_model(support_feet)
+        if not self.isTerminal:
+            self.tracking_cost(task)
