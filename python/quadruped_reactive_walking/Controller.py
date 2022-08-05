@@ -250,16 +250,18 @@ class Controller:
             self.result.FF = self.params.Kff_main * np.ones(12)
             self.result.tau_ff[3:6] = self.compute_torque(m)[:]
 
-            if self.params.interpolate_mpc:
-                if self.mpc_result.new_result:
-                    if self.params.interpolation_type == 3:
-                        self.interpolator.update(xs[0], xs[1], xs[2])
-                    # self.interpolator.plot(self.pd.mpc_wbc_ratio, self.pd.dt_wbc)
+            # if self.params.interpolate_mpc:
+            #     if self.mpc_result.new_result:
+            #         if self.params.interpolation_type == 3:
+            #             self.interpolator.update(xs[0], xs[1], xs[2])
+            #         # self.interpolator.plot(self.pd.mpc_wbc_ratio, self.pd.dt_wbc)
 
-                t = (self.k - self.k_solve + 1) * self.pd.dt_wbc
-                q, v = self.interpolator.interpolate(t)
-            else:
-                q, v = self.integrate_x(m)
+            #     t = (self.k - self.k_solve + 1) * self.pd.dt_wbc
+            #     q, v = self.interpolator.interpolate(t)
+            # else:
+            #     q, v = self.integrate_x(m)
+            q = xs[1][:3]
+            v = xs[1][3:]
 
             self.result.q_des[3:6] = q[:]
             self.result.v_des[3:6] = v[:]
@@ -422,8 +424,9 @@ class Controller:
         #         m["x_m"][self.pd.nq :] - self.mpc_result.xs[0][self.pd.nq :],
         #     ]
         # )
-        x_diff = self.mpc_result.xs[0] - m["x_m"]
-        tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
+        # x_diff = self.mpc_result.xs[0] - m["x_m"]
+        # tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
+        tau = self.mpc_result.us[0]
         return tau
 
     def integrate_x(self, m):

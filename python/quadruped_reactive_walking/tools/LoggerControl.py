@@ -147,7 +147,6 @@ class LoggerControl:
         self.plot_controller_times()
         if not self.params.enable_multiprocessing:
             self.plot_OCP_times()
-            self.plot_OCP_update_times()
 
         plt.show()
 
