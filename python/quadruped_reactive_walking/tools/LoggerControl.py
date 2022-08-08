@@ -209,7 +209,7 @@ class LoggerControl:
     def plot_target(self, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
-        x_mes = np.concatenate([self.q_mes[:, 3:6], self.v_mes[:, 3:6]], axis=1)
+        x_mes = np.concatenate([self.q_mes, self.v_mes], axis=1)
 
         horizon = int(self.ocp_xs.shape[0] / self.pd.mpc_wbc_ratio)
         t_scale = np.linspace(

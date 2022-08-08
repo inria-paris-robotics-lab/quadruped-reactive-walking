@@ -248,7 +248,7 @@ class Controller:
                 self.save_guess()
 
             self.result.FF = self.params.Kff_main * np.ones(12)
-            self.result.tau_ff[3:6] = self.compute_torque(m)[:]
+            self.result.tau_ff = self.compute_torque(m)[:]
 
             # if self.params.interpolate_mpc:
             #     if self.mpc_result.new_result:
@@ -260,11 +260,11 @@ class Controller:
             #     q, v = self.interpolator.interpolate(t)
             # else:
             #     q, v = self.integrate_x(m)
-            q = xs[1][:3]
-            v = xs[1][3:]
+            q = xs[1][: self.pd.nq]
+            v = xs[1][self.pd.nq :]
 
-            self.result.q_des[3:6] = q[:]
-            self.result.v_des[3:6] = v[:]
+            self.result.q_des = q[:]
+            self.result.v_des = v[:]
 
             if self.axs is not None:
                 [
@@ -407,7 +407,7 @@ class Controller:
     def read_state(self, device):
         qj_m = device.joints.positions
         vj_m = device.joints.velocities
-        x_m = np.concatenate([qj_m[3:6], vj_m[3:6]])
+        x_m = np.concatenate([qj_m, vj_m])
         return {"qj_m": qj_m, "vj_m": vj_m, "x_m": x_m}
 
     def compute_torque(self, m):
@@ -424,9 +424,9 @@ class Controller:
         #         m["x_m"][self.pd.nq :] - self.mpc_result.xs[0][self.pd.nq :],
         #     ]
         # )
-        # x_diff = self.mpc_result.xs[0] - m["x_m"]
-        # tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
-        tau = self.mpc_result.us[0]
+        x_diff = self.mpc_result.xs[0] - m["x_m"]
+        tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
+        # tau = self.mpc_result.us[0]
         return tau
 
     def integrate_x(self, m):

@@ -23,7 +23,8 @@ class problemDataAbstract:
 
         self.frozen_names = frozen_names
         if frozen_names:
-            self.frozen_idxs = [self.model.getJointId(id) for id in frozen_names]
+            self.frozen_idxs = [self.model.getJointId(
+                id) for id in frozen_names]
             self.freeze()
 
         self.nq = self.model.nq
@@ -162,17 +163,7 @@ class ProblemData(problemDataAbstract):
 class ProblemDataFull(problemDataAbstract):
     def __init__(self, param):
         frozen_names = [
-            "root_joint",
-            "FL_HAA",
-            "FL_HFE",
-            "FL_KFE",
-            "HL_HAA",
-            "HL_HFE",
-            "HL_KFE",
-            "HR_HAA",
-            "HR_HFE",
-            "HR_KFE",
-        ]
+            "root_joint"]
 
         super().__init__(param, frozen_names)
 
@@ -185,11 +176,17 @@ class ProblemDataFull(problemDataAbstract):
         # self.friction_cone_w = 1e3 * 0
         self.control_bound_w = 1e3
         self.control_reg_w = 1e0
-        self.state_reg_w = np.array([1e-5] * 3 + [1e0] * 3)
-        self.terminal_velocity_w = np.array([0] * 3 + [1e3] * 3)
+        self.state_reg_w = np.array([1e0] * 3
+                                    + [1e-5] * 3
+                                    + [1e0] * 6
+                                    + [1e1] * 3
+                                    + [1e0] * 3
+                                    + [1e1] * 6
+                                    )
+        self.terminal_velocity_w = np.array([0] * 12 + [1e3] * 12)
 
-        self.q0_reduced = self.q0[10:13]
-        self.v0_reduced = np.zeros(self.nq)
+        self.q0_reduced = self.q0[7:]
+        self.v0_reduced = np.zeros(self.nv)
         self.x0_reduced = np.concatenate([self.q0_reduced, self.v0_reduced])
 
         self.xref = self.x0_reduced
