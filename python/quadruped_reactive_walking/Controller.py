@@ -414,17 +414,17 @@ class Controller:
         """
         Compute the feedforward torque using ricatti gains
         """
-        # x_diff = np.concatenate(
-        #     [
-        #         pin.difference(
-        #             self.pd.model,
-        #             m["x_m"][: self.pd.nq],
-        #             self.mpc_result.xs[0][: self.pd.nq],
-        #         ),
-        #         m["x_m"][self.pd.nq :] - self.mpc_result.xs[0][self.pd.nq :],
-        #     ]
-        # )
-        x_diff = self.mpc_result.xs[0] - m["x_m"]
+        x_diff = np.concatenate(
+            [
+                pin.difference(
+                    self.pd.model,
+                    m["x_m"][: self.pd.nq],
+                    self.mpc_result.xs[0][: self.pd.nq],
+                ),
+                m["x_m"][self.pd.nq :] - self.mpc_result.xs[0][self.pd.nq :],
+            ]
+        )
+        # x_diff = self.mpc_result.xs[0] - m["x_m"]
         tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
         # tau = self.mpc_result.us[0]
         return tau
