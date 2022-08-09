@@ -176,9 +176,9 @@ class ProblemDataFull(problemDataAbstract):
         # self.friction_cone_w = 1e3 * 0
         self.control_bound_w = 1e3
         self.control_reg_w = 1e0
-        self.state_reg_w = np.array([1e0] * 3
+        self.state_reg_w = np.array([1e1] * 3
                                     + [1e-5] * 3
-                                    + [1e0] * 6
+                                    + [1e1] * 6
                                     + [1e1] * 3
                                     + [1e0] * 3
                                     + [1e1] * 6

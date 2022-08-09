@@ -37,10 +37,10 @@ class Interpolator:
         self.update(x0, x0)
 
     def update(self, x0, x1, x2=None):
-        self.q0 = x0[:3]
-        self.q1 = x1[:3]
-        self.v0 = x0[3:]
-        self.v1 = x1[3:]
+        self.q0 = x0[:12]
+        self.q1 = x1[:12]
+        self.v0 = x0[12:]
+        self.v1 = x1[12:]
         if self.type == 0:  # Linear
             self.alpha = 0.0
             self.beta = self.v1
@@ -69,8 +69,8 @@ class Interpolator:
             from scipy.interpolate import KroghInterpolator
 
             if x2 is not None:
-                self.q2 = x2[:3]
-                self.v2 = x2[3:]
+                self.q2 = x2[:12]
+                self.v2 = x2[12:]
                 self.y = [self.q0, self.v0, self.q1, self.v1, self.q2, self.v2]
                 self.krog = KroghInterpolator(self.ts, np.array(self.y))
             else:
@@ -171,7 +171,7 @@ class Controller:
         self.k_solve = 0
         if self.params.interpolate_mpc:
             self.interpolator = Interpolator(
-                params, np.concatenate([self.result.q_des[3:6], self.result.v_des[3:6]])
+                params, np.concatenate([self.result.q_des, self.result.v_des])
             )
         try:
             file = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
@@ -209,25 +209,32 @@ class Controller:
 
             try:
                 footstep = self.target.footstep(self.pd.T)
-                # self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
-                if self.initialized:
-                    self.mpc.solve(
-                        self.k,
-                        self.mpc_result.xs[1],
-                        footstep,
-                        self.gait,
-                        self.xs_init,
-                        self.us_init,
-                    )
-                else:
-                    self.mpc.solve(
-                        self.k,
-                        m["x_m"],
-                        footstep,
-                        self.gait,
-                        self.xs_init,
-                        self.us_init,
-                    )
+                self.mpc.solve(self.k,
+                                m["x_m"],
+                                footstep,
+                                self.gait,
+                                self.xs_init,
+                                self.us_init
+                                )
+                # OPEN LOOP MPC
+                # if self.initialized:
+                #     self.mpc.solve(
+                #         self.k,
+                #         self.mpc_result.xs[1],
+                #         footstep,
+                #         self.gait,
+                #         self.xs_init,
+                #         self.us_init,
+                #     )
+                # else:
+                #     self.mpc.solve(
+                #         self.k,
+                #         m["x_m"],
+                #         footstep,
+                #         self.gait,
+                #         self.xs_init,
+                #         self.us_init,
+                #     )
             except ValueError:
                 self.error = True
                 print("MPC Problem")
@@ -250,16 +257,17 @@ class Controller:
             self.result.FF = self.params.Kff_main * np.ones(12)
             self.result.tau_ff = self.compute_torque(m)[:]
 
-            # if self.params.interpolate_mpc:
-            #     if self.mpc_result.new_result:
-            #         if self.params.interpolation_type == 3:
-            #             self.interpolator.update(xs[0], xs[1], xs[2])
-            #         # self.interpolator.plot(self.pd.mpc_wbc_ratio, self.pd.dt_wbc)
+            if self.params.interpolate_mpc:
+                if self.mpc_result.new_result:
+                    if self.params.interpolation_type == 3:
+                        self.interpolator.update(xs[0], xs[1], xs[2])
+                    # self.interpolator.plot(self.pd.mpc_wbc_ratio, self.pd.dt_wbc)
 
-            #     t = (self.k - self.k_solve + 1) * self.pd.dt_wbc
-            #     q, v = self.interpolator.interpolate(t)
-            # else:
-            #     q, v = self.integrate_x(m)
+                t = (self.k - self.k_solve + 1) * self.pd.dt_wbc
+                q, v = self.interpolator.interpolate(t)
+            else:
+                q, v = self.integrate_x(m)
+
             q = xs[1][: self.pd.nq]
             v = xs[1][self.pd.nq :]
 
@@ -282,8 +290,8 @@ class Controller:
         t_send = time.time()
         self.t_send = t_send - t_mpc
 
-        # self.clamp_result(device)
-        # self.security_check(m)
+        self.clamp_result(device)
+        self.security_check(m)
 
         if self.error:
             self.set_null_control()
@@ -425,8 +433,7 @@ class Controller:
             ]
         )
         # x_diff = self.mpc_result.xs[0] - m["x_m"]
-        tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
-        # tau = self.mpc_result.us[0]
+        tau = self.mpc_result.us[0] - np.dot(self.mpc_result.K[0], x_diff)
         return tau
 
     def integrate_x(self, m):
@@ -434,9 +441,9 @@ class Controller:
         Integrate the position and velocity using the acceleration computed from the
         feedforward torque
         """
-        q0 = m["qj_m"][3:6].copy()
-        v0 = m["vj_m"][3:6].copy()
-        tau = self.result.tau_ff[3:6].copy()
+        q0 = m["qj_m"].copy()
+        v0 = m["vj_m"].copy()
+        tau = self.result.tau_ff.copy()
 
         a = pin.aba(self.pd.model, self.pd.rdata, q0, v0, tau)
 
