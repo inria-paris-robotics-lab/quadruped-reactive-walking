@@ -1,4 +1,5 @@
 from tracemalloc import start
+from xxlimited import foo
 
 from .ProblemData import ProblemData
 from .Target import Target

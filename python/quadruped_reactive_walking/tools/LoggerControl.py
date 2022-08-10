@@ -100,7 +100,10 @@ class LoggerControl:
             self.mocapOrientationQuat[self.i] = device.baseState[1]
 
         # Controller timings: MPC time, ...
-        self.target[self.i] = controller.target.evaluate_circle(0)
+        if self.i < self.pd.T * self.pd.mpc_wbc_ratio:
+            self.target[self.i] = controller.footsteps[self.i // self.pd.mpc_wbc_ratio][:, 1]
+        else:
+            self.target[self.i] = controller.target.compute(controller.k)[:, 1]
         self.t_mpc[self.i] = controller.t_mpc
         self.t_send[self.i] = controller.t_send
         self.t_loop[self.i] = controller.t_loop

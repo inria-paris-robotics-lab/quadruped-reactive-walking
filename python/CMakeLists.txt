@@ -40,6 +40,7 @@ set(${PY_NAME}_TOOLS_PYTHON
   __init__.py
   LoggerControl.py
   PyBulletSimulator.py
+  Utils.py
   qualisysClient.py
   kinematics_utils.py
   )

@@ -161,7 +161,6 @@ def control_loop():
         put_on_the_floor(device, q_init)
 
     # CONTROL LOOP ***************************************************
-
     t = 0.0
     t_max = (params.N_SIMULATION - 1) * params.dt_wbc
 
