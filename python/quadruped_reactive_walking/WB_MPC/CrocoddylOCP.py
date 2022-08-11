@@ -78,13 +78,20 @@ class OCP:
         pin.updateFramePlacements(self.pd.model, self.pd.rdata)
 
         if self.initialized:
-            task = self.make_task(np.reshape(footstep, (3, 4), order="F"))
-            support_feet = [self.pd.allContactIds[i] for i in np.nonzero(gait[-1] == 1)[0]]
-
-            self.nodes[0].update_model(support_feet, task)
+            support_feet = [
+                self.pd.allContactIds[i] for i in np.nonzero(gait[-1] == 1)[0]
+            ]
+            update_model(
+                self.problem.runningModels[0],
+                "FR_FOOT_footTrack",
+                footstep[:, 1],
+                support_feet,
+                self.pd,
+            )
 
             self.problem.circularAppend(
-                self.nodes[0].model, self.nodes[0].model.createData()
+                self.problem.runningModels[0],
+                self.problem.runningModels[0].createData(),
             )
 
         self.problem.x0 = self.x0
@@ -139,6 +146,20 @@ class OCP:
         return acc
 
 
+def update_model(model, name, footstep, support_feet, pd):
+    model.differential.costs.costs[name].cost.residual.reference = footstep
+
+    for i in pd.allContactIds:
+        if i in support_feet:
+            model.differential.contacts.changeContactStatus(
+                pd.model.frames[i].name + "_contact", True
+            )
+        else:
+            model.differential.contacts.changeContactStatus(
+                pd.model.frames[i].name + "_contact", False
+            )
+
+
 class Node:
     def __init__(
         self, pd, state, supportFootIds=[], swingFootTask=[], isTerminal=False
@@ -169,15 +190,20 @@ class Node:
         :param swingFootTask: swinging foot task
         :return action model for a swing foot phase
         """
-
         self.contactModel = crocoddyl.ContactModelMultiple(self.state, self.nu)
-        for i in supportFootIds:
+        for i in self.pd.allContactIds:
             supportContactModel = crocoddyl.ContactModel3D(
                 self.state, i, np.array([0.0, 0.0, 0.0]), self.nu, np.array([0.0, 0.0])
             )
+
             self.contactModel.addContact(
                 self.pd.model.frames[i].name + "_contact", supportContactModel
             )
+
+            if i not in supportFootIds:
+                self.contactModel.changeContactStatus(
+                    self.pd.model.frames[i].name + "_contact", False
+                )
 
         # Creating the cost model for a contact phase
         costModel = crocoddyl.CostModelSum(self.state, self.nu)
@@ -199,17 +225,6 @@ class Node:
         self.model = crocoddyl.IntegratedActionModelEuler(
             self.dmodel, self.control, self.pd.dt
         )
-
-    def update_contact_model(self, supportFootIds):
-        self.remove_contacts()
-        self.contactModel = crocoddyl.ContactModelMultiple(self.state, self.nu)
-        for i in supportFootIds:
-            supportContactModel = crocoddyl.ContactModel3D(
-                self.state, i, np.array([0.0, 0.0, 0.0]), self.nu, np.array([0.0, 0.0])
-            )
-            self.dmodel.contacts.addContact(
-                self.pd.model.frames[i].name + "_contact", supportContactModel
-            )
 
     def make_terminal_model(self):
         self.isTerminal = True
@@ -267,11 +282,6 @@ class Node:
         if "terminalVelocity" in self.dmodel.costs.active.tolist():
             self.dmodel.costs.removeCost("terminalVelocity")
 
-    def remove_contacts(self):
-        allContacts = self.dmodel.contacts.contacts.todict()
-        for c in allContacts:
-            self.dmodel.contacts.removeContact(c)
-
     def tracking_cost(self, task):
         if task is not None:
             for (id, pose) in task:
@@ -293,8 +303,3 @@ class Node:
                     footTrack,
                     self.pd.foot_tracking_w,
                 )
-
-    def update_model(self, support_feet=[], task=[]):
-        self.update_contact_model(support_feet)
-        if not self.isTerminal:
-            self.tracking_cost(task)

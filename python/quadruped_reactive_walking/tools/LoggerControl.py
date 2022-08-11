@@ -100,10 +100,6 @@ class LoggerControl:
             self.mocapOrientationQuat[self.i] = device.baseState[1]
 
         # Controller timings: MPC time, ...
-        if self.i < self.pd.T * self.pd.mpc_wbc_ratio:
-            self.target[self.i] = controller.footsteps[self.i // self.pd.mpc_wbc_ratio][:, 1]
-        else:
-            self.target[self.i] = controller.target.compute(controller.k)[:, 1]
         self.t_mpc[self.i] = controller.t_mpc
         self.t_send[self.i] = controller.t_send
         self.t_loop[self.i] = controller.t_loop
@@ -122,6 +118,13 @@ class LoggerControl:
         self.t_loop[self.i] = controller.t_loop
 
         self.t_ocp_ddp[self.i] = controller.mpc_result.solving_duration
+
+        if self.i == 0:
+            for i in range(self.pd.T * self.pd.mpc_wbc_ratio):
+                self.target[i] = controller.footsteps[i // self.pd.mpc_wbc_ratio][:, 1]
+        if self.i + self.pd.T * self.pd.mpc_wbc_ratio < self.log_size:
+            self.target[self.i + self.pd.T * self.pd.mpc_wbc_ratio] = controller.target_footstep[:, 1]
+
         if not self.params.enable_multiprocessing:
             self.t_ocp_update[self.i] = controller.mpc.ocp.t_update
             self.t_ocp_warm_start[self.i] = controller.mpc.ocp.t_warm_start

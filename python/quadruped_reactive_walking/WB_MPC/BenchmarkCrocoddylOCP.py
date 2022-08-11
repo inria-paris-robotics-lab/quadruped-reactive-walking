@@ -17,7 +17,7 @@ MAXITER = 1
 def createProblem():
     params = qrw.Params()
     pd = ProblemDataFull(params)
-    target = Target(pd)
+    target = Target(params)
 
     x0 = pd.x0_reduced
 
