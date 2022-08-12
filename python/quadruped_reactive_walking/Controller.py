@@ -208,7 +208,9 @@ class Controller:
         t_measures = time.time()
         self.t_measures = t_measures - t_start
 
-        self.target_footstep = self.target.compute(self.k + self.pd.T * self.pd.mpc_wbc_ratio)
+        self.target_footstep = self.target.compute(
+            self.k + self.pd.T * self.pd.mpc_wbc_ratio
+        )
 
         if self.k % self.pd.mpc_wbc_ratio == 0:
             if self.mpc_solved:
@@ -216,25 +218,32 @@ class Controller:
                 self.mpc_solved = False
 
             try:
-                # self.mpc.solve(self.k, m["x_m"], self.xs_init, self.us_init)
-                if self.initialized:
-                    self.mpc.solve(
-                        self.k,
-                        self.mpc_result.xs[1],
-                        self.target_footstep.copy(),
-                        self.gait,
-                        self.xs_init,
-                        self.us_init,
-                    )
-                else:
-                    self.mpc.solve(
-                        self.k,
-                        m["x_m"],
-                        self.target_footstep.copy(),
-                        self.gait,
-                        self.xs_init,
-                        self.us_init,
-                    )
+                self.mpc.solve(
+                    self.k,
+                    m["x_m"],
+                    self.target_footstep.copy(),
+                    self.gait,
+                    self.xs_init,
+                    self.us_init,
+                )
+                # if self.initialized:
+                #     self.mpc.solve(
+                #         self.k,
+                #         self.mpc_result.xs[1],
+                #         self.target_footstep.copy(),
+                #         self.gait,
+                #         self.xs_init,
+                #         self.us_init,
+                #     )
+                # else:
+                #     self.mpc.solve(
+                #         self.k,
+                #         m["x_m"],
+                #         self.target_footstep.copy(),
+                #         self.gait,
+                #         self.xs_init,
+                #         self.us_init,
+                #     )
             except ValueError:
                 self.error = True
                 print("MPC Problem")
@@ -287,8 +296,8 @@ class Controller:
         t_send = time.time()
         self.t_send = t_send - t_mpc
 
-        # self.clamp_result(device)
-        # self.security_check(m)
+        self.clamp_result(device)
+        self.security_check(m)
 
         if self.error:
             self.set_null_control()
