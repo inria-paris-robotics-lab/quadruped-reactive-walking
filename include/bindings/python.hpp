@@ -13,5 +13,7 @@ namespace bp = boost::python;
 
 void exposeJoystick();
 void exposeParams();
+void exposeEstimator();
+void exposeFilter();
 
 #endif

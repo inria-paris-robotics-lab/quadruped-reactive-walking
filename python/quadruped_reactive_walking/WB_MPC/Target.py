@@ -27,6 +27,8 @@ class Target:
             self.max_height = params.max_height
             self.T = self.k_per_step * self.dt_wbc
             self.A = np.zeros((6, 3))
+
+            self.update_time = -1
         else:
             self.target_footstep = self.position + np.array([0.0, 0.0, 0.10])
 
@@ -61,8 +63,9 @@ class Target:
             target = self.initial
 
         k_step = k % self.k_per_step
-        if k_step == 0:
+        if n_step != self.update_time:
             self.update_polynomial(initial, target)
+            self.update_time = n_step
 
         t = k_step * self.dt_wbc
         return self.compute_position(j, t)

@@ -2,6 +2,8 @@ set(${PY_NAME}_SOURCES
   main.cpp
   Joystick.cpp
   Params.cpp
+  Estimator.cpp
+  Filter.cpp
 )
 
 set(PY_LIB ${${PY_NAME}_LIB})

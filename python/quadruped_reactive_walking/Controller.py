@@ -4,9 +4,10 @@ import numpy as np
 import pinocchio as pin
 import pybullet as pyb
 
+import quadruped_reactive_walking as qrw
 from . import WB_MPC_Wrapper
 from .WB_MPC.Target import Target
-from .tools.Utils import init_robot
+from .tools.Utils import init_robot, quaternionToRPY
 
 COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c"]
 
@@ -161,6 +162,10 @@ class Controller:
         self.error = False
         self.initialized = False
 
+        self.estimator = qrw.Estimator()
+        self.estimator.initialize(params)
+        self.q = np.zeros(18)
+
         self.result = Result(params)
         self.result.q_des = self.pd.q0[7:].copy()
         self.result.v_des = self.pd.v0[6:].copy()
@@ -205,6 +210,9 @@ class Controller:
         t_start = time.time()
 
         m = self.read_state(device)
+
+        oRh, hRb, oTh = self.run_estimator(device)
+
         t_measures = time.time()
         self.t_measures = t_measures - t_start
 
@@ -416,6 +424,48 @@ class Controller:
             {"xs": self.mpc_result.xs, "us": self.mpc_result.us},
         )
         print("Initial guess saved")
+
+    def run_estimator(
+        self, device, q_perfect=np.zeros(6), b_baseVel_perfect=np.zeros(3)
+    ):
+        """
+        Call the estimator and retrieve the reference and estimated quantities.
+        Run a filter on q, h_v and v_ref.
+
+        @param device device structure holding simulation data
+        @param q_perfect 6D perfect position of the base in world frame
+        @param v_baseVel_perfect 3D perfect linear velocity of the base in base frame
+        """
+
+        self.estimator.run(
+            self.gait,
+            self.target.compute(self.k),
+            device.imu.linear_acceleration,
+            device.imu.gyroscope,
+            device.imu.attitude_euler,
+            device.joints.positions,
+            device.joints.velocities,
+            q_perfect,
+            b_baseVel_perfect,
+        )
+
+        self.estimator.update_reference_state(np.zeros(6))
+        # Add joystck reference velocity when needed
+
+        oRh = self.estimator.get_oRh()
+        hRb = self.estimator.get_hRb()
+        oTh = self.estimator.get_oTh().reshape((3, 1))
+
+        self.v_ref = self.estimator.get_base_vel_ref()
+        self.h_v = self.estimator.get_h_v()
+        self.h_v_windowed = self.estimator.get_h_v_filtered()
+
+        self.q[:3] = self.estimator.get_q_estimate()[:3]
+        self.q[6:] = self.estimator.get_q_estimate()[7:]
+        self.q[3:6] = quaternionToRPY(self.estimator.get_q_estimate()[3:7]).ravel()
+        self.v = self.estimator.get_v_reference()
+
+        return oRh, hRb, oTh
 
     def read_state(self, device):
         qj_m = device.joints.positions

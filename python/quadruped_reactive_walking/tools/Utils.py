@@ -68,3 +68,36 @@ def init_robot(q_init, params):
             params.shoulders[3 * i + j] = shoulders_init[j, i]
             params.footsteps_init[3 * i + j] = fsteps_init[j, i]
             params.footsteps_under_shoulders[3 * i + j] = fsteps_init[j, i]
+
+
+def quaternionToRPY(quat):
+    """Quaternion (4 x 0) to Roll Pitch Yaw (3 x 1)"""
+
+    qx = quat[0]
+    qy = quat[1]
+    qz = quat[2]
+    qw = quat[3]
+
+    rotateXa0 = 2.0 * (qy * qz + qw * qx)
+    rotateXa1 = qw * qw - qx * qx - qy * qy + qz * qz
+    rotateX = 0.0
+
+    if (rotateXa0 != 0.0) and (rotateXa1 != 0.0):
+        rotateX = np.arctan2(rotateXa0, rotateXa1)
+
+    rotateYa0 = -2.0 * (qx * qz - qw * qy)
+    rotateY = 0.0
+    if rotateYa0 >= 1.0:
+        rotateY = np.pi / 2.0
+    elif rotateYa0 <= -1.0:
+        rotateY = -np.pi / 2.0
+    else:
+        rotateY = np.arcsin(rotateYa0)
+
+    rotateZa0 = 2.0 * (qx * qy + qw * qz)
+    rotateZa1 = qw * qw + qx * qx - qy * qy - qz * qz
+    rotateZ = 0.0
+    if (rotateZa0 != 0.0) and (rotateZa1 != 0.0):
+        rotateZ = np.arctan2(rotateZa0, rotateZa1)
+
+    return np.array([[rotateX], [rotateY], [rotateZ]])

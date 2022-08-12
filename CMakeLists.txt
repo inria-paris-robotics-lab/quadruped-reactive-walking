@@ -51,11 +51,17 @@ set(${PROJECT_NAME}_HEADERS
   include/qrw/Types.h
   include/qrw/Params.hpp
   include/qrw/Joystick.hpp
+  include/qrw/Estimator.hpp
+  include/qrw/Filter.hpp
+  include/qrw/ComplementaryFilter.hpp
   )
 
 set(${PROJECT_NAME}_SOURCES
   src/Params.cpp
   src/Joystick.cpp
+  src/Estimator.cpp
+  src/Filter.cpp
+  src/ComplementaryFilter.cpp
   )
 
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SOURCES} ${${PROJECT_NAME}_HEADERS})

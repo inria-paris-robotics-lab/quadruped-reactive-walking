@@ -9,8 +9,8 @@ class problemDataAbstract:
         self.dt_wbc = param.dt_wbc
         self.mpc_wbc_ratio = int(self.dt / self.dt_wbc)
         self.init_steps = 0
-        self.target_steps = 100
-        self.T = self.init_steps + self.target_steps - 1
+        self.target_steps = param.gait.shape[0]
+        self.T = param.gait.shape[0] - 1
 
         self.robot = erd.load("solo12")
         self.q0 = self.robot.q0
@@ -23,8 +23,7 @@ class problemDataAbstract:
 
         self.frozen_names = frozen_names
         if frozen_names:
-            self.frozen_idxs = [self.model.getJointId(
-                id) for id in frozen_names]
+            self.frozen_idxs = [self.model.getJointId(id) for id in frozen_names]
             self.freeze()
 
         self.nq = self.model.nq
@@ -162,8 +161,7 @@ class ProblemData(problemDataAbstract):
 
 class ProblemDataFull(problemDataAbstract):
     def __init__(self, param):
-        frozen_names = [
-            "root_joint"]
+        frozen_names = ["root_joint"]
 
         super().__init__(param, frozen_names)
 
@@ -176,13 +174,9 @@ class ProblemDataFull(problemDataAbstract):
         # self.friction_cone_w = 1e3 * 0
         self.control_bound_w = 1e3
         self.control_reg_w = 1e-1
-        self.state_reg_w = np.array([1e1] * 3
-                                    + [1e-2] * 3
-                                    + [1e1] * 6
-                                    + [1e1] * 3
-                                    + [3*1e-1] * 3
-                                    + [1e1] * 6
-                                    )
+        self.state_reg_w = np.array(    
+            [1e1] * 3 + [1e-2] * 3 + [1e1] * 6 + [1e1] * 3 + [3 * 1e-1] * 3 + [1e1] * 6
+        )
         self.terminal_velocity_w = np.array([0] * 12 + [1e3] * 12)
 
         self.q0_reduced = self.q0[7:]
