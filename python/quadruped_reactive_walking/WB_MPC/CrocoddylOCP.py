@@ -42,6 +42,16 @@ class OCP:
         self.models = [node.model for node in self.nodes]
         self.terminal_model = self.terminal_node.model
 
+    # def initialize_models(self, gait, footsteps):
+    #     self.models = []
+    #     for t, step in enumerate(gait):
+    #         tasks = self.make_task(footsteps[t])
+    #         support_feet = [self.pd.allContactIds[i] for i in np.nonzero(step == 1)[0]]
+    #         self.models.append(self.create_model(support_feet, tasks))
+
+    #     support_feet = [self.pd.allContactIds[i] for i in np.nonzero(gait[-1] == 1)[0]]
+    #     self.terminal_model = self.create_model(support_feet, is_terminal=True)
+
     def solve(self, x0, footstep, gait, xs_init=None, us_init=None):
         t_start = time()
         self.x0 = x0
@@ -78,16 +88,11 @@ class OCP:
         pin.updateFramePlacements(self.pd.model, self.pd.rdata)
 
         if self.initialized:
+            tasks = self.make_task(footstep)
             support_feet = [
                 self.pd.allContactIds[i] for i in np.nonzero(gait[-1] == 1)[0]
             ]
-            update_model(
-                self.problem.runningModels[0],
-                "FR_FOOT_footTrack",
-                footstep[:, 1],
-                support_feet,
-                self.pd,
-            )
+            self.update_model(self.problem.runningModels[0], tasks, support_feet)
 
             self.problem.circularAppend(
                 self.problem.runningModels[0],
@@ -145,19 +150,135 @@ class OCP:
         [acc.append(m.differential.xout) for m in self.ddp.problem.runningDatas]
         return acc
 
+    def update_model(self, model, tasks, support_feet):
+        if tasks is not None:
+            for (id, pose) in tasks:
+                name = self.pd.model.frames[id].name + "_foot_tracking"
+                if name in model.differential.costs.active.tolist():
+                    model.differential.costs.costs[name].cost.residual.reference = pose
+                else:
+                    residual = crocoddyl.ResidualModelFrameTranslation(
+                        self.state, id, pose, nu
+                    )
+                    cost = crocoddyl.CostModelResidual(self.state, residual)
+                    model.differential.costs.addCost(
+                        name, cost, self.pd.foot_tracking_w
+                    )
 
-def update_model(model, name, footstep, support_feet, pd):
-    model.differential.costs.costs[name].cost.residual.reference = footstep
+        for i in self.pd.allContactIds:
+            name = self.pd.model.frames[i].name + "_contact"
+            model.differential.contacts.changeContactStatus(name, i in support_feet)
 
-    for i in pd.allContactIds:
-        if i in support_feet:
-            model.differential.contacts.changeContactStatus(
-                pd.model.frames[i].name + "_contact", True
-            )
+    def create_model(self, support_feet=[], tasks=[], is_terminal=False):
+        """
+        Create the action model
+
+        :param state: swinging foot task
+        :param support_feet: list of support feet ids
+        :param task: list of support feet ids and associated tracking reference
+        :param isTterminal: true for the terminal node
+        :return action model for a swing foot phase
+        """
+        model = self.create_standard_model(support_feet)
+        if is_terminal:
+            self.make_terminal_model(model)
         else:
-            model.differential.contacts.changeContactStatus(
-                pd.model.frames[i].name + "_contact", False
+            self.make_running_model(model, support_feet, tasks)
+
+        return model
+
+    def create_standard_model(self, support_feet):
+        """
+        Create a standard action model
+
+        :param state: swinging foot task
+        :param support_feet: list of support feet ids
+        :return action model for a swing foot phase
+        """
+        if self.pd.useFixedBase == 0:
+            actuation = crocoddyl.ActuationModelFloatingBase(self.state)
+        else:
+            actuation = crocoddyl.ActuationModelFull(self.state)
+        nu = actuation.nu
+
+        control = crocoddyl.ControlParametrizationModelPolyZero(nu)
+
+        contacts = crocoddyl.ContactModelMultiple(self.state, nu)
+        for i in self.pd.allContactIds:
+            name = (self.pd.model.frames[i].name + "_contact",)
+            contact = crocoddyl.ContactModel3D(
+                self.state, i, np.zeros(3), nu, np.zeros(2)
             )
+            contacts.addContact(name, contact)
+            if i not in support_feet:
+                self.contactModel.changeContactStatus(name, False)
+
+        costs = crocoddyl.CostModelSum(self.state, nu)
+        residual = crocoddyl.ResidualModelState(self.state, self.pd.xref, nu)
+        activation = crocoddyl.ActivationModelWeightedQuad(self.pd.state_reg_w**2)
+        state_cost = crocoddyl.CostModelResidual(self.state, activation, residual)
+        costs.addCost("state_reg", state_cost, 1)
+
+        differential = crocoddyl.DifferentialActionModelContactFwdDynamics(
+            self.state, actuation, contacts, costs, 0.0, True
+        )
+        model = crocoddyl.IntegratedActionModelEuler(differential, control, self.pd.dt)
+
+        return model
+
+    def make_terminal_model(self, model):
+        """
+        Add the final velocity cost to the terminal model
+        """
+        nu = model.differential.actuation.nu
+        residual = crocoddyl.ResidualModelState(self.state, self.pd.xref, nu)
+        activation = crocoddyl.ActivationModelWeightedQuad(
+            self.pd.terminal_velocity_w**2
+        )
+        state_cost = crocoddyl.CostModelResidual(self.state, activation, residual)
+        self.costModel.addCost("terminal_velocity", state_cost, 1)
+
+    def make_running_model(self, model, support_feet, tasks):
+        """
+        Add all the costs to the running models
+        """
+        nu = model.differential.actuation.nu
+        costs = model.differential.costs
+        for i in support_feet:
+            cone = crocoddyl.FrictionCone(self.pd.Rsurf, self.pd.mu, 4, False)
+            residual = crocoddyl.ResidualModelContactFrictionCone(
+                self.state, i, cone, nu
+            )
+            activation = crocoddyl.ActivationModelQuadraticBarrier(
+                crocoddyl.ActivationBounds(cone.lb, cone.ub)
+            )
+            friction_cone = crocoddyl.CostModelResidual(
+                self.state, activation, residual
+            )
+            friction_name = self.pd.model.frames[id].name + "_friction_cone"
+            costs.addCost(friction_name, friction_cone, self.pd.friction_cone_w)
+
+        control_residual = crocoddyl.ResidualModelControl(self.state, self.pd.uref)
+        control_reg = crocoddyl.CostModelResidual(self.state, control_residual)
+        self.costModel.addCost("control_reg", control_reg, self.pd.control_reg_w)
+
+        control_bound_residual = crocoddyl.ResidualModelControl(self.state, nu)
+        control_bound_activation = crocoddyl.ActivationModelQuadraticBarrier(
+            crocoddyl.ActivationBounds(-self.pd.effort_limit, self.pd.effort_limit)
+        )
+        control_bound = crocoddyl.CostModelResidual(
+            self.state, control_bound_activation, control_bound_residual
+        )
+        costs.addCost("control_bound", control_bound, self.pd.control_bound_w)
+
+        if tasks is not None:
+            for (id, pose) in tasks:
+                name = self.pd.model.frames[id].name + "_foot_tracking"
+                residual = crocoddyl.ResidualModelFrameTranslation(
+                    self.state, id, pose, nu
+                )
+                foot_tracking = crocoddyl.CostModelResidual(self.state, residual)
+                costs.addCost(name, foot_tracking, self.pd.foot_tracking_w)
 
 
 class Node:
@@ -292,14 +413,14 @@ class Node:
                     self.state, frameTranslationResidual
                 )
                 if (
-                    self.pd.model.frames[id].name + "_footTrack"
+                    self.pd.model.frames[id].name + "_foot_tracking"
                     in self.dmodel.costs.active.tolist()
                 ):
                     self.dmodel.costs.removeCost(
-                        self.pd.model.frames[id].name + "_footTrack"
+                        self.pd.model.frames[id].name + "_foot_tracking"
                     )
                 self.costModel.addCost(
-                    self.pd.model.frames[id].name + "_footTrack",
+                    self.pd.model.frames[id].name + "_foot_tracking",
                     footTrack,
                     self.pd.foot_tracking_w,
                 )
