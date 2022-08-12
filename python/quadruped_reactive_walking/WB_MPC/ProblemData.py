@@ -175,12 +175,12 @@ class ProblemDataFull(problemDataAbstract):
         self.foot_tracking_w = 1e4
         # self.friction_cone_w = 1e3 * 0
         self.control_bound_w = 1e3
-        self.control_reg_w = 1e0
+        self.control_reg_w = 1e-1
         self.state_reg_w = np.array([1e1] * 3
-                                    + [1e-1] * 3
+                                    + [1e-2] * 3
                                     + [1e1] * 6
                                     + [1e1] * 3
-                                    + [1e0] * 3
+                                    + [3*1e-1] * 3
                                     + [1e1] * 6
                                     )
         self.terminal_velocity_w = np.array([0] * 12 + [1e3] * 12)
