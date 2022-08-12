@@ -92,10 +92,11 @@ class OCP:
         self.initialized = True
 
     def make_task(self, footstep):
-        task = []
+        task = [[], []]
         for foot in range(4):
             if footstep[:, foot].any():
-                task += [[self.pd.allContactIds[foot], footstep[:, foot]]]
+                task[0].append(self.pd.allContactIds[foot])
+                task[1].append(footstep[:, foot])
         return task
 
     def get_results(self):
@@ -139,23 +140,12 @@ class OCP:
         return acc
 
     def update_model(self, model, tasks, support_feet):
-        if tasks is not None:
-            for (id, pose) in tasks:
-                name = self.pd.model.frames[id].name + "_foot_tracking"
-                if name in model.differential.costs.active.tolist():
-                    model.differential.costs.costs[name].cost.residual.reference = pose
-                else:
-                    residual = crocoddyl.ResidualModelFrameTranslation(
-                        self.state, id, pose, nu
-                    )
-                    cost = crocoddyl.CostModelResidual(self.state, residual)
-                    model.differential.costs.addCost(
-                        name, cost, self.pd.foot_tracking_w
-                    )
-
         for i in self.pd.allContactIds:
             name = self.pd.model.frames[i].name + "_contact"
             model.differential.contacts.changeContactStatus(name, i in support_feet)
+
+        self.update_tracking_costs(model.differential.costs, tasks)
+
 
     def create_model(self, support_feet=[], tasks=[], is_terminal=False):
         """
@@ -232,7 +222,7 @@ class OCP:
         """
         nu = model.differential.actuation.nu
         costs = model.differential.costs
-        for i in support_feet:
+        for i in self.pd.allContactIds:
             cone = crocoddyl.FrictionCone(self.pd.Rsurf, self.pd.mu, 4, False)
             residual = crocoddyl.ResidualModelContactFrictionCone(
                 self.state, i, cone, nu
@@ -243,8 +233,18 @@ class OCP:
             friction_cone = crocoddyl.CostModelResidual(
                 self.state, activation, residual
             )
-            friction_name = self.pd.model.frames[id].name + "_friction_cone"
+            friction_name = self.pd.model.frames[i].name + "_friction_cone"
             costs.addCost(friction_name, friction_cone, self.pd.friction_cone_w)
+            costs.changeCostStatus(friction_name, i in support_feet)
+
+            name = self.pd.model.frames[i].name + "_foot_tracking"
+            residual = crocoddyl.ResidualModelFrameTranslation(
+                self.state, i, np.zeros(3), nu
+            )
+            foot_tracking = crocoddyl.CostModelResidual(self.state, residual)
+            costs.addCost(name, foot_tracking, self.pd.foot_tracking_w)
+
+            costs.changeCostStatus(name, False)
 
         control_residual = crocoddyl.ResidualModelControl(self.state, self.pd.uref)
         control_reg = crocoddyl.CostModelResidual(self.state, control_residual)
@@ -259,11 +259,15 @@ class OCP:
         )
         costs.addCost("control_bound", control_bound, self.pd.control_bound_w)
 
-        if tasks is not None:
-            for (id, pose) in tasks:
-                name = self.pd.model.frames[id].name + "_foot_tracking"
-                residual = crocoddyl.ResidualModelFrameTranslation(
-                    self.state, id, pose, nu
-                )
-                foot_tracking = crocoddyl.CostModelResidual(self.state, residual)
-                costs.addCost(name, foot_tracking, self.pd.foot_tracking_w)
+        self.update_tracking_costs(costs, tasks)
+    
+    def update_tracking_costs(self, costs, tasks):
+        for i in self.pd.allContactIds:
+            name = self.pd.model.frames[i].name + "_foot_tracking"
+            index = 0
+            if i in tasks[0]:
+                costs.changeCostStatus(name, True)
+                costs.costs[name].cost.residual.reference = tasks[1][index]
+                index += 1
+            else:
+                costs.changeCostStatus(name, False)
