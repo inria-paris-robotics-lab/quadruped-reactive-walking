@@ -271,13 +271,6 @@ class Controller:
                     if self.params.interpolation_type == 3:
                         self.interpolator.update(xs[0], xs[1], xs[2])
                     # self.interpolator.plot(self.pd.mpc_wbc_ratio, self.pd.dt_wbc)
-
-            if self.params.interpolate_mpc:
-                if self.mpc_result.new_result:
-                    if self.params.interpolation_type == 3:
-                        self.interpolator.update(xs[0], xs[1], xs[2])
-                    # self.interpolator.plot(self.pd.mpc_wbc_ratio, self.pd.dt_wbc)
-
                 t = (self.k - self.k_solve + 1) * self.pd.dt_wbc
                 q, v = self.interpolator.interpolate(t)
             else:
