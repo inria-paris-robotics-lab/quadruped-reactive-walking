@@ -20,24 +20,25 @@ class OCP:
         self.t_update_last_model = 0.0
         self.t_shift = 0.0
 
-        self.initialize_models(gait, footsteps)
+        rm, tm = self.initialize_models(gait, footsteps)
 
         self.x0 = self.pd.x0_reduced
 
         self.problem = crocoddyl.ShootingProblem(
-            self.x0, self.models, self.terminal_model
-        )
+            self.x0, rm, tm)
         self.ddp = crocoddyl.SolverFDDP(self.problem)
 
     def initialize_models(self, gait, footsteps):
-        self.models = []
+        models = []
         for t, step in enumerate(gait):
             tasks = self.make_task(footsteps[t])
             support_feet = [self.pd.allContactIds[i] for i in np.nonzero(step == 1)[0]]
-            self.models.append(self.create_model(support_feet, tasks))
+            models.append(self.create_model(support_feet, tasks))
 
         support_feet = [self.pd.allContactIds[i] for i in np.nonzero(gait[-1] == 1)[0]]
-        self.terminal_model = self.create_model(support_feet, is_terminal=True)
+        terminal_model = self.create_model(support_feet, is_terminal=True)
+
+        return models, terminal_model
 
     def solve(self, x0, footstep, gait, xs_init=None, us_init=None):
         t_start = time()
