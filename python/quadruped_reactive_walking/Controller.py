@@ -6,6 +6,7 @@ import pybullet as pyb
 
 from . import WB_MPC_Wrapper
 from .WB_MPC.Target import Target
+from .tools.Utils import init_robot
 
 COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c"]
 
@@ -154,6 +155,7 @@ class Controller:
         self.params = params
         self.gait = np.repeat(np.array([0, 0, 0, 0]).reshape((1, 4)), self.pd.T, axis=0)
         self.q_init = pd.q0
+        init_robot(q_init, params)
 
         self.k = 0
         self.error = False
@@ -163,9 +165,14 @@ class Controller:
         self.result.q_des = self.pd.q0[7:].copy()
         self.result.v_des = self.pd.v0[6:].copy()
 
-        self.target = Target(pd)
-        footsteps = [self.target.footstep(t) for t in range(pd.T)]
-        self.mpc = WB_MPC_Wrapper.MPC_Wrapper(pd, params, footsteps, self.gait)
+        self.target = Target(params)
+        self.footsteps = []
+        for k in range(self.pd.T * self.pd.mpc_wbc_ratio):
+            self.target_footstep = self.target.compute(k).copy()
+            if k % self.pd.mpc_wbc_ratio == 0:
+                self.footsteps.append(self.target_footstep.copy())
+
+        self.mpc = WB_MPC_Wrapper.MPC_Wrapper(pd, params, self.footsteps, self.gait)
         self.mpc_solved = False
         self.k_result = 0
         self.k_solve = 0
@@ -201,27 +208,29 @@ class Controller:
         t_measures = time.time()
         self.t_measures = t_measures - t_start
 
+        self.target_footstep = self.target.compute(
+            self.k + self.pd.T * self.pd.mpc_wbc_ratio
+        )
+
         if self.k % self.pd.mpc_wbc_ratio == 0:
-            self.target.shift()
             if self.mpc_solved:
                 self.k_solve = self.k
                 self.mpc_solved = False
 
             try:
-                footstep = self.target.footstep(self.pd.T)
-                self.mpc.solve(self.k,
-                                m["x_m"],
-                                footstep,
-                                self.gait,
-                                self.xs_init,
-                                self.us_init
-                                )
-                # OPEN LOOP MPC
+                self.mpc.solve(
+                    self.k,
+                    m["x_m"],
+                    self.target_footstep.copy(),
+                    self.gait,
+                    self.xs_init,
+                    self.us_init,
+                )
                 # if self.initialized:
                 #     self.mpc.solve(
                 #         self.k,
                 #         self.mpc_result.xs[1],
-                #         footstep,
+                #         self.target_footstep.copy(),
                 #         self.gait,
                 #         self.xs_init,
                 #         self.us_init,
@@ -230,7 +239,7 @@ class Controller:
                 #     self.mpc.solve(
                 #         self.k,
                 #         m["x_m"],
-                #         footstep,
+                #         self.target_footstep.copy(),
                 #         self.gait,
                 #         self.xs_init,
                 #         self.us_init,
@@ -263,13 +272,16 @@ class Controller:
                         self.interpolator.update(xs[0], xs[1], xs[2])
                     # self.interpolator.plot(self.pd.mpc_wbc_ratio, self.pd.dt_wbc)
 
+            if self.params.interpolate_mpc:
+                if self.mpc_result.new_result:
+                    if self.params.interpolation_type == 3:
+                        self.interpolator.update(xs[0], xs[1], xs[2])
+                    # self.interpolator.plot(self.pd.mpc_wbc_ratio, self.pd.dt_wbc)
+
                 t = (self.k - self.k_solve + 1) * self.pd.dt_wbc
                 q, v = self.interpolator.interpolate(t)
             else:
                 q, v = self.integrate_x(m)
-
-            q = xs[1][: self.pd.nq]
-            v = xs[1][self.pd.nq :]
 
             self.result.q_des = q[:]
             self.result.v_des = v[:]

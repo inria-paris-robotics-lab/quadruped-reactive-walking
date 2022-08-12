@@ -112,6 +112,7 @@ class MPC_Wrapper:
             self.last_available_result.xs = [x0 for _ in range(self.pd.T + 1)]
             p = Process(target=self.MPC_asynchronous)
             p.start()
+
         self.add_new_data(k, x0, footstep, gait, xs, us)
 
     def MPC_asynchronous(self):
