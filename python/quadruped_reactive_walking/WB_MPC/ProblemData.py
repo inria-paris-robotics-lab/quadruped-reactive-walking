@@ -23,7 +23,8 @@ class problemDataAbstract:
 
         self.frozen_names = frozen_names
         if frozen_names:
-            self.frozen_idxs = [self.model.getJointId(id) for id in frozen_names]
+            self.frozen_idxs = [self.model.getJointId(
+                id) for id in frozen_names]
             self.freeze()
 
         self.nq = self.model.nq
@@ -35,7 +36,7 @@ class problemDataAbstract:
         )  # -1 to take into account the freeflyer
         self.ntau = self.nv
 
-        self.effort_limit = np.ones(self.nu) * 3
+        self.effort_limit = np.ones(self.nu) * 2.5
 
         self.v0 = np.zeros(18)
         self.x0 = np.concatenate([self.q0, self.v0])
@@ -168,14 +169,14 @@ class ProblemDataFull(problemDataAbstract):
         self.useFixedBase = 1
 
         # Cost function weights
-        # Cost function weights
         self.mu = 0.7
         self.foot_tracking_w = 1e4
-        # self.friction_cone_w = 1e3 * 0
+        self.friction_cone_w = 1e3
         self.control_bound_w = 1e3
-        self.control_reg_w = 1e-1
-        self.state_reg_w = np.array(    
-            [1e1] * 3 + [1e-2] * 3 + [1e1] * 6 + [1e1] * 3 + [3 * 1e-1] * 3 + [1e1] * 6
+        self.control_reg_w = 1e2
+        self.state_reg_w = np.array(
+            [1e1] * 3 + [1e-2] * 3 + [1e1] * 6 +
+            [1e1] * 3 + [1e0] * 3 + [1e1] * 6
         )
         self.terminal_velocity_w = np.array([0] * 12 + [1e3] * 12)
 
