@@ -170,7 +170,7 @@ class ProblemDataFull(problemDataAbstract):
 
         # Cost function weights
         self.mu = 0.7
-        self.foot_tracking_w = 1e4
+        self.foot_tracking_w = 1e5
         self.friction_cone_w = 1e3
         self.control_bound_w = 1e3
         self.control_reg_w = 1e2

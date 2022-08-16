@@ -25,7 +25,7 @@ robot:
     dt_mpc: 0.015  # Time step of the model predictive control
     type_MPC: 3  # Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
     save_guess: true # true to interpolate the impedance quantities between nodes of the MPC
-    movement: "circle" # name of the movement to perform
+    movement: "step" # name of the movement to perform
     interpolate_mpc: true # true to interpolate the impedance quantities between nodes of the MPC
     interpolation_type: 3 # 0,1,2,3 decide which kind of interpolation is used
     # Kp_main: [0.0, 0.0, 0.0]  # Proportional gains for the PD+
