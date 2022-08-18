@@ -253,14 +253,15 @@ class LoggerControl:
 
         # Target plot
         legend = ["x", "y", "z"]
-        plt.figure(figsize=(12, 18), dpi=90)
+
+        fig, axs = plt.subplots(3, sharex=True)
         for p in range(3):
-            plt.subplot(3, 1, p + 1)
-            plt.title("Free foot on " + legend[p])
-            plt.plot(self.target[:, p])
-            plt.plot(m_feet_p_log[self.pd.rfFootId][:, p])
-            plt.plot(feet_p_log[self.pd.rfFootId][:, p])
-            plt.legend(["Target", "Measured", "Predicted"])
+            axs[p].set_title("Free foot on " + legend[p])
+            axs[p].plot(self.target[:, p], label="Target")
+            axs[p].plot(m_feet_p_log[self.pd.rfFootId][:, p], label="Measured")
+            axs[p].plot(feet_p_log[self.pd.rfFootId][:, p], label="Predicted")
+            axs[p].legend()
+
         if save:
             plt.savefig(fileName + "/target")
 
@@ -291,6 +292,7 @@ class LoggerControl:
             plt.legend(["Stiffness", "Damping"])
             plt.ylabel("Gains")
             plt.xlabel("t")
+
         if save:
             plt.savefig(fileName + "/diagonal_Riccati_gains")
 
