@@ -169,6 +169,7 @@ class MPC_Wrapper:
         if xs is None or us is None:
             self.in_warm_start.value = False
             return
+        self.in_warm_start.value = True
 
         with self.in_xs.get_lock():
             np.frombuffer(self.in_xs.get_obj()).reshape((self.T + 1, self.nx))[

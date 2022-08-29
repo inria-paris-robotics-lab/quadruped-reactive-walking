@@ -37,8 +37,8 @@ robot:
 
     # Parameters of Gait
     N_periods: 1
-    gait: [10, 1, 1, 1, 1,
-           20, 1, 0, 1, 1]  # Initial gait matrix
+    gait: [2, 1, 1, 1, 1,
+           30, 1, 0, 1, 1]  # Initial gait matrix
 
     # Parameters of Joystick
     gp_alpha_vel: 0.003  # Coefficient of the low pass filter applied to gamepad velocity

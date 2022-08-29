@@ -22,7 +22,6 @@ def get_translation_array(pd:ProblemData, x, idx, ref_frame=pin.WORLD, x0=None):
     for xs in xiter:
         q = xs[:pd.nq]
         v = xs[pd.nq:]
-        print(v)
         pin.forwardKinematics(pd.model, pd.rdata, q, v)
         pin.updateFramePlacements(pd.model, pd.rdata)
         frame_p += [pd.rdata.oMf[idx].translation.copy()]
