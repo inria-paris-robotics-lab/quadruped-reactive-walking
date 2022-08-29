@@ -25,8 +25,8 @@ robot:
     dt_mpc: 0.015  # Time step of the model predictive control
     type_MPC: 3  # Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
     save_guess: false # true to interpolate the impedance quantities between nodes of the MPC
-    movement: "step" # name of the movement to perform
-    interpolate_mpc: false # true to interpolate the impedance quantities between nodes of the MPC
+    movement: "circle" # name of the movement to perform
+    interpolate_mpc: true # true to interpolate the impedance quantities between nodes of the MPC
     interpolation_type: 3 # 0,1,2,3 decide which kind of interpolation is used
     # Kp_main: [0.0, 0.0, 0.0]  # Proportional gains for the PD+
     # Kd_main: [0., 0., 0.]  # Derivative gains for the PD+
@@ -37,7 +37,8 @@ robot:
 
     # Parameters of Gait
     N_periods: 1
-    gait: [100, 0, 0, 0, 0]  # Initial gait matrix
+    gait: [10, 1, 1, 1, 1,
+           20, 1, 0, 1, 1]  # Initial gait matrix
 
     # Parameters of Joystick
     gp_alpha_vel: 0.003  # Coefficient of the low pass filter applied to gamepad velocity
@@ -59,7 +60,7 @@ robot:
     # Parameters of FootTrajectoryGenerator
     max_height: 0.05  # Apex height of the swinging trajectory [m]
     lock_time: 0.04  # Target lock before the touchdown [s]
-    vert_time: 0.03  # Duration during which feet move only along Z when taking off and landing
+    vert_time: 0.0  # Duration during which feet move only along Z when taking off and landing
 
     # Parameters of MPC with OSQP
     # [0.0, 0.0, 20.0, 0.25, 0.25, 10.0, 0.05, 0.05, 0.2, 0.0, 0.0, 0.3]

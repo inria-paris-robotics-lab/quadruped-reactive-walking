@@ -62,6 +62,9 @@ def init_robot(q_init, params):
     params.CoM_offset = (solo.data.com[0][:3] - q[0:3, 0]).tolist()
     params.CoM_offset[1] = 0.0
 
+    params.mpc_wbc_ratio = int(params.dt_mpc / params.dt_wbc)
+    params.T = params.gait.shape[0] - 1
+
     #  Use initial feet pos as reference
     for i in range(4):
         for j in range(3):

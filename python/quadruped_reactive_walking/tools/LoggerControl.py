@@ -55,8 +55,8 @@ class LoggerControl:
         self.t_ocp_solve = np.zeros(size)
 
         # MPC
-        self.ocp_xs = np.zeros([size, pd.T + 1, pd.nx])
-        self.ocp_us = np.zeros([size, pd.T, pd.nu])
+        self.ocp_xs = np.zeros([size, params.T + 1, pd.nx])
+        self.ocp_us = np.zeros([size, params.T, pd.nu])
         self.ocp_K = np.zeros([size, self.pd.nu, self.pd.ndx])
         self.MPC_equivalent_Kp = np.zeros([size, self.pd.nu])
         self.MPC_equivalent_Kd = np.zeros([size, self.pd.nu])
@@ -120,10 +120,14 @@ class LoggerControl:
         self.t_ocp_ddp[self.i] = controller.mpc_result.solving_duration
 
         if self.i == 0:
-            for i in range(self.pd.T * self.pd.mpc_wbc_ratio):
-                self.target[i] = controller.footsteps[i // self.pd.mpc_wbc_ratio][:, 1]
-        if self.i + self.pd.T * self.pd.mpc_wbc_ratio < self.log_size:
-            self.target[self.i + self.pd.T * self.pd.mpc_wbc_ratio] = controller.target_footstep[:, 1]
+            for i in range(self.params.T * self.params.mpc_wbc_ratio):
+                self.target[i] = controller.footsteps[i // self.params.mpc_wbc_ratio][
+                    :, 1
+                ]
+        if self.i + self.params.T * self.params.mpc_wbc_ratio < self.log_size:
+            self.target[
+                self.i + self.params.T * self.params.mpc_wbc_ratio
+            ] = controller.target_footstep[:, 1]
 
         if not self.params.enable_multiprocessing:
             self.t_ocp_update[self.i] = controller.mpc.ocp.t_update
@@ -215,41 +219,41 @@ class LoggerControl:
     def plot_target(self, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
-        x_mes = np.concatenate([self.q_mes, self.v_mes], axis=1)
+        # x_mes = np.concatenate([self.q_mes, self.v_mes], axis=1)
 
-        horizon = int(self.ocp_xs.shape[0] / self.pd.mpc_wbc_ratio)
-        t_scale = np.linspace(
-            0, (horizon) * self.pd.dt, (horizon) * self.pd.mpc_wbc_ratio
-        )
+        # horizon = int(self.ocp_xs.shape[0] / self.params.mpc_wbc_ratio)
+        # t_scale = np.linspace(
+        #     0, (horizon) * self.params.dt_mpc, (horizon) * self.params.mpc_wbc_ratio
+        # )
 
-        x_mpc = [self.ocp_xs[0][0, :]]
-        [x_mpc.append(x[1, :]) for x in self.ocp_xs[:-1]]
-        x_mpc = np.array(x_mpc)
+        # x_mpc = [self.ocp_xs[0][0, :]]
+        # [x_mpc.append(x[1, :]) for x in self.ocp_xs[:-1]]
+        # x_mpc = np.array(x_mpc)
 
-        # Feet positions calcuilated by every ocp
-        all_ocp_feet_p_log = {
-            idx: [
-                get_translation_array(
-                    self.pd, self.ocp_xs[i * self.pd.mpc_wbc_ratio], idx
-                )[0]
-                for i in range(horizon)
-            ]
-            for idx in self.pd.allContactIds
-        }
-        for foot in all_ocp_feet_p_log:
-            all_ocp_feet_p_log[foot] = np.array(all_ocp_feet_p_log[foot])
+        # # Feet positions calcuilated by every ocp
+        # all_ocp_feet_p_log = {
+        #     idx: [
+        #         get_translation_array(
+        #             self.pd, self.ocp_xs[i * self.params.mpc_wbc_ratio], idx
+        #         )[0]
+        #         for i in range(horizon)
+        #     ]
+        #     for idx in self.pd.feet_ids
+        # }
+        # for foot in all_ocp_feet_p_log:
+        #     all_ocp_feet_p_log[foot] = np.array(all_ocp_feet_p_log[foot])
 
-        # Measured feet positions
-        m_feet_p_log = {
-            idx: get_translation_array(self.pd, x_mes, idx)[0]
-            for idx in self.pd.allContactIds
-        }
+        # # Measured feet positions
+        # m_feet_p_log = {
+        #     idx: get_translation_array(self.pd, x_mes, idx)[0]
+        #     for idx in self.pd.feet_ids
+        # }
 
-        # Predicted feet positions
-        feet_p_log = {
-            idx: get_translation_array(self.pd, x_mpc, idx)[0]
-            for idx in self.pd.allContactIds
-        }
+        # # Predicted feet positions
+        # feet_p_log = {
+        #     idx: get_translation_array(self.pd, x_mpc, idx)[0]
+        #     for idx in self.pd.feet_ids
+        # }
 
         # Target plot
         legend = ["x", "y", "z"]
@@ -258,25 +262,12 @@ class LoggerControl:
         for p in range(3):
             axs[p].set_title("Free foot on " + legend[p])
             axs[p].plot(self.target[:, p], label="Target")
-            axs[p].plot(m_feet_p_log[self.pd.rfFootId][:, p], label="Measured")
-            axs[p].plot(feet_p_log[self.pd.rfFootId][:, p], label="Predicted")
+            # axs[p].plot(m_feet_p_log[self.pd.rfFootId][:, p], label="Measured")
+            # axs[p].plot(feet_p_log[self.pd.rfFootId][:, p], label="Predicted")
             axs[p].legend()
 
         if save:
             plt.savefig(fileName + "/target")
-
-        # legend = ['x', 'y', 'z']
-        # plt.figure(figsize=(12, 18), dpi = 90)
-        # for p in range(3):
-        #     plt.subplot(3,1, p+1)
-        #     plt.title('Free foot on ' + legend[p])
-        #     plt.plot(t_scale, self.target[:, p], color="tomato")
-        #     plt.plot(t_scale, m_feet_p_log[self.pd.rfFootId][:, p], color="lightgreen")
-        #     for i in range(horizon-1):
-        #         t = np.linspace(i*self.pd.dt, (self.pd.T+ i)*self.pd.dt, self.pd.T+1)
-        #         y = all_ocp_feet_p_log[self.pd.rfFootId][i][:,p]
-        #         for j in range(len(y) - 1):
-        #             plt.plot(t[j:j+2], y[j:j+2], color='royalblue', linewidth = 3, marker='o' ,alpha=max([1 - j/len(y), 0]))
 
     def plot_riccati_gains(self, n, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt

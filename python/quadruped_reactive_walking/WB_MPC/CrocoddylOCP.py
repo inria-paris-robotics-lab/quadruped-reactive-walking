@@ -10,8 +10,9 @@ from time import time
 
 
 class OCP:
-    def __init__(self, pd: ProblemData, footsteps, gait):
+    def __init__(self, pd: ProblemData, params, footsteps, gait):
         self.pd = pd
+        self.params = params
         self.max_iter = 1
 
         self.state = crocoddyl.StateMultibody(self.pd.model)
@@ -22,20 +23,19 @@ class OCP:
 
         rm, tm = self.initialize_models(gait, footsteps)
 
-        self.x0 = self.pd.x0_reduced
+        self.x0 = self.pd.x0
 
-        self.problem = crocoddyl.ShootingProblem(
-            self.x0, rm, tm)
+        self.problem = crocoddyl.ShootingProblem(self.x0, rm, tm)
         self.ddp = crocoddyl.SolverFDDP(self.problem)
 
     def initialize_models(self, gait, footsteps):
         models = []
-        for t, step in enumerate(gait):
+        for t, step in enumerate(gait[:-1]):
             tasks = self.make_task(footsteps[t])
-            support_feet = [self.pd.allContactIds[i] for i in np.nonzero(step == 1)[0]]
+            support_feet = [self.pd.feet_ids[i] for i in np.nonzero(step == 1)[0]]
             models.append(self.create_model(support_feet, tasks))
 
-        support_feet = [self.pd.allContactIds[i] for i in np.nonzero(gait[-1] == 1)[0]]
+        support_feet = [self.pd.feet_ids[i] for i in np.nonzero(gait[-1] == 1)[0]]
         terminal_model = self.create_model(support_feet, is_terminal=True)
 
         return models, terminal_model
@@ -77,9 +77,7 @@ class OCP:
 
         if self.initialized:
             tasks = self.make_task(footstep)
-            support_feet = [
-                self.pd.allContactIds[i] for i in np.nonzero(gait[-1] == 1)[0]
-            ]
+            support_feet = [self.pd.feet_ids[i] for i in np.nonzero(gait[-1] == 1)[0]]
             self.update_model(self.problem.runningModels[0], tasks, support_feet)
 
             self.problem.circularAppend(
@@ -95,7 +93,7 @@ class OCP:
         task = [[], []]
         for foot in range(4):
             if footstep[:, foot].any():
-                task[0].append(self.pd.allContactIds[foot])
+                task[0].append(self.pd.feet_ids[foot])
                 task[1].append(footstep[:, foot])
         return task
 
@@ -140,12 +138,11 @@ class OCP:
         return acc
 
     def update_model(self, model, tasks, support_feet):
-        for i in self.pd.allContactIds:
+        for i in self.pd.feet_ids:
             name = self.pd.model.frames[i].name + "_contact"
             model.differential.contacts.changeContactStatus(name, i in support_feet)
 
-        self.update_tracking_costs(model.differential.costs, tasks)
-
+        self.update_tracking_costs(model.differential.costs, tasks, support_feet)
 
     def create_model(self, support_feet=[], tasks=[], is_terminal=False):
         """
@@ -173,19 +170,16 @@ class OCP:
         :param support_feet: list of support feet ids
         :return action model for a swing foot phase
         """
-        if self.pd.useFixedBase == 0:
-            actuation = crocoddyl.ActuationModelFloatingBase(self.state)
-        else:
-            actuation = crocoddyl.ActuationModelFull(self.state)
+        actuation = crocoddyl.ActuationModelFloatingBase(self.state)
         nu = actuation.nu
 
         control = crocoddyl.ControlParametrizationModelPolyZero(nu)
 
         contacts = crocoddyl.ContactModelMultiple(self.state, nu)
-        for i in self.pd.allContactIds:
+        for i in self.pd.feet_ids:
             name = self.pd.model.frames[i].name + "_contact"
             contact = crocoddyl.ContactModel3D(
-                self.state, i, np.zeros(3), nu, np.zeros(2)
+                self.state, i, np.zeros(3), nu, self.pd.baumgarte_gains
             )
             contacts.addContact(name, contact)
             if i not in support_feet:
@@ -200,7 +194,9 @@ class OCP:
         differential = crocoddyl.DifferentialActionModelContactFwdDynamics(
             self.state, actuation, contacts, costs, 0.0, True
         )
-        model = crocoddyl.IntegratedActionModelEuler(differential, control, self.pd.dt)
+        model = crocoddyl.IntegratedActionModelEuler(
+            differential, control, self.params.dt_mpc
+        )
 
         return model
 
@@ -222,8 +218,8 @@ class OCP:
         """
         nu = model.differential.actuation.nu
         costs = model.differential.costs
-        for i in self.pd.allContactIds:
-            cone = crocoddyl.FrictionCone(self.pd.Rsurf, self.pd.mu, 4, False)
+        for i in self.pd.feet_ids:
+            cone = crocoddyl.FrictionCone(self.pd.Rsurf, self.pd.mu, 4, False, 3)
             residual = crocoddyl.ResidualModelContactFrictionCone(
                 self.state, i, cone, nu
             )
@@ -259,15 +255,15 @@ class OCP:
         )
         costs.addCost("control_bound", control_bound, self.pd.control_bound_w)
 
-        self.update_tracking_costs(costs, tasks)
-    
-    def update_tracking_costs(self, costs, tasks):
-        for i in self.pd.allContactIds:
+        self.update_tracking_costs(costs, tasks, support_feet)
+
+    def update_tracking_costs(self, costs, tasks, support_feet):
+        index = 0
+        for i in self.pd.feet_ids:
             name = self.pd.model.frames[i].name + "_foot_tracking"
-            index = 0
             if i in tasks[0]:
-                costs.changeCostStatus(name, True)
                 costs.costs[name].cost.residual.reference = tasks[1][index]
                 index += 1
-            else:
-                costs.changeCostStatus(name, False)
+            costs.changeCostStatus(name, i not in support_feet)
+
+        # print(f"{name} reference: {costs.costs[name].cost.residual.reference} status:{i in tasks[0]}")

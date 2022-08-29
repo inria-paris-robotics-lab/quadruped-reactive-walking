@@ -12,10 +12,10 @@ import quadruped_reactive_walking as qrw
 
 
 class Result:
-    def __init__(self, pd):
-        self.xs = list(np.zeros((pd.T + 1, pd.nx)))
-        self.us = list(np.zeros((pd.T, pd.nu)))
-        self.K = list(np.zeros([pd.T, pd.nu, pd.nx]))
+    def __init__(self, pd, params):
+        self.xs = list(np.zeros((params.T + 1, pd.nx)))
+        self.us = list(np.zeros((params.T, pd.nu)))
+        self.K = list(np.zeros([params.T, pd.nu, pd.ndx]))
         self.solving_duration = 0.0
         self.new_result = False
 
@@ -29,6 +29,10 @@ class MPC_Wrapper:
     def __init__(self, pd, params, footsteps, gait):
         self.params = params
         self.pd = pd
+        self.T = params.T
+        self.nu = pd.nu
+        self.nx = pd.nx
+        self.ndx = pd.ndx
 
         self.footsteps_plan = footsteps
         self.initial_gait = gait
@@ -39,20 +43,20 @@ class MPC_Wrapper:
             self.new_data = Value("b", False)
             self.running = Value("b", True)
             self.in_k = Value("i", 0)
-            self.in_x0 = Array("d", [0] * pd.nx)
+            self.in_x0 = Array("d", [0] * self.nx)
             self.in_warm_start = Value("b", False)
-            self.in_xs = Array("d", [0] * ((pd.T + 1) * pd.nx))
-            self.in_us = Array("d", [0] * (pd.T * pd.nu))
+            self.in_xs = Array("d", [0] * ((self.T + 1) * self.nx))
+            self.in_us = Array("d", [0] * (self.T * self.nu))
             self.in_footstep = Array("d", [0] * 12)
-            self.in_gait = Array("d", [0] * (pd.T * 4))
-            self.out_xs = Array("d", [0] * ((pd.T + 1) * pd.nx))
-            self.out_us = Array("d", [0] * (pd.T * pd.nu))
-            self.out_k = Array("d", [0] * (pd.T * pd.nu * pd.nx))
+            self.in_gait = Array("d", [0] * ((self.T + 1) * 4))
+            self.out_xs = Array("d", [0] * ((self.T + 1) * self.nx))
+            self.out_us = Array("d", [0] * (self.T * self.nu))
+            self.out_k = Array("d", [0] * (self.T * self.nu * self.ndx))
             self.out_solving_time = Value("d", 0.0)
         else:
-            self.ocp = OCP(pd, footsteps, gait)
+            self.ocp = OCP(pd, params, footsteps, gait)
 
-        self.last_available_result = Result(pd)
+        self.last_available_result = Result(pd, params)
         self.new_result = Value("b", False)
 
     def solve(self, k, x0, footstep, gait, xs=None, us=None):
@@ -109,7 +113,7 @@ class MPC_Wrapper:
         Run the MPC (asynchronous version)
         """
         if k == 0:
-            self.last_available_result.xs = [x0 for _ in range(self.pd.T + 1)]
+            self.last_available_result.xs = [x0 for _ in range(self.T + 1)]
             p = Process(target=self.MPC_asynchronous)
             p.start()
 
@@ -128,7 +132,9 @@ class MPC_Wrapper:
             k, x0, footstep, gait, xs, us = self.decompress_dataIn()
 
             if k == 0:
-                loop_ocp = OCP(self.pd, self.footsteps_plan, self.initial_gait)
+                loop_ocp = OCP(
+                    self.pd, self.params, self.footsteps_plan, self.initial_gait
+                )
 
             loop_ocp.solve(x0, footstep, gait, xs, us)
             xs, us, K, solving_time = loop_ocp.get_results()
@@ -154,22 +160,22 @@ class MPC_Wrapper:
         with self.in_k.get_lock():
             self.in_k.value = k
         with self.in_x0.get_lock():
-            np.frombuffer(self.in_x0.get_obj()).reshape(self.pd.nx)[:] = x0
+            np.frombuffer(self.in_x0.get_obj()).reshape(self.nx)[:] = x0
         with self.in_footstep.get_lock():
             np.frombuffer(self.in_footstep.get_obj()).reshape((3, 4))[:, :] = footstep
         with self.in_gait.get_lock():
-            np.frombuffer(self.in_gait.get_obj()).reshape((self.pd.T, 4))[:, :] = gait
+            np.frombuffer(self.in_gait.get_obj()).reshape((self.T + 1, 4))[:, :] = gait
 
         if xs is None or us is None:
             self.in_warm_start.value = False
             return
 
         with self.in_xs.get_lock():
-            np.frombuffer(self.in_xs.get_obj()).reshape((self.pd.T + 1, self.pd.nx))[
+            np.frombuffer(self.in_xs.get_obj()).reshape((self.T + 1, self.nx))[
                 :, :
             ] = np.array(xs)
         with self.in_us.get_lock():
-            np.frombuffer(self.in_us.get_obj()).reshape((self.pd.T, self.pd.nu))[
+            np.frombuffer(self.in_us.get_obj()).reshape((self.T, self.nu))[
                 :, :
             ] = np.array(us)
 
@@ -181,23 +187,21 @@ class MPC_Wrapper:
         with self.in_k.get_lock():
             k = self.in_k.value
         with self.in_x0.get_lock():
-            x0 = np.frombuffer(self.in_x0.get_obj()).reshape(self.pd.nx)
+            x0 = np.frombuffer(self.in_x0.get_obj()).reshape(self.nx)
         with self.in_footstep.get_lock():
             footstep = np.frombuffer(self.in_footstep.get_obj()).reshape((3, 4))
         with self.in_gait.get_lock():
-            gait = np.frombuffer(self.in_gait.get_obj()).reshape((self.pd.T, 4))
+            gait = np.frombuffer(self.in_gait.get_obj()).reshape((self.T + 1, 4))
 
         if not self.in_warm_start.value:
             return k, x0, footstep, gait, None, None
 
         with self.in_xs.get_lock():
             xs = list(
-                np.frombuffer(self.in_xs.get_obj()).reshape((self.pd.T + 1, self.pd.nx))
+                np.frombuffer(self.in_xs.get_obj()).reshape((self.T + 1, self.nx))
             )
         with self.in_us.get_lock():
-            us = list(
-                np.frombuffer(self.in_us.get_obj()).reshape((self.pd.T, self.pd.nu))
-            )
+            us = list(np.frombuffer(self.in_us.get_obj()).reshape((self.T, self.nu)))
 
         return k, x0, footstep, gait, xs, us
 
@@ -207,17 +211,17 @@ class MPC_Wrapper:
         retrieve data in the main control loop from the asynchronous MPC
         """
         with self.out_xs.get_lock():
-            np.frombuffer(self.out_xs.get_obj()).reshape((self.pd.T + 1, self.pd.nx))[
+            np.frombuffer(self.out_xs.get_obj()).reshape((self.T + 1, self.nx))[
                 :, :
             ] = np.array(xs)
         with self.out_us.get_lock():
-            np.frombuffer(self.out_us.get_obj()).reshape((self.pd.T, self.pd.nu))[
+            np.frombuffer(self.out_us.get_obj()).reshape((self.T, self.nu))[
                 :, :
             ] = np.array(us)
         with self.out_k.get_lock():
-            np.frombuffer(self.out_k.get_obj()).reshape(
-                [self.pd.T, self.pd.nu, self.pd.nx]
-            )[:, :, :] = np.array(K)
+            np.frombuffer(self.out_k.get_obj()).reshape([self.T, self.nu, self.ndx])[
+                :, :, :
+            ] = np.array(K)
         self.out_solving_time.value = solving_time
 
     def decompress_dataOut(self):
@@ -225,14 +229,10 @@ class MPC_Wrapper:
         Return the result of the asynchronous MPC (desired contact forces) that is
         stored in the shared memory
         """
-        xs = list(
-            np.frombuffer(self.out_xs.get_obj()).reshape((self.pd.T + 1, self.pd.nx))
-        )
-        us = list(np.frombuffer(self.out_us.get_obj()).reshape((self.pd.T, self.pd.nu)))
+        xs = list(np.frombuffer(self.out_xs.get_obj()).reshape((self.T + 1, self.nx)))
+        us = list(np.frombuffer(self.out_us.get_obj()).reshape((self.T, self.nu)))
         K = list(
-            np.frombuffer(self.out_k.get_obj()).reshape(
-                [self.pd.T, self.pd.nu, self.pd.nx]
-            )
+            np.frombuffer(self.out_k.get_obj()).reshape([self.T, self.nu, self.ndx])
         )
         solving_time = self.out_solving_time.value
 

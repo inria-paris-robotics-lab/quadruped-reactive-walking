@@ -15,10 +15,10 @@ class Target:
         )
 
         if params.movement == "circle":
-            self.A = np.array([0, 0.03, 0.03])
-            self.offset = np.array([0.05, -0.02, 0.06])
+            self.A = np.array([0, 0.03, 0.04])
+            self.offset = np.array([0, 0, 0.05])
             self.freq = np.array([0, 0.5, 0.5])
-            self.phase = np.array([0, np.pi / 2, 0])
+            self.phase = np.array([0, 0, -np.pi/2])
         elif params.movement == "step":
             self.initial = self.position[:, 1].copy()
             self.target = self.position[:, 1].copy() + np.array([0.1, 0.0, 0.0])
@@ -30,7 +30,9 @@ class Target:
 
             self.update_time = -1
         else:
-            self.target_footstep = self.position + np.array([0.0, 0.0, 0.10])
+            self.target_footstep = self.position
+            self.ramp_length = 100
+            self.target_ramp = np.linspace(0., 0.1, self.ramp_length)
 
     def compute(self, k):
         footstep = np.zeros((3, 4))
@@ -40,6 +42,7 @@ class Target:
             footstep[:, 1] = self.evaluate_step(1, k)
         else:
             footstep = self.target_footstep.copy()
+            footstep[2, 1] = self.target_ramp[k] if k < self.ramp_length else self.target_ramp[-1] 
 
         return footstep
 

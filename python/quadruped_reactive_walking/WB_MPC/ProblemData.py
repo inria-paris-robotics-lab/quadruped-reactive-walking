@@ -1,20 +1,15 @@
 import numpy as np
-import example_robot_data as erd
+from example_robot_data import load
 import pinocchio as pin
 
 
 class problemDataAbstract:
-    def __init__(self, param, frozen_names=[]):
-        self.dt = param.dt_mpc  # OCP dt
-        self.dt_wbc = param.dt_wbc
-        self.mpc_wbc_ratio = int(self.dt / self.dt_wbc)
-        self.init_steps = 0
-        self.target_steps = param.gait.shape[0]
-        self.T = param.gait.shape[0] - 1
+    def __init__(self, params, frozen_names=[]):
 
-        self.robot = erd.load("solo12")
+        self.robot = load("solo12")
         self.q0 = self.robot.q0
-        self.q0[7:] = param.q_init
+        self.q0[:7] = np.array([0.0, 0.0, params.h_ref, 0, 0, 0, 1])
+        self.q0[7:] = params.q_init
 
         self.model = self.robot.model
         self.rdata = self.model.createData()
@@ -22,19 +17,16 @@ class problemDataAbstract:
         self.visual_model = self.robot.visual_model
 
         self.frozen_names = frozen_names
-        if frozen_names:
-            self.frozen_idxs = [self.model.getJointId(
-                id) for id in frozen_names]
+        if frozen_names != []:
+            self.frozen_idxs = [self.model.getJointId(id) for id in frozen_names]
             self.freeze()
 
         self.nq = self.model.nq
         self.nv = self.model.nv
         self.nx = self.nq + self.nv
         self.ndx = 2 * self.nv
-        self.nu = (
-            12 - len(frozen_names) + 1 if len(frozen_names) != 0 else 12
-        )  # -1 to take into account the freeflyer
-        self.ntau = self.nv
+        # -1 to take into account the freeflyer
+        self.nu = 12 - (len(frozen_names) - 1) if len(frozen_names) != 0 else 12
 
         self.effort_limit = np.ones(self.nu) * 2.5
 
@@ -42,21 +34,10 @@ class problemDataAbstract:
         self.x0 = np.concatenate([self.q0, self.v0])
         self.u0 = np.zeros(self.nu)
 
-        self.xref = self.x0
-        self.uref = self.u0
+        self.baumgarte_gains = np.array([0, 100])
 
-        self.lfFoot, self.rfFoot, self.lhFoot, self.rhFoot = (
-            "FL_FOOT",
-            "FR_FOOT",
-            "HL_FOOT",
-            "HR_FOOT",
-        )
-        self.cnames = [self.lfFoot, self.rfFoot, self.lhFoot, self.rhFoot]
-        self.allContactIds = [self.model.getFrameId(f) for f in self.cnames]
-        self.lfFootId = self.model.getFrameId(self.lfFoot)
-        self.rfFootId = self.model.getFrameId(self.rfFoot)
-        self.lhFootId = self.model.getFrameId(self.lhFoot)
-        self.rhFootId = self.model.getFrameId(self.rhFoot)
+        self.feet_names = ["FL_FOOT", "FR_FOOT", "HL_FOOT", "HR_FOOT"]
+        self.feet_ids = [self.model.getFrameId(f) for f in self.feet_names]
 
         self.Rsurf = np.eye(3)
 
@@ -74,97 +55,40 @@ class problemDataAbstract:
 
 
 class ProblemData(problemDataAbstract):
-    def __init__(self, param):
-        super().__init__(param)
+    def __init__(self, params):
+        super().__init__(params)
 
         self.useFixedBase = 0
+
         # Cost function weights
         self.mu = 0.7
-        self.foot_tracking_w = 1e2
-        self.friction_cone_w = 1e3
+        self.foot_tracking_w = 1e1
+        self.friction_cone_w = 1e4
         self.control_bound_w = 1e3
         self.control_reg_w = 1e0
         self.state_reg_w = np.array(
             [0] * 3
             + [1e1] * 3
-            + [1e0] * 3
+            + [1e1] * 3
             + [1e-3] * 3
-            + [1e0] * 6
+            + [1e1] * 6
             + [0] * 6
             + [1e1] * 3
-            + [3 * 1e-1] * 3
+            + [1e-1] * 3
             + [1e1] * 6
         )
-        self.terminal_velocity_w = np.array([0] * 18 + [1e3] * 18)
-        self.control_bound_w = 1e3
+        self.terminal_velocity_w = np.array([0] * self.nv + [1e4] * self.nv)
+        self.force_reg_w = 1e0
 
-        self.x0 = np.array(
-            [
-                0.0,
-                0.0,
-                0.2607495,
-                0,
-                0,
-                0,
-                1,
-                0,
-                0.7,
-                -1.4,
-                0.0,
-                0.7,
-                -1.4,
-                0.0,
-                -0.7,
-                1.4,
-                0.0,
-                -0.7,
-                1.4,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ]
-        )  # x0 got from PyBullet
-
-        self.u0 = np.array(
-            [
-                -0.02615051,
-                -0.25848605,
-                0.51696646,
-                0.0285894,
-                -0.25720605,
-                0.51441775,
-                -0.02614404,
-                0.25848271,
-                -0.51697107,
-                0.02859587,
-                0.25720939,
-                -0.51441314,
-            ]
-        )  # quasi static control
         self.xref = self.x0
         self.uref = self.u0
 
 
 class ProblemDataFull(problemDataAbstract):
-    def __init__(self, param):
+    def __init__(self, params):
         frozen_names = ["root_joint"]
 
-        super().__init__(param, frozen_names)
+        super().__init__(params, frozen_names)
 
         self.useFixedBase = 1
 
@@ -175,8 +99,7 @@ class ProblemDataFull(problemDataAbstract):
         self.control_bound_w = 1e3
         self.control_reg_w = 1e0
         self.state_reg_w = np.array(
-            [1e2] * 3 + [1e-2] * 3 + [1e2] * 6 +
-            [1e1] * 3 + [1e0] * 3 + [1e1] * 6
+            [1e2] * 3 + [1e-2] * 3 + [1e2] * 6 + [1e1] * 3 + [1e0] * 3 + [1e1] * 6
         )
         self.terminal_velocity_w = np.array([0] * 12 + [1e3] * 12)
 

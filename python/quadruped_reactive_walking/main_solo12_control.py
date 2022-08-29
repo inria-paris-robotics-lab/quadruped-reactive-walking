@@ -8,11 +8,8 @@ from datetime import datetime
 import quadruped_reactive_walking as qrw
 from .Controller import Controller
 from .tools.LoggerControl import LoggerControl
-from .WB_MPC.ProblemData import ProblemData, ProblemDataFull
-
 
 params = qrw.Params()  # Object that holds all controller parameters
-pd = ProblemDataFull(params)
 
 repo = git.Repo(search_parent_directories=True)
 sha = repo.head.object.hexsha
@@ -134,7 +131,7 @@ def control_loop():
 
     # Default position after calibration
     q_init = np.array(params.q_init.tolist())
-    controller = Controller(pd, params, q_init, 0.0)
+    controller = Controller(params, q_init, 0.0)
 
     if params.SIMULATION:
         device = PyBulletSimulator()
@@ -144,7 +141,7 @@ def control_loop():
         qc = QualisysClient(ip="140.93.16.160", body_id=0)
 
     if params.LOGGING or params.PLOTTING:
-        loggerControl = LoggerControl(pd, params, log_size=params.N_SIMULATION)
+        loggerControl = LoggerControl(controller.pd, params, log_size=params.N_SIMULATION)
 
     if params.SIMULATION:
         device.Init(
