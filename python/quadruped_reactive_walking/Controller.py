@@ -265,7 +265,7 @@ class Controller:
             if self.mpc_result.new_result:
                 self.mpc_solved = True
                 self.k_new = self.k
-                # print(f"MPC solved in {self.k - self.k_solve} iterations")
+                print(f"MPC solved in {self.k - self.k_solve} iterations")
                 # self.plot_mpc()
 
             if not self.initialized and self.params.save_guess:
@@ -293,8 +293,8 @@ class Controller:
         t_send = time.time()
         self.t_send = t_send - t_mpc
 
-        self.clamp_result(device)
-        self.security_check(m)
+        # self.clamp_result(device)
+        # self.security_check(m)
 
         if self.error:
             self.set_null_control()
@@ -462,6 +462,8 @@ class Controller:
         vj_m = device.joints.velocities
         bp_m = np.array([e for tup in device.baseState for e in tup])
         bv_m = np.array([e for tup in device.baseVel for e in tup])
+        self.q = np.concatenate([bp_m, qj_m])
+        self.v = np.concatenate([bv_m, vj_m])
         x_m = np.concatenate([bp_m, qj_m, bv_m, vj_m])
         return {"qj_m": qj_m, "vj_m": vj_m, "x_m": x_m}
 
@@ -511,32 +513,30 @@ class Controller:
         axs[1].legend(legend)
         axs[1].set_title("Base velocity")
 
-        plt.show()
 
-        legend = ["Hip", "Shoulder", "Knee"]
-        _, axs = plt.subplots(3, 4, sharex=True)
-        for foot in range(4):
-            [
-                axs[0, foot].plot(np.array(self.mpc_result.xs)[:, 7 + 3 * foot + joint])
-                for joint in range(3)
-            ]
-            axs[0, foot].legend(legend)
-            axs[0, foot].set_title("Joint positions for " + self.pd.feet_names[foot])
+        # legend = ["Hip", "Shoulder", "Knee"]
+        # _, axs = plt.subplots(3, 4, sharex=True)
+        # for foot in range(4):
+        #     [
+        #         axs[0, foot].plot(np.array(self.mpc_result.xs)[:, 7 + 3 * foot + joint])
+        #         for joint in range(3)
+        #     ]
+        #     axs[0, foot].legend(legend)
+        #     axs[0, foot].set_title("Joint positions for " + self.pd.feet_names[foot])
 
-            [
-                axs[1, foot].plot(
-                    np.array(self.mpc_result.xs)[:, 19 + 6 + 3 * foot + joint]
-                )
-                for joint in range(3)
-            ]
-            axs[1, foot].legend(legend)
-            axs[1, foot].set_title("Joint velocity for " + self.pd.feet_names[foot])
+        #     [
+        #         axs[1, foot].plot(
+        #             np.array(self.mpc_result.xs)[:, 19 + 6 + 3 * foot + joint]
+        #         )
+        #         for joint in range(3)
+        #     ]
+        #     axs[1, foot].legend(legend)
+        #     axs[1, foot].set_title("Joint velocity for " + self.pd.feet_names[foot])
 
-            [
-                axs[2, foot].plot(np.array(self.mpc_result.us)[:, 3 * foot + joint])
-                for joint in range(3)
-            ]
-            axs[2, foot].legend(legend)
-            axs[2, foot].set_title("Joint torques for foot " + self.pd.feet_names[foot])
-
+        #     [
+        #         axs[2, foot].plot(np.array(self.mpc_result.us)[:, 3 * foot + joint])
+        #         for joint in range(3)
+        #     ]
+        #     axs[2, foot].legend(legend)
+        #     axs[2, foot].set_title("Joint torques for foot " + self.pd.feet_names[foot])
         plt.show()

@@ -55,6 +55,8 @@ class LoggerControl:
         self.t_ocp_solve = np.zeros(size)
 
         # MPC
+        self.q = np.zeros([size, pd.nq])
+        self.v = np.zeros([size, pd.nv])
         self.ocp_xs = np.zeros([size, params.T + 1, pd.nx])
         self.ocp_us = np.zeros([size, params.T, pd.nu])
         self.ocp_K = np.zeros([size, self.pd.nu, self.pd.ndx])
@@ -106,6 +108,8 @@ class LoggerControl:
         self.t_measures[self.i] = controller.t_measures
 
         # Logging from model predictive control
+        self.q[self.i] = np.array(controller.q)
+        self.v[self.i] = np.array(controller.v)
         self.ocp_xs[self.i] = np.array(controller.mpc_result.xs)
         self.ocp_us[self.i] = np.array(controller.mpc_result.us)
         self.ocp_K[self.i] = controller.mpc_result.K[0]
@@ -219,53 +223,23 @@ class LoggerControl:
     def plot_target(self, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
-        # x_mes = np.concatenate([self.q_mes, self.v_mes], axis=1)
-
-        # horizon = int(self.ocp_xs.shape[0] / self.params.mpc_wbc_ratio)
-        # t_scale = np.linspace(
-        #     0, (horizon) * self.params.dt_mpc, (horizon) * self.params.mpc_wbc_ratio
-        # )
-
-        # x_mpc = [self.ocp_xs[0][0, :]]
-        # [x_mpc.append(x[1, :]) for x in self.ocp_xs[:-1]]
-        # x_mpc = np.array(x_mpc)
-
-        # # Feet positions calcuilated by every ocp
-        # all_ocp_feet_p_log = {
-        #     idx: [
-        #         get_translation_array(
-        #             self.pd, self.ocp_xs[i * self.params.mpc_wbc_ratio], idx
-        #         )[0]
-        #         for i in range(horizon)
-        #     ]
-        #     for idx in self.pd.feet_ids
-        # }
-        # for foot in all_ocp_feet_p_log:
-        #     all_ocp_feet_p_log[foot] = np.array(all_ocp_feet_p_log[foot])
-
-        # # Measured feet positions
-        # m_feet_p_log = {
-        #     idx: get_translation_array(self.pd, x_mes, idx)[0]
-        #     for idx in self.pd.feet_ids
-        # }
-
-        # # Predicted feet positions
-        # feet_p_log = {
-        #     idx: get_translation_array(self.pd, x_mpc, idx)[0]
-        #     for idx in self.pd.feet_ids
-        # }
+        x_mes = np.concatenate([self.q, self.v], axis=1)
+        m_feet_p_log = {
+            idx: get_translation_array(self.pd, x_mes, idx)[0]
+            for idx in self.pd.feet_ids
+        }
 
         # Target plot
         legend = ["x", "y", "z"]
 
         fig, axs = plt.subplots(3, sharex=True)
         for p in range(3):
-            axs[p].set_title("Free foot on " + legend[p])
-            axs[p].plot(self.target[:, p], label="Target")
-            # axs[p].plot(m_feet_p_log[self.pd.rfFootId][:, p], label="Measured")
-            # axs[p].plot(feet_p_log[self.pd.rfFootId][:, p], label="Predicted")
-            axs[p].legend()
-
+            plt.subplot(3, 1, p + 1)
+            plt.title("Free foot on " + legend[p])
+            plt.plot(self.target[:, p])
+            plt.plot(m_feet_p_log[self.pd.feet_ids[1]][:, p])
+            plt.legend(["Target", "Measured"])
+            # "Predicted"])
         if save:
             plt.savefig(fileName + "/target")
 
@@ -298,7 +272,7 @@ class LoggerControl:
     def plot_controller_times(self):
         import matplotlib.pyplot as plt
 
-        t_range = np.array([k * self.pd.dt for k in range(self.tstamps.shape[0])])
+        t_range = np.array([k * self.params.dt_mpc for k in range(self.tstamps.shape[0])])
 
         plt.figure()
         plt.plot(t_range, self.t_measures, "r+")
@@ -315,7 +289,7 @@ class LoggerControl:
     def plot_OCP_times(self):
         import matplotlib.pyplot as plt
 
-        t_range = np.array([k * self.pd.dt for k in range(self.tstamps.shape[0])])
+        t_range = np.array([k * self.params.dt_mpc for k in range(self.tstamps.shape[0])])
 
         plt.figure()
         plt.plot(t_range, self.t_ocp_update, "r+")
@@ -333,6 +307,8 @@ class LoggerControl:
 
         np.savez_compressed(
             name,
+            q=self.q,
+            v=self.v,
             ocp_xs=self.ocp_xs,
             ocp_us=self.ocp_us,
             ocp_K=self.ocp_K,
@@ -403,6 +379,8 @@ class LoggerControl:
         self.t_loop = self.data["t_loop"]
         self.t_measures = self.data["t_meausres"]
 
+        self.q = self.data["q"]
+        self.v = self.data["v"]
         self.ocp_xs = self.data["ocp_xs"]
         self.ocp_us = self.data["ocp_us"]
         self.ocp_K = self.data["ocp_K"]
