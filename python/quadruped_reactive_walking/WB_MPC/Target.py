@@ -15,10 +15,10 @@ class Target:
         )
 
         if params.movement == "circle":
-            self.A = np.array([0, 0.03, 0.04])
-            self.offset = np.array([0, 0, 0.05])
-            self.freq = np.array([0, 0.5, 0.5])
-            self.phase = np.array([0, 0, -np.pi/2])
+            self.A = np.array([0.05, 0., 0.04])
+            self.offset = np.array([0.05, 0, 0.05])
+            self.freq = np.array([0.5, 0., 0.5])
+            self.phase = np.array([-np.pi/2-0.5, 0., -np.pi/2])
         elif params.movement == "step":
             self.initial = self.position[:, 1].copy()
             self.target = self.position[:, 1].copy() + np.array([0.1, 0.0, 0.0])

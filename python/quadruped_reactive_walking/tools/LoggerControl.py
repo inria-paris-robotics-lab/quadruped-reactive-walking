@@ -230,15 +230,13 @@ class LoggerControl:
         }
 
         # Target plot
+        _, axs = plt.subplots(3, sharex=True)
         legend = ["x", "y", "z"]
-
-        fig, axs = plt.subplots(3, sharex=True)
         for p in range(3):
-            plt.subplot(3, 1, p + 1)
-            plt.title("Free foot on " + legend[p])
-            plt.plot(self.target[:, p])
-            plt.plot(m_feet_p_log[self.pd.feet_ids[1]][:, p])
-            plt.legend(["Target", "Measured"])
+            axs[p].set_title("Free foot on " + legend[p])
+            axs[p].plot(self.target[:, p])
+            axs[p].plot(m_feet_p_log[self.pd.feet_ids[1]][:, p])
+            axs[p].legend(["Target", "Measured"])
             # "Predicted"])
         if save:
             plt.savefig(fileName + "/target")
