@@ -183,6 +183,8 @@ class Controller:
                     print("MPC Problem")
             if self.params.movement == "step":
                 self.gait = np.vstack((self.gait[1:, :], self.gait[0, :]))
+            elif self.params.movement == "walking":
+                self.gait = np.roll(self.gait, -1, axis=0)
             else:
                 self.gait = np.vstack((self.gait[1:, :], self.gait[-1, :]))
 

@@ -18,6 +18,10 @@ class Target:
             self.offset = np.array([0.0, 0.0, 0.0])
             self.freq = np.array([0.5, 0.5, 0.0])
             self.phase = np.array([0.0, 0.0, 0.0])
+        elif params.movement == "walk":
+            self.velocity_lin_target = np.array([10, 0, 0])
+            self.velocity_ang_target = np.array([0, 0, 0])
+            self.base_task = [self.velocity_lin_target, self.velocity_ang_target]
         else:
             self.initial_footsteps = np.array(params.footsteps_init.tolist()).reshape(
                 (3, 4), order="F"
@@ -26,7 +30,7 @@ class Target:
                 self.A = np.array([0.05, 0.0, 0.04])
                 self.offset = np.array([0.05, 0, 0.05])
                 self.freq = np.array([0.5, 0.0, 0.5])
-                self.phase = np.array([-np.pi / 2 , 0.0, -np.pi / 2])
+                self.phase = np.array([-np.pi / 2, 0.0, -np.pi / 2])
             elif params.movement == "step":
                 foot_pose = self.initial_footsteps[:, 1]
                 self.p0 = foot_pose
@@ -46,7 +50,7 @@ class Target:
 
     def compute(self, k):
         if k < self.initial_delay:
-            if self.params.movement == "base_circle":
+            if self.params.movement == "base_circle" or self.params.movement == "walk":
                 target = self.initial_base
             else:
                 target = self.initial_footsteps
@@ -56,6 +60,8 @@ class Target:
 
         if self.params.movement == "base_circle":
             target = self.evaluate_circle(k, self.initial_base)
+        elif self.params.movement == "walk":
+            target = self.base_task
         else:
             target = self.initial_footsteps.copy()
             if self.params.movement == "circle":

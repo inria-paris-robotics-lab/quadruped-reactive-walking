@@ -16,6 +16,8 @@ class problemDataAbstract:
         self.collision_model = self.robot.collision_model
         self.visual_model = self.robot.visual_model
 
+        self.robot_weight = -sum([Y.mass for Y in self.model.inertias]) * self.model.gravity.linear[2]
+
         self.frozen_names = frozen_names
         if frozen_names != []:
             self.frozen_idxs = [self.model.getJointId(id) for id in frozen_names]
@@ -65,13 +67,26 @@ class ProblemData(problemDataAbstract):
         # Cost function weights
         self.mu = 0.7
 
-        if params.movement == "step":
-            self.foot_tracking_w = 2.0 * 1e3
-        else:
-            self.foot_tracking_w = 1e4
-        self.base_tracking_w = 0.
-        self.friction_cone_w = 0.0  # 1e4
-        self.control_bound_w = 0.
+        # if params.movement == "step":
+        #     self.foot_tracking_w = 2.0 * 1e3
+        # else:
+        #     self.foot_tracking_w = 1e4
+        # self.base_tracking_w = 0.
+        # self.friction_cone_w = 0.0  # 1e4
+        # self.control_bound_w = 0.
+
+        self.fly_high_slope = 1000
+        self.fly_high_w = 1e4
+        self.ground_collision_w = 1e3
+
+        self.base_velocity_tracking_w = 1e2
+        self.foot_tracking_w = 0
+
+        self.impact_altitude_w = 1e4
+        self.impact_velocity_w = 1e5
+        self.friction_cone_w = 1e4
+        
+        self.control_bound_w = 1e3
         self.control_reg_w = 1e0
         self.state_reg_w = np.array(
             [0] * 3
@@ -80,9 +95,9 @@ class ProblemData(problemDataAbstract):
             + [1e1] * 3
             + [1e1] * 6
             + [0] * 6
-            + [1e-1] * 3
-            + [1e-1] * 3
-            + [1e-1] * 6
+            + [1e1] * 3 # 1e-1
+            + [1e1] * 3 # 1e-1
+            + [1e1] * 6 # 1e-1
         )
         self.terminal_velocity_w = np.array([0] * self.nv + [0.] * self.nv)
 
