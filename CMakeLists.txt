@@ -19,7 +19,6 @@ endif()
 # JRL-cmakemodule setup
 include(cmake/base.cmake)
 include(cmake/boost.cmake)
-include(cmake/python.cmake)
 
 # Disable -Werror on Unix.
 SET(CXX_DISABLE_WERROR True)
@@ -35,7 +34,6 @@ ADD_PROJECT_DEPENDENCY(Eigen3 REQUIRED)
 ADD_PROJECT_DEPENDENCY(example-robot-data REQUIRED)
 
 if(BUILD_PYTHON_INTERFACE)
-  FINDPYTHON()
   ADD_PROJECT_DEPENDENCY(eigenpy REQUIRED)
   string(REGEX REPLACE "-" "_" PY_NAME ${PROJECT_NAME})
   set(${PY_NAME}_LIB "${PY_NAME}_pywrap")
