@@ -62,7 +62,11 @@ class ProblemData(problemDataAbstract):
 
         # Cost function weights
         self.mu = 0.7
-        self.foot_tracking_w = 2. * 1e1
+
+        if params.movement == "step":
+            self.foot_tracking_w = 2.0 * 1e3
+        else:
+            self.foot_tracking_w = 1.5 * 1e1
         self.friction_cone_w = 1e4
         self.control_bound_w = 1e3
         self.control_reg_w = 1e0

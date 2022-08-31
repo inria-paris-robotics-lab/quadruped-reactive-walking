@@ -9,6 +9,7 @@ from . import WB_MPC_Wrapper
 from .WB_MPC.Target import Target
 from .tools.Utils import init_robot, quaternionToRPY
 from .WB_MPC.ProblemData import ProblemData, ProblemDataFull
+from .tools.kinematics_utils import get_translation_array
 
 COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c"]
 
@@ -170,7 +171,11 @@ class Controller:
         self.result.q_des = self.pd.q0[7:].copy()
         self.result.v_des = self.pd.v0[6:].copy()
 
-        self.target = Target(params)
+        pin.forwardKinematics(self.pd.model, self.pd.rdata, self.pd.q0, np.zeros(18))
+        pin.updateFramePlacements(self.pd.model, self.pd.rdata)
+        foot_pose = self.pd.rdata.oMf[self.pd.feet_ids[1]].translation.copy()
+
+        self.target = Target(params, foot_pose)
         self.footsteps = []
         for k in range(self.params.T * self.params.mpc_wbc_ratio):
             self.target_footstep = self.target.compute(k).copy()
@@ -224,37 +229,36 @@ class Controller:
                 self.k_solve = self.k
                 self.mpc_solved = False
 
-            try:
-                self.mpc.solve(
-                    self.k,
-                    m["x_m"],
-                    self.target_footstep.copy(),
-                    self.gait,
-                    self.xs_init,
-                    self.us_init,
-                )
-                # if self.initialized:
-                #     self.mpc.solve(
-                #         self.k,
-                #         self.mpc_result.xs[1],
-                #         self.target_footstep.copy(),
-                #         self.gait,
-                #         self.xs_init,
-                #         self.us_init,
-                #     )
-                # else:
-                #     self.mpc.solve(
-                #         self.k,
-                #         m["x_m"],
-                #         self.target_footstep.copy(),
-                #         self.gait,
-                #         self.xs_init,
-                #         self.us_init,
-                #     )
-            except ValueError:
-                self.error = True
-                print("MPC Problem")
-            self.gait = np.vstack((self.gait[1:, :], self.gait[-1, :]))
+            if self.params.closed_loop or not self.initialized:
+                try:
+                    self.mpc.solve(
+                        self.k,
+                        m["x_m"],
+                        self.target_footstep.copy(),
+                        self.gait,
+                        self.xs_init,
+                        self.us_init,
+                    )
+                except ValueError:
+                    self.error = True
+                    print("MPC Problem")
+            else:
+                try:
+                    self.mpc.solve(
+                        self.k,
+                        self.mpc_result.xs[1],
+                        self.target_footstep.copy(),
+                        self.gait,
+                        self.xs_init,
+                        self.us_init,
+                    )
+                except ValueError:
+                    self.error = True
+                    print("MPC Problem")
+            if self.params.movement == "step":
+                self.gait = np.vstack((self.gait[1:, :], self.gait[0, :]))
+            else:
+                self.gait = np.vstack((self.gait[1:, :], self.gait[-1, :]))
 
         t_mpc = time.time()
         self.t_mpc = t_mpc - t_measures
@@ -293,8 +297,8 @@ class Controller:
         t_send = time.time()
         self.t_send = t_send - t_mpc
 
-        # self.clamp_result(device)
-        # self.security_check(m)
+        self.clamp_result(device)
+        self.security_check(m)
 
         if self.error:
             self.set_null_control()
@@ -510,7 +514,10 @@ class Controller:
             axs[0].legend(legend)
             axs[0].set_title("Base position")
 
-            [axs[1].plot(np.array(self.mpc_result.xs)[:, 19 + axis]) for axis in range(3)]
+            [
+                axs[1].plot(np.array(self.mpc_result.xs)[:, 19 + axis])
+                for axis in range(3)
+            ]
             axs[1].legend(legend)
             axs[1].set_title("Base velocity")
 
@@ -519,11 +526,15 @@ class Controller:
             _, axs = plt.subplots(3, 4, sharex=True)
             for foot in range(4):
                 [
-                    axs[0, foot].plot(np.array(self.mpc_result.xs)[:, 7 + 3 * foot + joint])
+                    axs[0, foot].plot(
+                        np.array(self.mpc_result.xs)[:, 7 + 3 * foot + joint]
+                    )
                     for joint in range(3)
                 ]
                 axs[0, foot].legend(legend)
-                axs[0, foot].set_title("Joint positions for " + self.pd.feet_names[foot])
+                axs[0, foot].set_title(
+                    "Joint positions for " + self.pd.feet_names[foot]
+                )
 
                 [
                     axs[1, foot].plot(
@@ -539,6 +550,8 @@ class Controller:
                     for joint in range(3)
                 ]
                 axs[2, foot].legend(legend)
-                axs[2, foot].set_title("Joint torques for foot " + self.pd.feet_names[foot])
+                axs[2, foot].set_title(
+                    "Joint torques for foot " + self.pd.feet_names[foot]
+                )
 
         plt.show()

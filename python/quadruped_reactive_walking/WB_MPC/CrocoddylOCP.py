@@ -13,7 +13,7 @@ class OCP:
     def __init__(self, pd: ProblemData, params, footsteps, gait):
         self.pd = pd
         self.params = params
-        self.max_iter = 500 if params.save_guess else 1
+        self.max_iter = 1000 if params.save_guess else 1
 
         self.state = crocoddyl.StateMultibody(self.pd.model)
         self.initialized = False
