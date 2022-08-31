@@ -233,6 +233,14 @@ class LoggerControl:
         _, axs = plt.subplots(3, sharex=True)
         legend = ["x", "y", "z"]
         for p in range(3):
+            axs[p].set_title("Base position on " + legend[p])
+            axs[p].plot([self.pd.xref[p]] * self.log_size)
+            axs[p].plot(self.q[:, p])
+            axs[p].legend(["Target", "Measured"])
+
+        _, axs = plt.subplots(3, sharex=True)
+        legend = ["x", "y", "z"]
+        for p in range(3):
             axs[p].set_title("Free foot on " + legend[p])
             axs[p].plot(self.target[:, p])
             axs[p].plot(m_feet_p_log[self.pd.feet_ids[1]][:, p])
@@ -270,7 +278,9 @@ class LoggerControl:
     def plot_controller_times(self):
         import matplotlib.pyplot as plt
 
-        t_range = np.array([k * self.params.dt_mpc for k in range(self.tstamps.shape[0])])
+        t_range = np.array(
+            [k * self.params.dt_mpc for k in range(self.tstamps.shape[0])]
+        )
 
         plt.figure()
         plt.plot(t_range, self.t_measures, "r+")
@@ -287,7 +297,9 @@ class LoggerControl:
     def plot_OCP_times(self):
         import matplotlib.pyplot as plt
 
-        t_range = np.array([k * self.params.dt_mpc for k in range(self.tstamps.shape[0])])
+        t_range = np.array(
+            [k * self.params.dt_mpc for k in range(self.tstamps.shape[0])]
+        )
 
         plt.figure()
         plt.plot(t_range, self.t_ocp_update, "r+")
