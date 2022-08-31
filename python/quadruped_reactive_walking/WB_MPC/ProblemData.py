@@ -76,15 +76,15 @@ class ProblemData(problemDataAbstract):
         # self.control_bound_w = 0.
 
         self.fly_high_slope = 1000
-        self.fly_high_w = 1e4
+        self.fly_high_w = 1e3
         self.ground_collision_w = 1e3
 
         self.base_velocity_tracking_w = 1e2
         self.foot_tracking_w = 0
 
-        self.impact_altitude_w = 1e4
-        self.impact_velocity_w = 1e5
-        self.friction_cone_w = 1e4
+        self.impact_altitude_w = 1e3
+        self.impact_velocity_w = 1e3
+        self.friction_cone_w = 1e3
         
         self.control_bound_w = 1e3
         self.control_reg_w = 1e0

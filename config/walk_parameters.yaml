@@ -35,12 +35,11 @@ robot:
 
     # Parameters of Gait
     N_periods: 1
+    starting_nodes: 40
+    ending_nodes: 40
     gait: [20, 1, 0, 0, 1,
-           20, 0, 1, 1, 0,
-           20, 1, 0, 0, 1,
-           20, 0, 1, 1, 0,
-           20, 1, 0, 0, 1,
-           20, 0, 1, 1, 0]
+           20, 0, 1, 1, 0
+           ]
 
     # Parameters of Joystick
     gp_alpha_vel: 0.003  # Coefficient of the low pass filter applied to gamepad velocity

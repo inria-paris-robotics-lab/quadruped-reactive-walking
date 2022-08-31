@@ -65,7 +65,6 @@ class Controller:
         self.q_security = np.array([1.2, 2.1, 3.14] * 4)
 
         self.params = params
-        self.gait = params.gait
         init_robot(q_init, params)
         self.pd = ProblemData(params)
 

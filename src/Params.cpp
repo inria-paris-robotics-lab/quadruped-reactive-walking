@@ -64,6 +64,9 @@ Params::Params()
       Fz_min(0.0),
       enable_comp_forces(false),
 
+      starting_nodes(0),
+      ending_nodes(0),
+
       T_gait(0.0),         // Period of the gait
       mass(0.0),           // Mass of the robot
       I_mat(9, 0.0),       // Fill with zeros, will be filled with values later
@@ -166,6 +169,12 @@ void Params::initialize(const std::string& file_path) {
 
   assert_yaml_parsing(robot_node, "robot", "Kff_main");
   Kff_main = robot_node["Kff_main"].as<double>();
+
+  assert_yaml_parsing(robot_node, "robot", "starting_nodes");
+  starting_nodes = robot_node["starting_nodes"].as<int>();
+
+  assert_yaml_parsing(robot_node, "robot", "ending_nodes");
+  ending_nodes = robot_node["ending_nodes"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "gait");
   gait_vec = robot_node["gait"].as<std::vector<int> >();
