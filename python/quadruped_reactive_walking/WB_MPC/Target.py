@@ -30,12 +30,6 @@ class Target:
             self.ts = np.repeat(np.linspace(0, self.T, 3), 2)
 
             self.update_time = -1
-
-    def interpolate(self, t):
-        if self.type == 3:
-            q = self.krog(t)
-            v = self.krog.derivative(t)
-            return q, v
         else:
             self.target_footstep = self.position
             self.ramp_length = 100
