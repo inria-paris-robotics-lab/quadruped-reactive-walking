@@ -108,8 +108,8 @@ class LoggerControl:
         self.t_measures[self.i] = controller.t_measures
 
         # Logging from model predictive control
-        self.q[self.i] = np.array(controller.q)
-        self.v[self.i] = np.array(controller.v)
+        self.q[self.i] = np.array(controller.q_estimate)
+        self.v[self.i] = np.array(controller.v_estimate)
         self.ocp_xs[self.i] = np.array(controller.mpc_result.xs)
         self.ocp_us[self.i] = np.array(controller.mpc_result.us)
         self.ocp_K[self.i] = controller.mpc_result.K[0]

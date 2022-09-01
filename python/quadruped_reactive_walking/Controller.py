@@ -173,7 +173,7 @@ class Controller:
 
         pin.forwardKinematics(self.pd.model, self.pd.rdata, self.pd.q0, np.zeros(18))
         pin.updateFramePlacements(self.pd.model, self.pd.rdata)
-        foot_pose = self.pd.rdata.oMf[self.pd.feet_ids[1]].translation.copy()
+        foot_pose = self.pd.rdata.oMf[self.pd.feet_ids[1]].translation
 
         self.target = Target(params, foot_pose)
         self.footsteps = []
@@ -213,9 +213,7 @@ class Controller:
         """
         t_start = time.time()
 
-        m = self.read_state(device)
-
-        # oRh, hRb, oTh = self.run_estimator(device)
+        oRh, hRb, oTh = self.run_estimator(device)
 
         t_measures = time.time()
         self.t_measures = t_measures - t_start
@@ -233,7 +231,7 @@ class Controller:
                 try:
                     self.mpc.solve(
                         self.k,
-                        m["x_m"],
+                        self.x,
                         self.target_footstep.copy(),
                         self.gait,
                         self.xs_init,
@@ -276,7 +274,7 @@ class Controller:
                 self.save_guess()
 
             self.result.FF = self.params.Kff_main * np.ones(12)
-            self.result.tau_ff = self.compute_torque(m)[:]
+            self.result.tau_ff = self.compute_torque()[:]
 
             if self.params.interpolate_mpc:
                 if self.mpc_result.new_result:
@@ -298,7 +296,7 @@ class Controller:
         self.t_send = t_send - t_mpc
 
         self.clamp_result(device)
-        self.security_check(m)
+        self.security_check()
 
         if self.error:
             self.set_null_control()
@@ -324,21 +322,21 @@ class Controller:
                 cameraTargetPosition=[device.height[0], device.height[1], 0.0],
             )
 
-    def security_check(self, m):
+    def security_check(self):
         """
         Check if the command is fine and set the command to zero in case of error
         """
 
         if not self.error:
-            if (np.abs(m["qj_m"]) > self.q_security).any():
+            if (np.abs(self.q_estimate[7:]) > self.q_security).any():
                 print("-- POSITION LIMIT ERROR --")
-                print(m["qj_m"])
-                print(np.abs(m["qj_m"]) > self.q_security)
+                print(self.q_estimate[7:])
+                print(np.abs(self.q_estimate[7:]) > self.q_security)
                 self.error = True
-            elif (np.abs(m["vj_m"]) > 1000 * np.pi / 180).any():
+            elif (np.abs(self.v_estimate[6:]) > 1000 * np.pi / 180).any():
                 print("-- VELOCITY TOO HIGH ERROR --")
-                print(m["vj_m"])
-                print(np.abs(m["vj_m"]) > 1000 * np.pi / 180)
+                print(self.v_estimate[6:])
+                print(np.abs(self.v_estimate[6:]) > 1000 * np.pi / 180)
                 self.error = True
             elif (np.abs(self.result.FF) > 3.2).any():
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")
@@ -430,10 +428,11 @@ class Controller:
         @param q_perfect 6D perfect position of the base in world frame
         @param v_baseVel_perfect 3D perfect linear velocity of the base in base frame
         """
+        footstep = np.array(self.params.footsteps_init.tolist())
 
         self.estimator.run(
             self.gait,
-            self.target.compute(self.k),
+            footstep.reshape((3, 4), order='F'),
             device.imu.linear_acceleration,
             device.imu.gyroscope,
             device.imu.attitude_euler,
@@ -443,8 +442,8 @@ class Controller:
             b_baseVel_perfect,
         )
 
-        self.estimator.update_reference_state(np.zeros(6))
         # Add joystck reference velocity when needed
+        self.estimator.update_reference_state(np.zeros(6))
 
         oRh = self.estimator.get_oRh()
         hRb = self.estimator.get_hRb()
@@ -454,24 +453,21 @@ class Controller:
         self.h_v = self.estimator.get_h_v()
         self.h_v_windowed = self.estimator.get_h_v_filtered()
 
-        self.q[:3] = self.estimator.get_q_estimate()[:3]
-        self.q[6:] = self.estimator.get_q_estimate()[7:]
-        self.q[3:6] = quaternionToRPY(self.estimator.get_q_estimate()[3:7]).ravel()
+        self.q_estimate = self.estimator.get_q_estimate()
+        self.v_estimate = self.estimator.get_v_estimate()
+
+        # bp_m = np.array([e for tup in device.baseState for e in tup])
+        # bv_m = np.array([e for tup in device.baseVel for e in tup])
+
+        self.q[:3] = self.q_estimate[:3]
+        self.q[3:6] = quaternionToRPY(self.q_estimate[3:7]).ravel()
+        self.q[6:] = self.q_estimate[7:]
         self.v = self.estimator.get_v_reference()
 
+        self.x = np.concatenate([self.q_estimate, self.v_estimate])
         return oRh, hRb, oTh
 
-    def read_state(self, device):
-        qj_m = device.joints.positions
-        vj_m = device.joints.velocities
-        bp_m = np.array([e for tup in device.baseState for e in tup])
-        bv_m = np.array([e for tup in device.baseVel for e in tup])
-        self.q = np.concatenate([bp_m, qj_m])
-        self.v = np.concatenate([bv_m, vj_m])
-        x_m = np.concatenate([bp_m, qj_m, bv_m, vj_m])
-        return {"qj_m": qj_m, "vj_m": vj_m, "x_m": x_m}
-
-    def compute_torque(self, m):
+    def compute_torque(self):
         """
         Compute the feedforward torque using ricatti gains
         """
@@ -479,10 +475,10 @@ class Controller:
             [
                 pin.difference(
                     self.pd.model,
-                    m["x_m"][: self.pd.nq],
+                    self.x[: self.pd.nq],
                     self.mpc_result.xs[0][: self.pd.nq],
                 ),
-                self.mpc_result.xs[0][self.pd.nq :] - m["x_m"][self.pd.nq :],
+                self.mpc_result.xs[0][self.pd.nq :] - self.x[self.pd.nq :],
             ]
         )
         tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
@@ -493,8 +489,8 @@ class Controller:
         Integrate the position and velocity using the acceleration computed from the
         feedforward torque
         """
-        q0 = m["x_m"].copy()[:19]
-        v0 = m["x_m"].copy()[19:]
+        q0 = self.q_estimate.copy()
+        v0 = self.v_estimate.copy()
         tau = np.concatenate([np.zeros(6), self.result.tau_ff.copy()])
 
         a = pin.aba(self.pd.model, self.pd.rdata, q0, v0, tau)

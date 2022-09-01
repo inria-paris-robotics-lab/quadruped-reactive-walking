@@ -15,19 +15,8 @@ def init_robot(q_init, params):
     q = solo.q0.reshape((-1, 1))
 
     # Initialisation of the position of footsteps to be under the shoulder
-    # There is a lateral offset of around 7 centimeters
-    fsteps_under_shoulders = np.zeros((3, 4))
-    indexes = [
-        solo.model.getFrameId("FL_FOOT"),
-        solo.model.getFrameId("FR_FOOT"),
-        solo.model.getFrameId("HL_FOOT"),
-        solo.model.getFrameId("HR_FOOT"),
-    ]
     q[7:, 0] = 0.0
     pin.framesForwardKinematics(solo.model, solo.data, q)
-    for i in range(4):
-        fsteps_under_shoulders[:, i] = solo.data.oMf[indexes[i]].translation
-    fsteps_under_shoulders[2, :] = 0.0
 
     # Initial angular positions of actuators
     q[7:, 0] = q_init
@@ -38,14 +27,20 @@ def init_robot(q_init, params):
     pin.crba(solo.model, solo.data, solo.q0)
 
     # Initialisation of the position of footsteps
-    fsteps_init = np.zeros((3, 4))
+    initial_footsteps = np.zeros((3, 4))
     h_init = 0.0
+    indexes = [
+        solo.model.getFrameId("FL_FOOT"),
+        solo.model.getFrameId("FR_FOOT"),
+        solo.model.getFrameId("HL_FOOT"),
+        solo.model.getFrameId("HR_FOOT"),
+    ]
     for i in range(4):
-        fsteps_init[:, i] = solo.data.oMf[indexes[i]].translation
+        initial_footsteps[:, i] = solo.data.oMf[indexes[i]].translation
         h = (solo.data.oMf[1].translation - solo.data.oMf[indexes[i]].translation)[2]
         if h > h_init:
             h_init = h
-    fsteps_init[2, :] = 0.0
+    initial_footsteps[2, :] = 0.0
 
     # Initialisation of the position of shoulders
     shoulders_init = np.zeros((3, 4))
@@ -69,8 +64,8 @@ def init_robot(q_init, params):
     for i in range(4):
         for j in range(3):
             params.shoulders[3 * i + j] = shoulders_init[j, i]
-            params.footsteps_init[3 * i + j] = fsteps_init[j, i]
-            params.footsteps_under_shoulders[3 * i + j] = fsteps_init[j, i]
+            params.footsteps_init[3 * i + j] = initial_footsteps[j, i]
+            params.footsteps_under_shoulders[3 * i + j] = initial_footsteps[j, i]
 
 
 def quaternionToRPY(quat):
