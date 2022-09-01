@@ -206,7 +206,7 @@ Vector3 Estimator::computeBaseVelocityFromFoot(int footId) {
   pinocchio::updateFramePlacement(velocityModel_, velocityData_, feetFrames_[footId]);
   pinocchio::SE3 contactFrame = velocityData_.oMf[feetFrames_[footId]];
   Vector3 frameVelocity =
-      pinocchio::getFrameVelocity(velocityModel_, velocityData_, feetFrames_[footId], pinocchio::LOCAL).linear()
+      pinocchio::getFrameVelocity(velocityModel_, velocityData_, feetFrames_[footId], pinocchio::LOCAL).linear();
   frameVelocity(0) += footRadius_ * (vActuators_(1 + 3 * footId) + vActuators_(2 + 3 * footId));
   return contactFrame.translation().cross(IMUAngularVelocity_) - contactFrame.rotation() * frameVelocity;
 }

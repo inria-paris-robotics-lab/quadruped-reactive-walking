@@ -10,8 +10,7 @@ from .WB_MPC.Target import Target
 from .tools.Utils import init_robot, quaternionToRPY
 from .WB_MPC.ProblemData import ProblemData, ProblemDataFull
 from .tools.kinematics_utils import get_translation_array
-
-COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c"]
+from .tools.Interpolator import Interpolator
 
 
 class Result:
@@ -28,96 +27,6 @@ class Result:
         self.q_des = np.zeros(12)
         self.v_des = np.zeros(12)
         self.tau_ff = np.zeros(12)
-
-
-class Interpolator:
-    def __init__(self, params, x0):
-        self.dt = params.dt_mpc
-        self.type = params.interpolation_type
-
-        if self.type == 3:
-            self.ts = np.repeat(np.linspace(0, 2 * self.dt, 3), 2)
-
-        self.update(x0, x0)
-
-    def update(self, x0, x1, x2=None):
-        self.q0 = x0[7:19]
-        self.q1 = x1[7:19]
-        self.v0 = x0[19 + 6 :]
-        self.v1 = x1[19 + 6 :]
-        if self.type == 0:  # Linear
-            self.alpha = 0.0
-            self.beta = self.v1
-            self.gamma = self.q0
-        elif self.type == 1:  # Quadratic fixed velocity
-            self.alpha = 2 * (self.q1 - self.q0 - self.v0 * self.dt) / self.dt**2
-            self.beta = self.v0
-            self.gamma = self.q0
-        elif self.type == 2:  # Quadratic time variable
-            for i in range(3):
-                q0 = self.q0[i]
-                v0 = self.v0[i]
-                q1 = self.q1[i]
-                v1 = self.v1[i]
-                if (q1 == q0) or (v1 == -v0):
-                    self.alpha[i] = 0.0
-                    self.beta[i] = 0.0
-                    self.gamma[i] = q1
-                    self.delta = 1.0
-                else:
-                    self.alpha[i] = (v1**2 - v0**2) / (2 * (q1 - q0))
-                    self.beta[i] = v0
-                    self.gamma[i] = q0
-                    self.delta = 2 * (q1 - q0) / (v1 + v0) / self.dt
-        elif self.type == 3:  # Spline interpolation
-            from scipy.interpolate import KroghInterpolator
-
-            if x2 is not None:
-                self.q2 = x2[7:19]
-                self.v2 = x2[19 + 6 :]
-                self.y = [self.q0, self.v0, self.q1, self.v1, self.q2, self.v2]
-                self.krog = KroghInterpolator(self.ts, np.array(self.y))
-            else:
-                self.y = [self.q0, self.v0, self.q1, self.v1]
-                self.krog = KroghInterpolator(self.ts[:4], np.array(self.y))
-
-    def interpolate(self, t):
-        if self.type == 3:
-            q = self.krog(t)
-            v = self.krog.derivative(t)
-            return q, v
-
-        if self.type == 2:
-            t *= self.delta
-        q = 1 / 2 * self.alpha * t**2 + self.beta * t + self.gamma
-        v = self.v1 if self.type == 1 else self.alpha * t + self.beta
-
-        return q, v
-
-    def plot(self, n, dt):
-        import matplotlib.pyplot as plt
-
-        ts = np.linspace(0.0, 2 * self.dt, 2 * n + 1)
-        plt.style.use("seaborn")
-        for i in range(3):
-            plt.subplot(3, 2, (i * 2) + 1)
-            plt.title("Position interpolation")
-            plt.plot(ts, [self.interpolate(t)[0][i] for t in ts])
-            plt.scatter(y=self.q0[i], x=0.0, color="violet", marker="+")
-            plt.scatter(y=self.q1[i], x=self.dt, color="violet", marker="+")
-            if self.type == 3 and self.q2 is not None:
-                plt.scatter(y=self.q2[i], x=2 * self.dt, color="violet", marker="+")
-
-            plt.subplot(3, 2, (i * 2) + 2)
-            plt.title("Velocity interpolation")
-            plt.plot(ts, [self.interpolate(t)[1][i] for t in ts])
-            plt.scatter(y=self.v0[i], x=0.0, color="violet", marker="+")
-            plt.scatter(y=self.v1[i], x=self.dt, color="violet", marker="+")
-            if self.type == 3 and self.v2 is not None:
-                plt.scatter(y=self.v2[i], x=2 * self.dt, color="violet", marker="+")
-
-        plt.show()
-
 
 class DummyDevice:
     def __init__(self, h):
@@ -171,7 +80,7 @@ class Controller:
         self.result.q_des = self.pd.q0[7:].copy()
         self.result.v_des = self.pd.v0[6:].copy()
 
-        pin.forwardKinematics(self.pd.model, self.pd.rdata, self.pd.q0, np.zeros(18))
+        pin.forwardKinematics(self.pd.model, self.pd.rdata, self.pd.q0)
         pin.updateFramePlacements(self.pd.model, self.pd.rdata)
         foot_pose = self.pd.rdata.oMf[self.pd.feet_ids[1]].translation
 
@@ -458,10 +367,10 @@ class Controller:
 
         # bp_m = np.array([e for tup in device.baseState for e in tup])
         # bv_m = np.array([e for tup in device.baseVel for e in tup])
-
         self.q[:3] = self.q_estimate[:3]
         self.q[3:6] = quaternionToRPY(self.q_estimate[3:7]).ravel()
         self.q[6:] = self.q_estimate[7:]
+
         self.v = self.estimator.get_v_reference()
 
         self.x = np.concatenate([self.q_estimate, self.v_estimate])

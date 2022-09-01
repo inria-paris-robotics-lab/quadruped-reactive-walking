@@ -45,6 +45,7 @@ set(${PY_NAME}_TOOLS_PYTHON
   Utils.py
   qualisysClient.py
   kinematics_utils.py
+  Interpolator.py
   )
 
 foreach(python ${${PY_NAME}_PYTHON})

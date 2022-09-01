@@ -172,8 +172,8 @@ class Params {
   std::vector<double> I_mat;                      // Inertia matrix
   std::vector<double> CoM_offset;                 // Center of Mass offset
   double h_ref;                                   // Reference height for the base
-  std::vector<double> shoulders;                  // Position of shoulders in base frame
-  std::vector<double> footsteps_init;             // Initial 3D position of footsteps in base frame
+  std::vector<double> shoulders;                  // Position of shoulders in horizontal frame
+  std::vector<double> footsteps_init;             // Initial 3D position of footsteps in horizontal frame
   std::vector<double> footsteps_under_shoulders;  // Positions of footsteps to be "under the shoulder"
 };
 

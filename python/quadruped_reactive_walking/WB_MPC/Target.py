@@ -11,19 +11,15 @@ class Target:
         self.dt_wbc = params.dt_wbc
         self.k_per_step = 160
 
-        self.position = np.array(params.footsteps_under_shoulders).reshape(
-            (3, 4), order="F"
-        )
-
         if params.movement == "circle":
-            self.A = np.array([0.05, 0., 0.04])
+            self.A = np.array([0.05, 0.0, 0.04])
             self.offset = np.array([0.05, 0, 0.05])
-            self.freq = np.array([0.5, 0., 0.5])
-            self.phase = np.array([-np.pi/2-0.5, 0., -np.pi/2])
+            self.freq = np.array([0.5, 0.0, 0.5])
+            self.phase = np.array([-np.pi / 2 - 0.5, 0.0, -np.pi / 2])
         elif params.movement == "step":
             self.p0 = foot_pose
             self.p1 = foot_pose.copy() + np.array([0.025, 0.0, 0.03])
-            self.v1 = np.array([0.5, 0., 0.])
+            self.v1 = np.array([0.5, 0.0, 0.0])
             self.p2 = foot_pose.copy() + np.array([0.05, 0.0, 0.0])
 
             self.T = self.k_per_step * self.dt_wbc
@@ -31,9 +27,11 @@ class Target:
 
             self.update_time = -1
         else:
-            self.target_footstep = self.position
+            self.target_footstep = np.array(
+                self.params.footsteps_init.tolist()
+            ).reshape((3, 4), order="F")
             self.ramp_length = 100
-            self.target_ramp = np.linspace(0., 0.1, self.ramp_length)
+            self.target_ramp = np.linspace(0.0, 0.1, self.ramp_length)
 
     def compute(self, k):
         footstep = np.zeros((3, 4))
@@ -44,7 +42,9 @@ class Target:
             footstep[2, 1] += 0.015
         else:
             footstep = self.target_footstep.copy()
-            footstep[2, 1] = self.target_ramp[k] if k < self.ramp_length else self.target_ramp[-1] 
+            footstep[2, 1] = (
+                self.target_ramp[k] if k < self.ramp_length else self.target_ramp[-1]
+            )
 
         return footstep
 
@@ -69,7 +69,6 @@ class Target:
             target = self.p0
             velocity = -self.v1
 
-
         k_step = k % self.k_per_step
         if n_step != self.update_time:
             self.update_interpolator(initial, target, velocity)
@@ -86,4 +85,3 @@ class Target:
         p = self.krog(t)
         # v = self.krog.derivative(t)
         return p
-        
