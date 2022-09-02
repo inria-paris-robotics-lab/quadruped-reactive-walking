@@ -11,7 +11,16 @@ class Target:
         self.dt_wbc = params.dt_wbc
         self.k_per_step = 160
 
-        if params.movement == "circle":
+        if params.movement == "base_circle":
+            self.initial_base = np.array([0.0, 0.0, params.h_ref])
+            self.A = np.array([0.02, 0.0, 0.0])
+            self.offset = np.array([0.0, 0.0, 0.0])
+            self.freq = np.array([0.5, 0.5, 0.0])
+            self.phase = np.array([0.0, 0.0, 0.0])
+        elif params.movement == "circle":
+            self.position = np.array(params.footsteps_init.tolist()).reshape(
+                (3, 4), order="F"
+            )
             self.A = np.array([0.05, 0.0, 0.04])
             self.offset = np.array([0.05, 0, 0.05])
             self.freq = np.array([0.5, 0.0, 0.5])
@@ -31,26 +40,42 @@ class Target:
                 self.params.footsteps_init.tolist()
             ).reshape((3, 4), order="F")
             self.ramp_length = 100
-            self.target_ramp = np.linspace(0.0, 0.1, self.ramp_length)
+            self.target_ramp_x = np.linspace(0.0, -0.0, self.ramp_length)
+            self.target_ramp_y = np.linspace(0.0, 0.0, self.ramp_length)
+            self.target_ramp_z = np.linspace(0.0, 0.05, self.ramp_length)
 
     def compute(self, k):
         footstep = np.zeros((3, 4))
-        if self.params.movement == "circle":
-            footstep[:, 1] = self.evaluate_circle(k)
+        if self.params.movement == "base_circle":
+            target = self.evaluate_circle(k, self.initial_base)
+        elif self.params.movement == "circle":
+            target[:, 1] = self.evaluate_circle(k, self.position[:, 1])
         elif self.params.movement == "step":
-            footstep[:, 1] = self.evaluate_step(1, k)
-            footstep[2, 1] += 0.015
+            target[:, 1] = self.evaluate_step(1, k)
+            target[2, 1] += 0.015
         else:
-            footstep = self.target_footstep.copy()
-            footstep[2, 1] = (
-                self.target_ramp[k] if k < self.ramp_length else self.target_ramp[-1]
+            target = self.target_footstep.copy()
+            target[0, 1] = (
+                self.target_ramp_x[k]
+                if k < self.ramp_length
+                else self.target_ramp_x[-1]
+            )
+            target[1, 1] = (
+                self.target_ramp_y[k]
+                if k < self.ramp_length
+                else self.target_ramp_y[-1]
+            )
+            target[2, 1] = (
+                self.target_ramp_z[k]
+                if k < self.ramp_length
+                else self.target_ramp_z[-1]
             )
 
-        return footstep
+        return target
 
-    def evaluate_circle(self, k):
+    def evaluate_circle(self, k, initial_position):
         return (
-            self.position[:, 1]
+            initial_position
             + self.offset
             + self.A * np.sin(2 * np.pi * self.freq * k * self.dt_wbc + self.phase)
         )

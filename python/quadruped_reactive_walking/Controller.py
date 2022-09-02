@@ -28,6 +28,7 @@ class Result:
         self.v_des = np.zeros(12)
         self.tau_ff = np.zeros(12)
 
+
 class DummyDevice:
     def __init__(self, h):
         self.imu = self.IMU()
@@ -86,13 +87,21 @@ class Controller:
 
         self.target = Target(params, foot_pose)
         self.footsteps = []
+        self.base_refs = []
         for k in range(self.params.T * self.params.mpc_wbc_ratio):
-            self.target_footstep = self.target.compute(k).copy()
+            if params.movement == "base_circle":
+                self.target_base = self.target.compute(k).copy()
+                self.target_footstep = np.zeros((3, 4))
+            else:
+                self.target_footstep = self.target.compute(k).copy()
+                self.target_base = np.zeros(3)
+
             if k % self.params.mpc_wbc_ratio == 0:
+                self.base_refs.append(self.target_base.copy())
                 self.footsteps.append(self.target_footstep.copy())
 
         self.mpc = WB_MPC_Wrapper.MPC_Wrapper(
-            self.pd, params, self.footsteps, self.gait
+            self.pd, params, self.footsteps, self.base_refs, self.gait
         )
         self.mpc_solved = False
         self.k_result = 0
@@ -108,6 +117,11 @@ class Controller:
             self.xs_init = None
             self.us_init = None
             print("No initial guess\n")
+
+        self.filter_q = qrw.Filter()
+        self.filter_q.initialize(params)
+        self.filter_v = qrw.Filter()
+        self.filter_v.initialize(params)
 
         device = DummyDevice(params.h_ref)
         device.joints.positions = q_init
@@ -127,9 +141,16 @@ class Controller:
         t_measures = time.time()
         self.t_measures = t_measures - t_start
 
-        self.target_footstep = self.target.compute(
-            self.k + self.params.T * self.params.mpc_wbc_ratio
-        )
+        if self.params.movement == "base_circle":
+            self.target_base = self.target.compute(
+                self.k + self.params.T * self.params.mpc_wbc_ratio
+            )
+            self.target_footstep = np.zeros((3, 4))
+        else:
+            self.target_base = np.zeros(3)
+            self.target_footstep = self.target.compute(
+                self.k + self.params.T * self.params.mpc_wbc_ratio
+            )
 
         if self.k % self.params.mpc_wbc_ratio == 0:
             if self.mpc_solved:
@@ -142,6 +163,7 @@ class Controller:
                         self.k,
                         self.x,
                         self.target_footstep.copy(),
+                        self.target_base.copy(),
                         self.gait,
                         self.xs_init,
                         self.us_init,
@@ -155,6 +177,7 @@ class Controller:
                         self.k,
                         self.mpc_result.xs[1],
                         self.target_footstep.copy(),
+                        self.target_base.copy(),
                         self.gait,
                         self.xs_init,
                         self.us_init,
@@ -341,7 +364,7 @@ class Controller:
 
         self.estimator.run(
             self.gait,
-            footstep.reshape((3, 4), order='F'),
+            footstep.reshape((3, 4), order="F"),
             device.imu.linear_acceleration,
             device.imu.gyroscope,
             device.imu.attitude_euler,
@@ -361,6 +384,7 @@ class Controller:
         self.v_ref = self.estimator.get_base_vel_ref()
         self.h_v = self.estimator.get_h_v()
         self.h_v_windowed = self.estimator.get_h_v_filtered()
+        self.v_windowed = self.estimator.get_v_filtered()
 
         self.q_estimate = self.estimator.get_q_estimate()
         self.v_estimate = self.estimator.get_v_estimate()
@@ -373,7 +397,19 @@ class Controller:
 
         self.v = self.estimator.get_v_reference()
 
-        self.x = np.concatenate([self.q_estimate, self.v_estimate])
+        self.base_position_filtered = self.filter_q.filter(self.q[:6], True)
+
+        self.q_filtered = self.q_estimate.copy()
+        self.q_filtered[:3] = self.base_position_filtered[:3]
+        self.q_filtered[3:7] = pin.Quaternion(
+            pin.rpy.rpyToMatrix(self.base_position_filtered[3:])
+        ).coeffs()
+        self.v_filtered = self.v_estimate.copy()
+        # self.v_filtered[:6] = np.zeros(6)
+        # self.v_filtered[:6] = self.filter_v.filter(self.v_windowed, False)
+        self.v_filtered[:6] = self.filter_v.filter(self.v_estimate[:6], False)
+
+        self.x = np.concatenate([self.q_filtered, self.v_filtered])
         return oRh, hRb, oTh
 
     def compute_torque(self):

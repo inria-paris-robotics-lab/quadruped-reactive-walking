@@ -55,8 +55,11 @@ class LoggerControl:
         self.t_ocp_solve = np.zeros(size)
 
         # MPC
-        self.q = np.zeros([size, pd.nq])
-        self.v = np.zeros([size, pd.nv])
+        self.q_estimate_rpy = np.zeros([size, pd.nq - 1])
+        self.q_estimate = np.zeros([size, pd.nq])
+        self.v_estimate = np.zeros([size, pd.nv])
+        self.q_filtered = np.zeros([size, pd.nq])
+        self.v_filtered = np.zeros([size, pd.nv])
         self.ocp_xs = np.zeros([size, params.T + 1, pd.nx])
         self.ocp_us = np.zeros([size, params.T, pd.nu])
         self.ocp_K = np.zeros([size, self.pd.nu, self.pd.ndx])
@@ -64,6 +67,7 @@ class LoggerControl:
         self.MPC_equivalent_Kd = np.zeros([size, self.pd.nu])
 
         self.target = np.zeros([size, 3])
+        self.target_base = np.zeros([size, 3])
 
         # Whole body control
         self.wbc_P = np.zeros([size, 12])  # proportionnal gains of the PD+
@@ -108,8 +112,11 @@ class LoggerControl:
         self.t_measures[self.i] = controller.t_measures
 
         # Logging from model predictive control
-        self.q[self.i] = np.array(controller.q_estimate)
-        self.v[self.i] = np.array(controller.v_estimate)
+        self.q_estimate_rpy[self.i] = np.array(controller.q)
+        self.q_estimate[self.i] = np.array(controller.q_estimate)
+        self.v_estimate[self.i] = np.array(controller.v_estimate)
+        self.q_filtered[self.i] = np.array(controller.q_filtered)
+        self.v_filtered[self.i] = np.array(controller.v_filtered)
         self.ocp_xs[self.i] = np.array(controller.mpc_result.xs)
         self.ocp_us[self.i] = np.array(controller.mpc_result.us)
         self.ocp_K[self.i] = controller.mpc_result.K[0]
@@ -128,10 +135,16 @@ class LoggerControl:
                 self.target[i] = controller.footsteps[i // self.params.mpc_wbc_ratio][
                     :, 1
                 ]
+                self.target_base[i] = controller.base_refs[
+                    i // self.params.mpc_wbc_ratio
+                ]
         if self.i + self.params.T * self.params.mpc_wbc_ratio < self.log_size:
             self.target[
                 self.i + self.params.T * self.params.mpc_wbc_ratio
             ] = controller.target_footstep[:, 1]
+            self.target_base[
+                self.i + self.params.T * self.params.mpc_wbc_ratio
+            ] = controller.target_base[:]
 
         if not self.params.enable_multiprocessing:
             self.t_ocp_update[self.i] = controller.mpc.ocp.t_update
@@ -223,20 +236,38 @@ class LoggerControl:
     def plot_target(self, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
-        x_mes = np.concatenate([self.q, self.v], axis=1)
+        x = np.concatenate([self.q_filtered, self.v_filtered], axis=1)
         m_feet_p_log = {
-            idx: get_translation_array(self.pd, x_mes, idx)[0]
-            for idx in self.pd.feet_ids
+            idx: get_translation_array(self.pd, x, idx)[0] for idx in self.pd.feet_ids
         }
 
         # Target plot
-        _, axs = plt.subplots(3, sharex=True)
+        _, axs = plt.subplots(3, 2, sharex=True)
         legend = ["x", "y", "z"]
         for p in range(3):
-            axs[p].set_title("Base position on " + legend[p])
-            axs[p].plot([self.pd.xref[p]] * self.log_size)
-            axs[p].plot(self.q[:, p])
-            axs[p].legend(["Target", "Measured"])
+            axs[p, 0].set_title("Base position on " + legend[p])
+            axs[p, 0].plot(self.target_base[:, p])
+            axs[p, 0].plot(self.q_estimate[:, p])
+            axs[p, 0].plot(self.q_filtered[:, p])
+            axs[p, 0].legend(["Target", "Estimated", "Filtered"])
+
+            axs[p, 1].set_title("Base rotation on " + legend[p])
+            axs[p, 1].plot(self.q_estimate_rpy[:, 3 + p])
+            axs[p, 1].legend(["Estimated"])
+
+        _, axs = plt.subplots(3, 2, sharex=True)
+        legend = ["x", "y", "z"]
+        for p in range(3):
+            axs[p, 0].set_title("Base velocity on " + legend[p])
+            axs[p, 0].plot([self.pd.xref[19 + p]] * self.log_size)
+            axs[p, 0].plot(self.v_estimate[:, p])
+            axs[p, 0].plot(self.v_filtered[:, p])
+            axs[p, 0].legend(["Target", "Estimated", "Filtered"])
+
+            axs[p, 1].set_title("Base angular velocity on " + legend[p])
+            axs[p, 1].plot(self.v_estimate[:, 3 + p])
+            axs[p, 1].plot(self.v_filtered[:, 3 + p])
+            axs[p, 1].legend(["Estimated", "Filtered"])
 
         _, axs = plt.subplots(3, sharex=True)
         legend = ["x", "y", "z"]
@@ -317,8 +348,13 @@ class LoggerControl:
 
         np.savez_compressed(
             name,
-            q=self.q,
-            v=self.v,
+            target=self.target,
+            target_base=self.target_base,
+            q_estimate_rpy=self.q_estimate_rpy,
+            q_estimate=self.q_estimate,
+            v_estimate=self.v_estimate,
+            q_filtered=self.q_filtered,
+            v_filtered=self.v_filtered,
             ocp_xs=self.ocp_xs,
             ocp_us=self.ocp_us,
             ocp_K=self.ocp_K,
@@ -364,6 +400,8 @@ class LoggerControl:
             return
 
         # Load sensors arrays
+        self.target = self.data["target"]
+        self.target_base = self.data["target_base"]
         self.q_mes = self.data["q_mes"]
         self.v_mes = self.data["v_mes"]
         self.baseOrientation = self.data["baseOrientation"]
@@ -389,8 +427,11 @@ class LoggerControl:
         self.t_loop = self.data["t_loop"]
         self.t_measures = self.data["t_meausres"]
 
-        self.q = self.data["q"]
-        self.v = self.data["v"]
+        self.q_estimate_rpy = self.data["q_estimate_rpy"]
+        self.q_estimate = self.data["q_estimate"]
+        self.v_estimate = self.data["v_estimate"]
+        self.q_filtered = self.data["q_filtered"]
+        self.v_filtered = self.data["v_filtered"]
         self.ocp_xs = self.data["ocp_xs"]
         self.ocp_us = self.data["ocp_us"]
         self.ocp_K = self.data["ocp_K"]

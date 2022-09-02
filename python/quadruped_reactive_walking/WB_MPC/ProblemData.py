@@ -32,7 +32,8 @@ class problemDataAbstract:
 
         self.v0 = np.zeros(18)
         self.x0 = np.concatenate([self.q0, self.v0])
-        self.u0 = np.zeros(self.nu)
+
+        self.u0 = np.array([0.0, 0.0, 9.81 * params.mass / 4.0] * 4)
 
         self.baumgarte_gains = np.array([0, 100])
 
@@ -59,6 +60,7 @@ class ProblemData(problemDataAbstract):
         super().__init__(params)
 
         self.useFixedBase = 0
+        self.base_id = self.model.getFrameId("base_link")
 
         # Cost function weights
         self.mu = 0.7
@@ -66,23 +68,23 @@ class ProblemData(problemDataAbstract):
         if params.movement == "step":
             self.foot_tracking_w = 2.0 * 1e3
         else:
-            self.foot_tracking_w = 1.5 * 1e1
-        self.friction_cone_w = 1e4
-        self.control_bound_w = 1e3
+            self.foot_tracking_w = 0.
+        self.base_tracking_w = 1e5
+        self.friction_cone_w = 0.0  # 1e4
+        self.control_bound_w = 0.
         self.control_reg_w = 1e0
         self.state_reg_w = np.array(
             [0] * 3
             + [1e1] * 3
             + [1e1] * 3
-            + [1e-3] * 3
+            + [1e1] * 3
             + [1e1] * 6
             + [0] * 6
-            + [1e1] * 3
             + [1e-1] * 3
-            + [1e1] * 6
+            + [1e-1] * 3
+            + [1e-1] * 6
         )
-        self.terminal_velocity_w = np.array([0] * self.nv + [1e4] * self.nv)
-        self.force_reg_w = 1e0
+        self.terminal_velocity_w = np.array([0] * self.nv + [0.] * self.nv)
 
         self.xref = self.x0
         self.uref = self.u0

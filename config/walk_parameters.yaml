@@ -6,14 +6,14 @@ robot:
     LOGGING: true  # Enable/disable logging during the experiment
     PLOTTING: true  # Enable/disable automatic plotting at the end of the experiment
     DEMONSTRATION: false  # Enable/disable demonstration functionalities
-    SIMULATION: true  # Enable/disable PyBullet simulation or running on real robot
-    enable_pyb_GUI: true  # Enable/disable PyBullet GUI
+    SIMULATION: false  # Enable/disable PyBullet simulation or running on real robot
+    enable_pyb_GUI: false  # Enable/disable PyBullet GUI
     envID: 0  # Identifier of the environment to choose in which one the simulation will happen
     use_flat_plane: true  # If True the ground is flat, otherwise it has bumps
     predefined_vel: true  # If we are using a predefined reference velocity (True) or a joystick (False)
-    N_SIMULATION: 5000  # Number of simulated wbc time steps
+    N_SIMULATION: 10000  # Number of simulated wbc time steps
     enable_corba_viewer: false  # Enable/disable Corba Viewer
-    enable_multiprocessing: true  # Enable/disable running the MPC in another process in parallel of the main loop
+    enable_multiprocessing: true     # Enable/disable running the MPC in another process in parallel of the main loop
     perfect_estimator: false  # Enable/disable perfect estimator by using data directly from PyBullet
 
     # General control parameters
@@ -25,18 +25,18 @@ robot:
     dt_mpc: 0.01  # Time step of the model predictive control
     type_MPC: 3  # Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
     save_guess: false # true to interpolate the impedance quantities between nodes of the MPC
-    movement: "" # name of the movement to perform
+    movement: "base_circle" # name of the movement to perform
     interpolate_mpc: true # true to interpolate the impedance quantities between nodes of the MPC
     interpolation_type: 3 # 0,1,2,3 decide which kind of interpolation is used
-    closed_loop: false # true to close the loop on the MPC
-    Kp_main: [3, 3, 3]  # Proportional gains for the PD+
+    closed_loop: true # true to close the loop on the MPC
+    Kp_main: [2, 2, 2]  # Proportional gains for the PD+
     Kd_main: [0.3, 0.3, 0.3]  # Derivative gains for the PD+
     Kff_main: 1.0  # Feedforward torques multiplier for the PD+
 
     # Parameters of Gait
     N_periods: 1
     gait: [16, 1, 1, 1, 1,
-           16, 1, 0, 1, 1]
+           16, 1, 1, 1, 1]
 
     # Parameters of Joystick
     gp_alpha_vel: 0.003  # Coefficient of the low pass filter applied to gamepad velocity

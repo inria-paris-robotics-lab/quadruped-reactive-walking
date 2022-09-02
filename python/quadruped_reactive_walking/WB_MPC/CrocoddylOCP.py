@@ -10,7 +10,7 @@ from time import time
 
 
 class OCP:
-    def __init__(self, pd: ProblemData, params, footsteps, gait):
+    def __init__(self, pd: ProblemData, params, footsteps, base_refs, gait):
         self.pd = pd
         self.params = params
         self.max_iter = 1000 if params.save_guess else 1
@@ -21,17 +21,17 @@ class OCP:
         self.t_update_last_model = 0.0
         self.t_shift = 0.0
 
-        rm, tm = self.initialize_models(gait, footsteps)
+        rm, tm = self.initialize_models(gait, footsteps, base_refs)
 
         self.x0 = self.pd.x0
 
         self.problem = crocoddyl.ShootingProblem(self.x0, rm, tm)
         self.ddp = crocoddyl.SolverFDDP(self.problem)
 
-    def initialize_models(self, gait, footsteps):
+    def initialize_models(self, gait, footsteps, base_refs):
         models = []
         for t, step in enumerate(gait[:-1]):
-            tasks = self.make_task(footsteps[t])
+            tasks = self.make_task(footsteps[t], base_refs[t])
             support_feet = [self.pd.feet_ids[i] for i in np.nonzero(step == 1)[0]]
             models.append(self.create_model(support_feet, tasks))
 
@@ -40,10 +40,10 @@ class OCP:
 
         return models, terminal_model
 
-    def solve(self, x0, footstep, gait, xs_init=None, us_init=None):
+    def solve(self, x0, footstep, base_ref, gait, xs_init=None, us_init=None):
         t_start = time()
         self.x0 = x0
-        self.make_ocp(footstep, gait)
+        self.make_ocp(footstep, base_ref, gait)
 
         t_update = time()
         self.t_update = t_update - t_start
@@ -66,7 +66,7 @@ class OCP:
 
         self.t_solve = time() - t_start
 
-    def make_ocp(self, footstep, gait):
+    def make_ocp(self, footstep, base_ref, gait):
         """
         Create a shooting problem for a simple walking gait.
 
@@ -76,7 +76,7 @@ class OCP:
         pin.updateFramePlacements(self.pd.model, self.pd.rdata)
 
         if self.initialized:
-            tasks = self.make_task(footstep)
+            tasks = self.make_task(footstep, base_ref)
             support_feet = [self.pd.feet_ids[i] for i in np.nonzero(gait[-1] == 1)[0]]
             self.update_model(self.problem.runningModels[0], tasks, support_feet)
 
@@ -89,8 +89,11 @@ class OCP:
 
         self.initialized = True
 
-    def make_task(self, footstep):
+    def make_task(self, footstep, base_ref):
         task = [[], []]
+        if base_ref is not None:
+            task[0].append(self.pd.base_id)
+            task[1].append(base_ref)
         for foot in range(4):
             if footstep[:, foot].any():
                 task[0].append(self.pd.feet_ids[foot])
@@ -219,7 +222,7 @@ class OCP:
         nu = model.differential.actuation.nu
         costs = model.differential.costs
         for i in self.pd.feet_ids:
-            cone = crocoddyl.FrictionCone(self.pd.Rsurf, self.pd.mu, 4, False, 3)
+            cone = crocoddyl.FrictionCone(self.pd.Rsurf, self.pd.mu, 4, False, min_nforce=3.)
             residual = crocoddyl.ResidualModelContactFrictionCone(
                 self.state, i, cone, nu
             )
@@ -241,6 +244,10 @@ class OCP:
             costs.addCost(name, foot_tracking, self.pd.foot_tracking_w)
 
             costs.changeCostStatus(name, False)
+        
+        residual = crocoddyl.ResidualModelFrameTranslation(self.state, self.pd.base_id, np.zeros(3), nu)
+        base_tracking = crocoddyl.CostModelResidual(self.state, residual)
+        costs.addCost("base_tracking", base_tracking, self.pd.base_tracking_w)
 
         control_residual = crocoddyl.ResidualModelControl(self.state, self.pd.uref)
         control_reg = crocoddyl.CostModelResidual(self.state, control_residual)
@@ -259,11 +266,13 @@ class OCP:
 
     def update_tracking_costs(self, costs, tasks, support_feet):
         index = 0
+        if tasks[0][0] == self.pd.base_id:
+            costs.costs["base_tracking"].cost.residual.reference = tasks[1][index]
+            index += 1
+
         for i in self.pd.feet_ids:
             name = self.pd.model.frames[i].name + "_foot_tracking"
             if i in tasks[0]:
                 costs.costs[name].cost.residual.reference = tasks[1][index]
                 index += 1
             costs.changeCostStatus(name, i not in support_feet)
-
-        # print(f"{name} reference: {costs.costs[name].cost.residual.reference} status:{i in tasks[0]}")
