@@ -68,7 +68,7 @@ class ProblemData(problemDataAbstract):
         if params.movement == "step":
             self.foot_tracking_w = 2.0 * 1e3
         else:
-            self.foot_tracking_w = 1e5
+            self.foot_tracking_w = 1e4
         self.base_tracking_w = 0.
         self.friction_cone_w = 0.0  # 1e4
         self.control_bound_w = 0.
