@@ -199,7 +199,7 @@ class Controller:
             if self.mpc_result.new_result:
                 self.mpc_solved = True
                 self.k_new = self.k
-                print(f"MPC solved in {self.k - self.k_solve} iterations")
+                # print(f"MPC solved in {self.k - self.k_solve} iterations")
                 # self.plot_mpc()
 
             if not self.initialized and self.params.save_guess:
@@ -361,6 +361,9 @@ class Controller:
         @param v_baseVel_perfect 3D perfect linear velocity of the base in base frame
         """
         footstep = np.array(self.params.footsteps_init.tolist())
+
+        if self.k < 2:
+            self.estimator.initialize_IMU_Yaw()
 
         self.estimator.run(
             self.gait,

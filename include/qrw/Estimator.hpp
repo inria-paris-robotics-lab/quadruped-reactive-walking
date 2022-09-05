@@ -71,6 +71,8 @@ class Estimator {
   ////////////////////////////////////////////////////////////////////////////////////////////////
   void updateReferenceState(VectorN const& vRef);
 
+  void initializeIMUYaw() { initialized_=false; };
+
   VectorN getQEstimate() { return qEstimate_; }
   VectorN getVEstimate() { return vEstimate_; }
   VectorN getVSecurity() { return vSecurity_; }

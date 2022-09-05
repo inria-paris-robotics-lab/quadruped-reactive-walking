@@ -11,6 +11,7 @@ struct EstimatorVisitor : public bp::def_visitor<EstimatorVisitor<Estimator>> {
         .def("initialize", &Estimator::initialize, bp::args("params"), "Initialize Estimator from Python.\n")
         .def("update_reference_state", &Estimator::updateReferenceState, bp::args("v_ref"), "Update robot state.\n")
 
+        .def("initialize_IMU_Yaw", &Estimator::initializeIMUYaw, "Initialize yaw of the IMU.\n")
         .def("get_q_estimate", &Estimator::getQEstimate, "Get filtered configuration.\n")
         .def("get_v_estimate", &Estimator::getVEstimate, "Get filtered velocity.\n")
         .def("get_v_security", &Estimator::getVSecurity, "Get filtered velocity for security check.\n")

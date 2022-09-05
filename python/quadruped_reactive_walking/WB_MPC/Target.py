@@ -14,7 +14,7 @@ class Target:
 
         if params.movement == "base_circle":
             self.initial_base = np.array([0.0, 0.0, params.h_ref])
-            self.A = np.array([0.02, 0.0, 0.0])
+            self.A = np.array([0.02, 0.015, 0.0])
             self.offset = np.array([0.0, 0.0, 0.0])
             self.freq = np.array([0.5, 0.5, 0.0])
             self.phase = np.array([0.0, 0., 0.0])
