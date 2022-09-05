@@ -81,11 +81,7 @@ class Controller:
         self.result.q_des = self.pd.q0[7:].copy()
         self.result.v_des = self.pd.v0[6:].copy()
 
-        pin.forwardKinematics(self.pd.model, self.pd.rdata, self.pd.q0)
-        pin.updateFramePlacements(self.pd.model, self.pd.rdata)
-        foot_pose = self.pd.rdata.oMf[self.pd.feet_ids[1]].translation
-
-        self.target = Target(params, foot_pose)
+        self.target = Target(params)
         self.footsteps = []
         self.base_refs = []
         for k in range(self.params.T * self.params.mpc_wbc_ratio):
@@ -94,7 +90,7 @@ class Controller:
                 self.target_footstep = np.zeros((3, 4))
             else:
                 self.target_footstep = self.target.compute(k).copy()
-                self.target_base = np.zeros(3)
+                self.target_base = np.array([0., 0., self.params.h_ref])
 
             if k % self.params.mpc_wbc_ratio == 0:
                 self.base_refs.append(self.target_base.copy())
