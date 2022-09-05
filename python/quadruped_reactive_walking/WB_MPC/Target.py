@@ -10,13 +10,14 @@ class Target:
         self.params = params
         self.dt_wbc = params.dt_wbc
         self.k_per_step = 160
+        self.initial_delay = 1000
 
         if params.movement == "base_circle":
             self.initial_base = np.array([0.0, 0.0, params.h_ref])
             self.A = np.array([0.02, 0.0, 0.0])
             self.offset = np.array([0.0, 0.0, 0.0])
             self.freq = np.array([0.5, 0.5, 0.0])
-            self.phase = np.array([0.0, 0.0, 0.0])
+            self.phase = np.array([0.0, 0., 0.0])
         elif params.movement == "circle":
             self.position = np.array(params.footsteps_init.tolist()).reshape(
                 (3, 4), order="F"
@@ -45,7 +46,16 @@ class Target:
             self.target_ramp_z = np.linspace(0.0, 0.05, self.ramp_length)
 
     def compute(self, k):
-        footstep = np.zeros((3, 4))
+        if k < self.initial_delay:
+            if self.params.movement == "base_circle":
+                target = self.initial_base
+            else:
+                #TODO needs some fixing
+                target=self.position
+            return target
+
+        k -= self.initial_delay
+
         if self.params.movement == "base_circle":
             target = self.evaluate_circle(k, self.initial_base)
         elif self.params.movement == "circle":
