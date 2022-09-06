@@ -66,7 +66,9 @@ class ProblemData(problemDataAbstract):
         self.useFixedBase = 0
         self.base_id = self.model.getFrameId("base_link")
 
-        self.state_limit = np.concatenate([np.full(18, np.inf), np.zeros(6), np.ones(12) * 800])
+        self.state_limit = np.concatenate(
+            [np.full(18, np.inf), np.zeros(6), np.ones(12) * 800]
+        )
 
         # Cost function weights
         self.mu = 0.7
@@ -81,23 +83,23 @@ class ProblemData(problemDataAbstract):
 
         self.fly_high_slope = 200
         self.fly_high_w = 1e4
-        self.ground_collision_w = 1e4
+        self.ground_collision_w = 1e3
 
-        self.base_velocity_tracking_w = 1e4
+        self.base_velocity_tracking_w = 5 * 1e5
         self.foot_tracking_w = 0
 
-        self.impact_altitude_w = 1e4
-        self.impact_velocity_w = 1e4
+        self.impact_altitude_w = 1e3
+        self.impact_velocity_w = 1e3
         self.friction_cone_w = 1e3 * 0.0
 
         self.control_bound_w = 1e3
         self.control_reg_w = 1e1
         self.state_reg_w = np.array(
-            [0] * 3 + [0] * 3 + [1e2] * 12 + [0] * 6 + [1e0] * 12
+            [0] * 3 + [0] * 3 + [1e2] * 12 + [0] * 6 + [1e1] * 12
         )
-        self.state_bound_w = 1e5
+        self.state_bound_w = np.array([0] * 18 + [0] * 6 + [1e3] * 12)
         self.terminal_velocity_w = np.array([0] * self.nv + [1e3] * self.nv)
-        self.force_reg_w = 5* 1e1
+        self.force_reg_w = 5 * 1e1
 
         self.xref = self.x0
         self.uref = self.u0

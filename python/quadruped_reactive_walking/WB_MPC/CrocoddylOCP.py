@@ -271,11 +271,11 @@ class OCP:
         costs.addCost("state_reg", state_cost, 1)
 
         state_bound_residual = crocoddyl.ResidualModelState(self.state, self.pd.xref, nu)
-        activation = crocoddyl.ActivationModelQuadraticBarrier(
-            crocoddyl.ActivationBounds(-self.pd.state_limit, self.pd.state_limit)
+        activation = crocoddyl.ActivationModelWeightedQuadraticBarrier(
+            crocoddyl.ActivationBounds(-self.pd.state_limit, self.pd.state_limit), self.pd.state_bound_w **2
         )
         state_bound_cost = crocoddyl.CostModelResidual(self.state, activation, state_bound_residual)
-        costs.addCost("state_limitBound", state_bound_cost, self.pd.state_bound_w)
+        costs.addCost("state_limitBound", state_bound_cost, 1)
 
 
         differential = sobec.DifferentialActionModelContactFwdDynamics(
