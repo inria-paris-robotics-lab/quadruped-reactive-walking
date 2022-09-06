@@ -81,7 +81,7 @@ class ProblemData(problemDataAbstract):
         # self.friction_cone_w = 0.0  # 1e4
         # self.control_bound_w = 0.
 
-        self.fly_high_slope = 50
+        self.fly_high_slope = 80
         self.fly_high_w = 1e4
         self.ground_collision_w = 1e3
 
