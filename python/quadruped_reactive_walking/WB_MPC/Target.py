@@ -19,7 +19,7 @@ class Target:
             self.freq = np.array([0.5, 0.5, 0.0])
             self.phase = np.array([0.0, 0.0, 0.0])
         elif params.movement == "walk":
-            self.velocity_lin_target = np.array([0.1, 0, 0])
+            self.velocity_lin_target = np.array([0.5, 0, 0])
             self.velocity_ang_target = np.array([0, 0, 0])
             self.base_ref = np.concatenate(
                 [self.velocity_lin_target, self.velocity_ang_target]

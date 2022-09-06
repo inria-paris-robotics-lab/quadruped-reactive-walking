@@ -259,15 +259,15 @@ class Controller:
                 print(self.q_estimate[7:])
                 print(np.abs(self.q_estimate[7:]) > self.q_security)
                 self.error = True
-            elif (np.abs(self.v_estimate[6:]) > 1000 * np.pi / 180).any():
+            elif (np.abs(self.v_estimate[6:]) > 100.).any():
                 print("-- VELOCITY TOO HIGH ERROR --")
                 print(self.v_estimate[6:])
-                print(np.abs(self.v_estimate[6:]) > 1000 * np.pi / 180)
+                print(np.abs(self.v_estimate[6:]) > 100.)
                 self.error = True
-            elif (np.abs(self.result.FF) > 3.2).any():
+            elif (np.abs(self.result.FF) > 5.).any():
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")
                 print(self.result.FF)
-                print(np.abs(self.result.FF) > 3.2)
+                print(np.abs(self.result.FF) > 5.)
                 self.error = True
 
     def clamp(self, num, min_value=None, max_value=None):

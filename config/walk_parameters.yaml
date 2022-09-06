@@ -6,12 +6,12 @@ robot:
     LOGGING: true  # Enable/disable logging during the experiment
     PLOTTING: true  # Enable/disable automatic plotting at the end of the experiment
     DEMONSTRATION: false  # Enable/disable demonstration functionalities
-    SIMULATION: false  # Enable/disable PyBullet simulation or running on real robot
-    enable_pyb_GUI: false  # Enable/disable PyBullet GUI
+    SIMULATION: true  # Enable/disable PyBullet simulation or running on real robot
+    enable_pyb_GUI: true  # Enable/disable PyBullet GUI
     envID: 0  # Identifier of the environment to choose in which one the simulation will happen
     use_flat_plane: true  # If True the ground is flat, otherwise it has bumps
     predefined_vel: true  # If we are using a predefined reference velocity (True) or a joystick (False)
-    N_SIMULATION: 15000  # Number of simulated wbc time steps
+    N_SIMULATION: 8000  # Number of simulated wbc time steps
     enable_corba_viewer: false  # Enable/disable Corba Viewer
     enable_multiprocessing: true     # Enable/disable running the MPC in another process in parallel of the main loop
     perfect_estimator: false  # Enable/disable perfect estimator by using data directly from PyBullet
@@ -35,11 +35,11 @@ robot:
 
     # Parameters of Gait
     N_periods: 1
-    starting_nodes: 40
-    ending_nodes: 40
-    gait: [20, 1, 0, 0, 1,
-           20, 0, 1, 1, 0]
-    gait_repetitions: 10
+    starting_nodes: 50
+    ending_nodes: 50
+    gait: [25, 1, 0, 0, 1,
+           25, 0, 1, 1, 0]
+    gait_repetitions: 5
        
 
     # Parameters of Joystick

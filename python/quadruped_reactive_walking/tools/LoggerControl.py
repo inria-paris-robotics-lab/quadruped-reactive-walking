@@ -179,7 +179,7 @@ class LoggerControl:
         self.plot_torques(save, fileName)
         self.plot_target(save, fileName)
         # self.plot_riccati_gains(0, save, fileName)
-        self.plot_controller_times()
+        self.plot_controller_times(save, fileName)
         if not self.params.enable_multiprocessing:
             self.plot_OCP_times()
 
@@ -262,6 +262,9 @@ class LoggerControl:
             axs[p, 1].plot(self.q_estimate_rpy[:, 3 + p])
             axs[p, 1].legend(["Estimated"])
 
+        if save:
+            plt.savefig(fileName + "/base_position_target")
+
         _, axs = plt.subplots(3, 2, sharex=True)
         legend = ["x", "y", "z"]
         for p in range(3):
@@ -276,17 +279,20 @@ class LoggerControl:
             axs[p, 1].plot(self.v_estimate[:, 3 + p])
             axs[p, 1].plot(self.v_filtered[:, 3 + p])
             axs[p, 1].legend(["Target", "Estimated", "Filtered"])
+        if save:
+            plt.savefig(fileName + "/base_velocity_target")
 
         _, axs = plt.subplots(3, sharex=True)
         legend = ["x", "y", "z"]
         for p in range(3):
             axs[p].set_title("Free foot on " + legend[p])
-            axs[p].plot(self.target[:, p])
-            axs[p].plot(m_feet_p_log[self.pd.feet_ids[1]][:, p])
-            axs[p].legend(["Target", "Measured"])
+            [axs[p].plot(m_feet_p_log[foot_id][:, p]) for foot_id in self.pd.feet_ids]
+            axs[p].legend(self.pd.feet_names)
             # "Predicted"])
         if save:
             plt.savefig(fileName + "/target")
+        if save:
+            plt.savefig(fileName + "/foot_target")
 
     def plot_riccati_gains(self, n, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
@@ -314,7 +320,7 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/Riccati_gains")
 
-    def plot_controller_times(self):
+    def plot_controller_times(self, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
         t_range = np.array(
@@ -332,6 +338,9 @@ class LoggerControl:
         plt.legend(lgd)
         plt.xlabel("Time [s]")
         plt.ylabel("Time [s]")
+
+        if save:
+            plt.savefig(fileName + "/timings")
 
     def plot_OCP_times(self):
         import matplotlib.pyplot as plt
