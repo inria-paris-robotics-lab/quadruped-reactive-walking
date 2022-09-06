@@ -28,7 +28,7 @@ class OCP:
         self.initialization_gait = np.concatenate(
             [self.starting_gait, self.life_gait, self.ending_gait]
         )
-        self.current_gait = self.starting_gait
+        self.current_gait = np.append(self.starting_gait, self.ending_gait[0].reshape(1, -1), axis = 0)
 
         self.life_rm, self.life_tm = self.initialize_models(
             self.life_gait, footsteps, base_refs
@@ -106,7 +106,7 @@ class OCP:
                     self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[t] == 1)[0]
                 ]
                 m = self.life_rm[t]
-                self.current_gait = np.append(self.current_gait[1:], self.life_gait[t].reshape(1, -1), axis = 0)
+                self.current_gait = np.insert(self.current_gait[1:], -1, self.life_gait[t].reshape(1, -1), axis = 0)
 
             elif (
                 t
@@ -117,7 +117,7 @@ class OCP:
                     self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[-1] == 1)[0]
                 ]
                 m = self.problem.runningModels[0]
-                self.current_gait = np.append(self.current_gait[1:], self.life_gait[-1].reshape(1, -1), axis = 0)
+                self.current_gait = np.insert(self.current_gait[1:], -1, self.life_gait[-1].reshape(1, -1), axis = 0)
 
 
             else:
@@ -135,10 +135,10 @@ class OCP:
 
                 if i:
                     m = self.end_rm[1]
-                    self.current_gait = np.append(self.current_gait[1:], self.ending_gait[1].reshape(1, -1), axis = 0)
+                    self.current_gait = np.insert(self.current_gait[1:], -1, self.ending_gait[1].reshape(1, -1), axis = 0)
                 else:
                     m = self.end_rm[0]
-                    self.current_gait = np.append(self.current_gait[1:], self.ending_gait[0].reshape(1, -1), axis = 0)
+                    self.current_gait = np.insert(self.current_gait[1:], -1, self.ending_gait[0].reshape(1, -1), axis = 0)
                 base_task = []
 
             self.update_model(m, tasks, base_task, support_feet)

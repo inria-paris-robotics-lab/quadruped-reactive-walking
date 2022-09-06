@@ -67,7 +67,8 @@ class LoggerControl:
         self.MPC_equivalent_Kd = np.zeros([size, self.pd.nu])
 
         self.target = np.zeros([size, 3])
-        self.target_base = np.zeros([size, 3])
+        self.target_base_linear = np.zeros([size, 3])
+        self.target_base_angular = np.zeros([size, 3])
 
         # Whole body control
         self.wbc_P = np.zeros([size, 12])  # proportionnal gains of the PD+
@@ -135,16 +136,23 @@ class LoggerControl:
                 self.target[i] = controller.footsteps[i // self.params.mpc_wbc_ratio][
                     :, 1
                 ]
-                self.target_base[i] = controller.base_refs[
+                self.target_base_linear[i] = controller.base_refs[
                     i // self.params.mpc_wbc_ratio
-                ][0]
+                ][:3]
+                self.target_base_angular[i] = controller.base_refs[
+                    i // self.params.mpc_wbc_ratio
+                ][3:]
         if self.i + self.params.T * self.params.mpc_wbc_ratio < self.log_size:
             self.target[
                 self.i + self.params.T * self.params.mpc_wbc_ratio
             ] = controller.target_footstep[:, 1]
-            self.target_base[
+            self.target_base_linear[
                 self.i + self.params.T * self.params.mpc_wbc_ratio
-            ] = controller.target_base[:][0]
+            ] = controller.target_base[:][:3]
+
+            self.target_base_angular[
+                self.i + self.params.T * self.params.mpc_wbc_ratio
+            ] = controller.target_base[:][3:]
 
         if not self.params.enable_multiprocessing:
             self.t_ocp_update[self.i] = controller.mpc.ocp.t_update
@@ -246,10 +254,9 @@ class LoggerControl:
         legend = ["x", "y", "z"]
         for p in range(3):
             axs[p, 0].set_title("Base position on " + legend[p])
-            axs[p, 0].plot(self.target_base[:, p])
             axs[p, 0].plot(self.q_estimate[:, p])
             axs[p, 0].plot(self.q_filtered[:, p])
-            axs[p, 0].legend(["Target", "Estimated", "Filtered"])
+            axs[p, 0].legend(["Estimated", "Filtered"])
 
             axs[p, 1].set_title("Base rotation on " + legend[p])
             axs[p, 1].plot(self.q_estimate_rpy[:, 3 + p])
@@ -259,15 +266,16 @@ class LoggerControl:
         legend = ["x", "y", "z"]
         for p in range(3):
             axs[p, 0].set_title("Base velocity on " + legend[p])
-            axs[p, 0].plot([self.pd.xref[19 + p]] * self.log_size)
+            axs[p, 0].plot(self.target_base_linear[:, p])
             axs[p, 0].plot(self.v_estimate[:, p])
             axs[p, 0].plot(self.v_filtered[:, p])
             axs[p, 0].legend(["Target", "Estimated", "Filtered"])
 
             axs[p, 1].set_title("Base angular velocity on " + legend[p])
+            axs[p, 1].plot(self.target_base_angular[:, p])
             axs[p, 1].plot(self.v_estimate[:, 3 + p])
             axs[p, 1].plot(self.v_filtered[:, 3 + p])
-            axs[p, 1].legend(["Estimated", "Filtered"])
+            axs[p, 1].legend(["Target", "Estimated", "Filtered"])
 
         _, axs = plt.subplots(3, sharex=True)
         legend = ["x", "y", "z"]
@@ -349,7 +357,8 @@ class LoggerControl:
         np.savez_compressed(
             name,
             target=self.target,
-            target_base=self.target_base,
+            target_base_linear=self.target_base_linear,
+            target_base_angular=self.target_base_angular,
             q_estimate_rpy=self.q_estimate_rpy,
             q_estimate=self.q_estimate,
             v_estimate=self.v_estimate,
@@ -401,7 +410,8 @@ class LoggerControl:
 
         # Load sensors arrays
         self.target = self.data["target"]
-        self.target_base = self.data["target_base"]
+        self.target_base_linear = self.data["target_base_linear"]
+        self.target_base_angular = self.data["target_base_angular"]
         self.q_mes = self.data["q_mes"]
         self.v_mes = self.data["v_mes"]
         self.baseOrientation = self.data["baseOrientation"]

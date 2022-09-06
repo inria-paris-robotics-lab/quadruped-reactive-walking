@@ -98,7 +98,7 @@ class Controller:
         self.mpc = WB_MPC_Wrapper.MPC_Wrapper(
             self.pd, params, self.footsteps, self.base_refs
         )
-        self.gait = self.mpc.ocp.current_gait
+        self.gait = np.array([[1, 1, 1, 1]] * params.starting_nodes)
         self.mpc_solved = False
         self.k_result = 0
         self.k_solve = 0
@@ -180,11 +180,15 @@ class Controller:
                     self.error = True
                     print("MPC Problem")
 
+            # print(self.gait)
+            # print("-----------------------")
+
         t_mpc = time.time()
         self.t_mpc = t_mpc - t_measures
 
         if not self.error:
             self.mpc_result = self.mpc.get_latest_result()
+            self.gait = self.mpc_result.gait
             xs = self.mpc_result.xs
             if self.mpc_result.new_result:
                 self.mpc_solved = True

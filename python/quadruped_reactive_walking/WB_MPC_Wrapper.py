@@ -84,6 +84,7 @@ class MPC_Wrapper:
         if self.new_result.value:
             if self.multiprocessing:
                 (
+                    self.last_available_result.gait,
                     self.last_available_result.xs,
                     self.last_available_result.us,
                     self.last_available_result.K,
@@ -135,15 +136,14 @@ class MPC_Wrapper:
 
             if k == 0:
                 loop_ocp = OCP(
-                    self.pd, self.params, self.footsteps_plan, self.base_refs, self.initial_gait
-                )
+                    self.pd, self.params, self.footsteps_plan, self.base_refs)
 
-            loop_ocp.solve(x0, footstep, base_ref, xs, us)
+            loop_ocp.solve(k, x0, footstep, base_ref, xs, us)
             gait, xs, us, K, solving_time = loop_ocp.get_results()
             self.compress_dataOut(gait, xs, us, K, solving_time)
             self.new_result.value = True
 
-    def add_new_data(self, k, x0, footstep, base_ref, gait, xs, us):
+    def add_new_data(self, k, x0, footstep, base_ref, xs, us):
         """
         Compress data in a C-type structure that belongs to the shared memory to send
         data from the main control loop to the asynchronous MPC and notify the process
@@ -166,7 +166,7 @@ class MPC_Wrapper:
         with self.in_footstep.get_lock():
             np.frombuffer(self.in_footstep.get_obj()).reshape((3, 4))[:, :] = footstep
         with self.in_base_ref.get_lock():
-            np.frombuffer(self.in_base_ref.get_obj()).reshape(3)[:] = base_ref
+            np.frombuffer(self.in_base_ref.get_obj())[:] = base_ref
 
         if xs is None or us is None:
             self.in_warm_start.value = False
@@ -194,12 +194,10 @@ class MPC_Wrapper:
         with self.in_footstep.get_lock():
             footstep = np.frombuffer(self.in_footstep.get_obj()).reshape((3, 4))
         with self.in_base_ref.get_lock():
-            base_ref = np.frombuffer(self.in_base_ref.get_obj()).reshape(3)
-        with self.in_gait.get_lock():
-            gait = np.frombuffer(self.in_gait.get_obj()).reshape((self.T + 1, 4))
-
+            base_ref = np.frombuffer(self.in_base_ref.get_obj()).reshape(6)
+        
         if not self.in_warm_start.value:
-            return k, x0, footstep, base_ref, gait, None, None
+            return k, x0, footstep, base_ref, None, None
 
         with self.in_xs.get_lock():
             xs = list(
@@ -208,13 +206,18 @@ class MPC_Wrapper:
         with self.in_us.get_lock():
             us = list(np.frombuffer(self.in_us.get_obj()).reshape((self.T, self.nu)))
 
-        return k, x0, footstep, base_ref, gait, xs, us
+        return k, x0, footstep, base_ref, xs, us
 
     def compress_dataOut(self, gait, xs, us, K, solving_time):
         """
         Compress data to a C-type structure that belongs to the shared memory to
         retrieve data in the main control loop from the asynchronous MPC
         """
+        with self.out_gait.get_lock():
+            np.frombuffer(self.out_gait.get_obj()).reshape((self.T + 1, 4))[
+                :, :
+            ] = np.array(gait)
+
         with self.out_xs.get_lock():
             np.frombuffer(self.out_xs.get_obj()).reshape((self.T + 1, self.nx))[
                 :, :
@@ -234,6 +237,7 @@ class MPC_Wrapper:
         Return the result of the asynchronous MPC (desired contact forces) that is
         stored in the shared memory
         """
+        gait = np.frombuffer(self.out_gait.get_obj()).reshape((self.T + 1, 4))
         xs = list(np.frombuffer(self.out_xs.get_obj()).reshape((self.T + 1, self.nx)))
         us = list(np.frombuffer(self.out_us.get_obj()).reshape((self.T, self.nu)))
         K = list(
@@ -241,7 +245,7 @@ class MPC_Wrapper:
         )
         solving_time = self.out_solving_time.value
 
-        return xs, us, K, solving_time
+        return gait, xs, us, K, solving_time
 
     def stop_parallel_loop(self):
         """
