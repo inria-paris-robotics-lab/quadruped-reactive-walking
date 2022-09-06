@@ -28,7 +28,7 @@ class OCP:
         self.initialization_gait = np.concatenate(
             [self.starting_gait, self.life_gait, self.ending_gait]
         )
-        self.current_gait = self.life_gait
+        self.current_gait = self.starting_gait
 
         self.life_rm, self.life_tm = self.initialize_models(
             self.life_gait, footsteps, base_refs
@@ -106,7 +106,7 @@ class OCP:
                     self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[t] == 1)[0]
                 ]
                 m = self.life_rm[t]
-                self.current_gait = self.current_gait[1:] + [self.life_gait[t]]
+                self.current_gait = np.append(self.current_gait[1:], self.life_gait[t].reshape(1, -1), axis = 0)
 
             elif (
                 t
@@ -117,7 +117,8 @@ class OCP:
                     self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[-1] == 1)[0]
                 ]
                 m = self.problem.runningModels[0]
-                self.current_gait = self.current_gait[1:] + [self.life_gait[-1]]
+                self.current_gait = np.append(self.current_gait[1:], self.life_gait[-1].reshape(1, -1), axis = 0)
+
 
             else:
                 i = (
@@ -134,10 +135,10 @@ class OCP:
 
                 if i:
                     m = self.end_rm[1]
-                    self.current_gait = self.current_gait[1:] + [self.ending_gait[1]]
+                    self.current_gait = np.append(self.current_gait[1:], self.ending_gait[1].reshape(1, -1), axis = 0)
                 else:
                     m = self.end_rm[0]
-                    self.current_gait = self.current_gait[1:] + [self.ending_gait[0]]
+                    self.current_gait = np.append(self.current_gait[1:], self.ending_gait[0].reshape(1, -1), axis = 0)
                 base_task = []
 
             self.update_model(m, tasks, base_task, support_feet)
@@ -268,6 +269,14 @@ class OCP:
         activation = crocoddyl.ActivationModelWeightedQuad(self.pd.state_reg_w**2)
         state_cost = crocoddyl.CostModelResidual(self.state, activation, residual)
         costs.addCost("state_reg", state_cost, 1)
+
+        state_bound_residual = crocoddyl.ResidualModelState(self.state, self.pd.xref, nu)
+        activation = crocoddyl.ActivationModelQuadraticBarrier(
+            crocoddyl.ActivationBounds(-self.pd.state_limit, self.pd.state_limit)
+        )
+        state_bound_cost = crocoddyl.CostModelResidual(self.state, activation, state_bound_residual)
+        costs.addCost("state_limitBound", state_bound_cost, self.pd.state_bound_w)
+
 
         differential = sobec.DifferentialActionModelContactFwdDynamics(
             self.state, actuation, contacts, costs, 0.0, True
