@@ -137,14 +137,14 @@ class LoggerControl:
                 ]
                 self.target_base[i] = controller.base_refs[
                     i // self.params.mpc_wbc_ratio
-                ]
+                ][0]
         if self.i + self.params.T * self.params.mpc_wbc_ratio < self.log_size:
             self.target[
                 self.i + self.params.T * self.params.mpc_wbc_ratio
             ] = controller.target_footstep[:, 1]
             self.target_base[
                 self.i + self.params.T * self.params.mpc_wbc_ratio
-            ] = controller.target_base[:]
+            ] = controller.target_base[:][0]
 
         if not self.params.enable_multiprocessing:
             self.t_ocp_update[self.i] = controller.mpc.ocp.t_update

@@ -11,7 +11,7 @@ from time import time
 
 
 class OCP:
-    def __init__(self, pd: ProblemData, params, footsteps, base_refs, gait):
+    def __init__(self, pd: ProblemData, params, footsteps, base_refs):
         self.pd = pd
         self.params = params
         self.max_iter = 1000 if params.save_guess else 1
@@ -26,42 +26,46 @@ class OCP:
         self.starting_gait = np.array([[1, 1, 1, 1]] * params.starting_nodes)
         self.ending_gait = np.array([[1, 1, 1, 1]] * params.ending_nodes)
         self.initialization_gait = np.concatenate(
-            [self.starting_gait, self.life_gait, self.ending_gait])
+            [self.starting_gait, self.life_gait, self.ending_gait]
+        )
+        self.current_gait = self.life_gait
 
         self.life_rm, self.life_tm = self.initialize_models(
-            self.life_gait, base_refs, footsteps)
+            self.life_gait, footsteps,  base_refs
+        )
         self.start_rm, self.start_tm = self.initialize_models(self.ending_gait)
         self.end_rm, self.end_tm = self.initialize_models(self.ending_gait)
 
         self.x0 = self.pd.x0
 
-        self.problem = crocoddyl.ShootingProblem(
-            self.x0, self.start_rm, self.start_tm)
+        self.problem = crocoddyl.ShootingProblem(self.x0, self.start_rm, self.start_tm)
         self.ddp = crocoddyl.SolverFDDP(self.problem)
 
-    def initialize_models(self, gait, footsteps, base_refs):
+    def initialize_models(self, gait, footsteps = [], base_refs=[]):
         models = []
         for t, step in enumerate(gait):
             tasks = self.make_task(footsteps[t]) if footsteps else []
-            support_feet = [self.pd.feet_ids[i]
-                            for i in np.nonzero(step == 1)[0]]
-            switch_matrix = gait[t] if (
-                (gait[t] != gait[t-1]).any() or t == 0) else []
-            switch_feet = [self.pd.feet_ids[i]
-                           for i in np.nonzero(switch_matrix == 1)[0]]
-            models.append(self.create_model(
-                support_feet, switch_feet, base_refs, tasks))
+            base_task = base_refs[t] if base_refs else []
+            support_feet = [self.pd.feet_ids[i] for i in np.nonzero(step == 1)[0]]
+            switch_matrix = (
+                gait[t] if ((gait[t] != gait[t - 1]).any() or t == 0) else []
+            )
+            switch_feet = [
+                self.pd.feet_ids[i] for i in np.nonzero(switch_matrix == 1)[0]
+            ]
+            models.append(
+                self.create_model(support_feet, switch_feet, tasks, base_task)
+            )
 
-        support_feet = [self.pd.feet_ids[i]
-                        for i in np.nonzero(gait[-1] == 1)[0]]
+        support_feet = [self.pd.feet_ids[i] for i in np.nonzero(gait[-1] == 1)[0]]
         terminal_model = self.create_model(support_feet, is_terminal=True)
 
         return models, terminal_model
 
-    def solve(self, x0, footstep, base_ref, gait, xs_init=None, us_init=None):
+    def solve(self, k, x0, footstep, base_ref, xs_init=None, us_init=None):
         t_start = time()
         self.x0 = x0
-        self.make_ocp(footstep, base_ref, gait)
+        self.make_ocp(k, footstep, base_ref)
 
         t_update = time()
         self.t_update = t_update - t_start
@@ -84,7 +88,7 @@ class OCP:
 
         self.t_solve = time() - t_start
 
-    def make_ocp(self, footstep, base_ref, gait):
+    def make_ocp(self, k, footstep, base_task):
         """
         Create a shooting problem for a simple walking gait.
 
@@ -95,34 +99,40 @@ class OCP:
 
         if self.initialized:
             tasks = self.make_task(footstep)
-            t = int( k / self.params.mpc_wbc_ratio ) - 1
+            t = int(k / self.params.mpc_wbc_ratio) - 1
 
             if t < len(self.start_rm):
-                support_feet = [self.pd.feet_ids[i]
-                                for i in np.nonzero(self.life_gait[t] == 1)[0]]
+                support_feet = [
+                    self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[t] == 1)[0]
+                ]
                 m = self.life_rm[t]
+                self.current_gait = self.current_gait[1 :] + [self.life_gait[t]]
 
-            elif t < len(self.start_rm) + len(self.life_rm)*2:
-                self.life_gait = np.roll(self.life_gait, -1, axis = 0)
-                support_feet = [self.pd.feet_ids[i]
-                                for i in np.nonzero(self.life_gait[-1] == 1)[0]]
+            elif t < len(self.start_rm) + len(self.life_rm):
+                self.life_gait = np.roll(self.life_gait, -1, axis=0)
+                support_feet = [
+                    self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[-1] == 1)[0]
+                ]
                 m = self.problem.runningModels[0]
+                self.current_gait = self.current_gait[1 :] + [self.life_gait[-1]]
 
             else:
-                i = 0 if t == len(self.start_rm) + len(self.life_rm)*2 else 1 #choose to pich the node with impact or not
-                support_feet = [self.pd.feet_ids[i]
-                                for i in np.nonzero(self.ending_gait[i] == 1)[0]]
+                i = (
+                    0 if t == len(self.start_rm) + len(self.life_rm) else 1
+                )  # choose to pich the node with impact or not
+                support_feet = [
+                    self.pd.feet_ids[i] for i in np.nonzero(self.ending_gait[i] == 1)[0]
+                ]
+                
                 if i:
                     m = self.end_rm[1]
+                    self.current_gait = self.current_gait[1 :] + [self.ending_gait[1]]
                 else:
                     m = self.end_rm[0]
+                    self.current_gait = self.current_gait[1 :] + [self.ending_gait[0]]
                 base_task = []
-                footstep = []
 
-            self.update_model(
-                m, base_ref, tasks, support_feet)
-            # self.update_model(
-            #     self.problem.terminalModel, base_task, tasks, support_feet, True)
+            self.update_model(m, tasks, base_task, support_feet)
 
             self.problem.circularAppend(
                 m,
@@ -133,11 +143,11 @@ class OCP:
 
         self.initialized = True
 
-    def make_task(self, footstep, base_ref):
+    def make_task(self, footstep):
         task = [[], []]
-        if base_ref is not None:
-            task[0].append(self.pd.base_id)
-            task[1].append(base_ref)
+        # if base_ref is not None:
+        #     task[0].append(self.pd.base_id)
+        #     task[1].append(base_ref)
         for foot in range(4):
             if footstep[:, foot].any():
                 task[0].append(self.pd.feet_ids[foot])
@@ -146,6 +156,7 @@ class OCP:
 
     def get_results(self):
         return (
+            self.current_gait.copy(),
             self.ddp.xs.tolist().copy(),
             self.ddp.us.tolist().copy(),
             self.ddp.K.tolist().copy(),
@@ -184,17 +195,17 @@ class OCP:
         [acc.append(m.differential.xout) for m in self.ddp.problem.runningDatas]
         return acc
 
-    def update_model(self, model, base_ref, tasks, support_feet, is_terminal = False):
+    def update_model(self, model, tasks, base_task, support_feet, is_terminal=False):
         for i in self.pd.feet_ids:
             name = self.pd.model.frames[i].name + "_contact"
-            model.differential.contacts.changeContactStatus(
-                name, i in support_feet)
+            model.differential.contacts.changeContactStatus(name, i in support_feet)
         if not is_terminal:
             self.update_tracking_costs(
-                model.differential.costs, base_ref, tasks, support_feet)
+                model.differential.costs, tasks, base_task, support_feet
+            )
 
     def create_model(
-        self, support_feet=[], switch_feet=[], base_task=[], tasks=[], is_terminal=False
+        self, support_feet=[], switch_feet=[], tasks=[], base_task=[], is_terminal=False
     ):
         """
         Create the action model
@@ -212,7 +223,7 @@ class OCP:
         if is_terminal:
             self.make_terminal_model(model)
         else:
-            self.make_running_model(model, support_feet, switch_feet, base_task, tasks)
+            self.make_running_model(model, support_feet, switch_feet, tasks, base_task)
 
         return model
 
@@ -266,7 +277,7 @@ class OCP:
         state_cost = crocoddyl.CostModelResidual(self.state, activation, residual)
         model.differential.costs.addCost("terminal_velocity", state_cost, 1)
 
-    def make_running_model(self, model, support_feet, switch_feet, base_task, tasks):
+    def make_running_model(self, model, support_feet, switch_feet, tasks, base_task):
         """
         Add all the costs to the running models
         """
@@ -276,8 +287,7 @@ class OCP:
             start_pos = self.pd.rdata.oMf[i].translation
 
             # Contact forces
-            cone = crocoddyl.FrictionCone(
-                self.pd.Rsurf, self.pd.mu, 4, False, 3)
+            cone = crocoddyl.FrictionCone(self.pd.Rsurf, self.pd.mu, 4, False, 3)
             residual = crocoddyl.ResidualModelContactFrictionCone(
                 self.state, i, cone, nu
             )
@@ -314,37 +324,38 @@ class OCP:
 
             # Swing foot
             groundColRes = crocoddyl.ResidualModelFrameTranslation(
-                self.state, i, start_pos, nu)
+                self.state, i, start_pos, nu
+            )
 
             groundColBounds = crocoddyl.ActivationBounds(
-                np.array([-1000, -1000, start_pos[2]]
-                         ), np.array([1000, 1000, 1000])
+                np.array([-1000, -1000, start_pos[2]]), np.array([1000, 1000, 1000])
             )
-            groundColAct = crocoddyl.ActivationModelQuadraticBarrier(
-                groundColBounds)
+            groundColAct = crocoddyl.ActivationModelQuadraticBarrier(groundColBounds)
             groundColCost = crocoddyl.CostModelResidual(
-                self.state, groundColAct, groundColRes)
+                self.state, groundColAct, groundColRes
+            )
 
             name = "%s_groundCol" % self.pd.model.frames[i].name
             if self.pd.ground_collision_w > 0:
-                costs.addCost(name,
-                              groundColCost,
-                              self.pd.ground_collision_w,
-                              )
+                costs.addCost(
+                    name,
+                    groundColCost,
+                    self.pd.ground_collision_w,
+                )
             costs.changeCostStatus(name, False)
 
             flyHighResidual = sobec.ResidualModelFlyHigh(
                 self.state, i, self.pd.fly_high_slope / 2.0, nu
             )
-            flyHighCost = crocoddyl.CostModelResidual(
-                self.state, flyHighResidual)
+            flyHighCost = crocoddyl.CostModelResidual(self.state, flyHighResidual)
 
             name = "%s_flyHigh" % self.pd.model.frames[i].name
             if self.pd.fly_high_w > 0:
-                costs.addCost(name,
-                              flyHighCost,
-                              self.pd.fly_high_w,
-                              )
+                costs.addCost(
+                    name,
+                    flyHighCost,
+                    self.pd.fly_high_w,
+                )
             costs.changeCostStatus(name, False)
 
             # Fake impoact
@@ -384,14 +395,14 @@ class OCP:
             name = "base_velocity_tracking"
             ref = pin.Motion(base_task[0], base_task[1])
             residual_base_velocity = crocoddyl.ResidualModelFrameVelocity(
-                self.state, self.pd.base_id, ref, pin.LOCAL, nu)
+                self.state, self.pd.base_id, ref, pin.LOCAL, nu
+            )
             base_velocity = crocoddyl.CostModelResidual(
-                self.state, residual_base_velocity)
+                self.state, residual_base_velocity
+            )
 
             if self.pd.base_velocity_tracking_w > 0:
-                costs.addCost(name, base_velocity,
-                              self.pd.base_velocity_tracking_w)
->>>>>>> 72313bf... walking (bad) MPC
+                costs.addCost(name, base_velocity, self.pd.base_velocity_tracking_w)
 
         control_residual = crocoddyl.ResidualModelControl(self.state, self.pd.uref)
         control_reg = crocoddyl.CostModelResidual(self.state, control_residual)
@@ -406,9 +417,9 @@ class OCP:
         )
         costs.addCost("control_bound", control_bound, self.pd.control_bound_w)
 
-        self.update_tracking_costs(costs, base_task, tasks, support_feet)
+        self.update_tracking_costs(costs, tasks, base_task, support_feet)
 
-    def update_tracking_costs(self, costs, base_task, tasks, support_feet):
+    def update_tracking_costs(self, costs, tasks, base_task, support_feet):
         index = 0
         for i in self.pd.feet_ids:
             if self.pd.foot_tracking_w > 0:

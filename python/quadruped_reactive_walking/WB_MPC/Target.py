@@ -21,7 +21,7 @@ class Target:
         elif params.movement == "walk":
             self.velocity_lin_target = np.array([10, 0, 0])
             self.velocity_ang_target = np.array([0, 0, 0])
-            self.base_task = [self.velocity_lin_target, self.velocity_ang_target]
+            self.base_ref = [self.velocity_lin_target, self.velocity_ang_target]
         else:
             self.initial_footsteps = np.array(params.footsteps_init.tolist()).reshape(
                 (3, 4), order="F"
@@ -51,7 +51,7 @@ class Target:
     def compute(self, k):
         if k < self.initial_delay:
             if self.params.movement == "base_circle" or self.params.movement == "walk":
-                target = self.initial_base
+                target = self.base_ref
             else:
                 target = self.initial_footsteps
             return target
@@ -61,7 +61,7 @@ class Target:
         if self.params.movement == "base_circle":
             target = self.evaluate_circle(k, self.initial_base)
         elif self.params.movement == "walk":
-            target = self.base_task
+            target = self.base_ref
         else:
             target = self.initial_footsteps.copy()
             if self.params.movement == "circle":

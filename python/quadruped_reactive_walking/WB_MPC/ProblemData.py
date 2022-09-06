@@ -100,6 +100,7 @@ class ProblemData(problemDataAbstract):
             + [1e1] * 6 # 1e-1
         )
         self.terminal_velocity_w = np.array([0] * self.nv + [0.] * self.nv)
+        self.force_reg_w = 1e0
 
         self.xref = self.x0
         self.uref = self.u0

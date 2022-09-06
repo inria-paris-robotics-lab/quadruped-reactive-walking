@@ -84,20 +84,21 @@ class Controller:
         self.footsteps = []
         self.base_refs = []
         for k in range(self.params.T * self.params.mpc_wbc_ratio):
-            if params.movement == "base_circle":
+            if params.movement == "base_circle" or params.movement == "walk":
                 self.target_base = self.target.compute(k).copy()
                 self.target_footstep = np.zeros((3, 4))
             else:
                 self.target_footstep = self.target.compute(k).copy()
-                self.target_base = np.array([0., 0., self.params.h_ref])
+                self.target_base = np.array([0.0, 0.0, self.params.h_ref])
 
             if k % self.params.mpc_wbc_ratio == 0:
                 self.base_refs.append(self.target_base.copy())
                 self.footsteps.append(self.target_footstep.copy())
 
         self.mpc = WB_MPC_Wrapper.MPC_Wrapper(
-            self.pd, params, self.footsteps, self.base_refs, self.gait
+            self.pd, params, self.footsteps, self.base_refs
         )
+        self.gait = self.mpc.ocp.current_gait
         self.mpc_solved = False
         self.k_result = 0
         self.k_solve = 0
@@ -136,7 +137,7 @@ class Controller:
         t_measures = time.time()
         self.t_measures = t_measures - t_start
 
-        if self.params.movement == "base_circle":
+        if self.params.movement == "base_circle" or self.params.movement == "walk":
             self.target_base = self.target.compute(
                 self.k + self.params.T * self.params.mpc_wbc_ratio
             )
@@ -159,7 +160,6 @@ class Controller:
                         self.x,
                         self.target_footstep.copy(),
                         self.target_base.copy(),
-                        self.gait,
                         self.xs_init,
                         self.us_init,
                     )
@@ -173,19 +173,12 @@ class Controller:
                         self.mpc_result.xs[1],
                         self.target_footstep.copy(),
                         self.target_base.copy(),
-                        self.gait,
                         self.xs_init,
                         self.us_init,
                     )
                 except ValueError:
                     self.error = True
                     print("MPC Problem")
-            if self.params.movement == "step":
-                self.gait = np.vstack((self.gait[1:, :], self.gait[0, :]))
-            elif self.params.movement == "walking":
-                self.gait = np.roll(self.gait, -1, axis=0)
-            else:
-                self.gait = np.vstack((self.gait[1:, :], self.gait[-1, :]))
 
         t_mpc = time.time()
         self.t_mpc = t_mpc - t_measures
