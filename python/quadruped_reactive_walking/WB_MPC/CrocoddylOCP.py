@@ -31,7 +31,7 @@ class OCP:
         self.current_gait = self.life_gait
 
         self.life_rm, self.life_tm = self.initialize_models(
-            self.life_gait, footsteps,  base_refs
+            self.life_gait, footsteps, base_refs
         )
         self.start_rm, self.start_tm = self.initialize_models(self.ending_gait)
         self.end_rm, self.end_tm = self.initialize_models(self.ending_gait)
@@ -41,7 +41,7 @@ class OCP:
         self.problem = crocoddyl.ShootingProblem(self.x0, self.start_rm, self.start_tm)
         self.ddp = crocoddyl.SolverFDDP(self.problem)
 
-    def initialize_models(self, gait, footsteps = [], base_refs=[]):
+    def initialize_models(self, gait, footsteps=[], base_refs=[]):
         models = []
         for t, step in enumerate(gait):
             tasks = self.make_task(footsteps[t]) if footsteps else []
@@ -106,30 +106,38 @@ class OCP:
                     self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[t] == 1)[0]
                 ]
                 m = self.life_rm[t]
-                self.current_gait = self.current_gait[1 :] + [self.life_gait[t]]
+                self.current_gait = self.current_gait[1:] + [self.life_gait[t]]
 
-            elif t < len(self.start_rm) + len(self.life_rm):
+            elif (
+                t
+                < len(self.start_rm) + len(self.life_rm) * self.params.gait_repetitions
+            ):
                 self.life_gait = np.roll(self.life_gait, -1, axis=0)
                 support_feet = [
                     self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[-1] == 1)[0]
                 ]
                 m = self.problem.runningModels[0]
-                self.current_gait = self.current_gait[1 :] + [self.life_gait[-1]]
+                self.current_gait = self.current_gait[1:] + [self.life_gait[-1]]
 
             else:
                 i = (
-                    0 if t == len(self.start_rm) + len(self.life_rm) else 1
-                )  # choose to pich the node with impact or not
+                    0
+                    if t
+                    == len(self.start_rm)
+                    + len(self.life_rm) * self.params.gait_repetitions
+                    else 1
+                )
+                # choose to pich the node with impact or not
                 support_feet = [
                     self.pd.feet_ids[i] for i in np.nonzero(self.ending_gait[i] == 1)[0]
                 ]
-                
+
                 if i:
                     m = self.end_rm[1]
-                    self.current_gait = self.current_gait[1 :] + [self.ending_gait[1]]
+                    self.current_gait = self.current_gait[1:] + [self.ending_gait[1]]
                 else:
                     m = self.end_rm[0]
-                    self.current_gait = self.current_gait[1 :] + [self.ending_gait[0]]
+                    self.current_gait = self.current_gait[1:] + [self.ending_gait[0]]
                 base_task = []
 
             self.update_model(m, tasks, base_task, support_feet)
@@ -240,11 +248,16 @@ class OCP:
 
         control = crocoddyl.ControlParametrizationModelPolyZero(nu)
 
-        contacts = crocoddyl.ContactModelMultiple(self.state, nu)
+        contacts = sobec.ContactModelMultiple(self.state, nu)
         for i in self.pd.feet_ids:
             name = self.pd.model.frames[i].name + "_contact"
-            contact = crocoddyl.ContactModel3D(
-                self.state, i, np.zeros(3), nu, self.pd.baumgarte_gains
+            contact = sobec.ContactModel3D(
+                self.state,
+                i,
+                np.zeros(3),
+                nu,
+                self.pd.baumgarte_gains,
+                pin.LOCAL_WORLD_ALIGNED,
             )
             contacts.addContact(name, contact)
             if i not in support_feet:
@@ -256,7 +269,7 @@ class OCP:
         state_cost = crocoddyl.CostModelResidual(self.state, activation, residual)
         costs.addCost("state_reg", state_cost, 1)
 
-        differential = crocoddyl.DifferentialActionModelContactFwdDynamics(
+        differential = sobec.DifferentialActionModelContactFwdDynamics(
             self.state, actuation, contacts, costs, 0.0, True
         )
         model = crocoddyl.IntegratedActionModelEuler(
@@ -305,7 +318,7 @@ class OCP:
             nc = len(model.differential.contacts.active.tolist())
             ref_force = np.array([0, 0, self.pd.robot_weight / nc])
             ref_Force = pin.Force(ref_force, ref_force * 0)
-            forceRegResidual = crocoddyl.ResidualModelContactForce(
+            forceRegResidual = sobec.ResidualModelContactForce(
                 self.state, i, ref_Force, 3, nu
             )
             forceRegCost = crocoddyl.CostModelResidual(self.state, forceRegResidual)
@@ -391,18 +404,20 @@ class OCP:
                         self.pd.impact_velocity_w / self.params.dt_mpc,
                     )
 
-        if base_task:
-            name = "base_velocity_tracking"
-            ref = pin.Motion(base_task[0], base_task[1])
-            residual_base_velocity = crocoddyl.ResidualModelFrameVelocity(
-                self.state, self.pd.base_id, ref, pin.LOCAL, nu
-            )
-            base_velocity = crocoddyl.CostModelResidual(
-                self.state, residual_base_velocity
-            )
+        name = "base_velocity_tracking"
+        if list(base_task):
+            ref = pin.Motion(base_task[: 3], base_task[3:])
+        else:
+            ref = pin.Motion.Zero()
 
-            if self.pd.base_velocity_tracking_w > 0:
-                costs.addCost(name, base_velocity, self.pd.base_velocity_tracking_w)
+        residual_base_velocity = crocoddyl.ResidualModelFrameVelocity(
+            self.state, self.pd.base_id, ref, pin.LOCAL, nu)
+        base_velocity = crocoddyl.CostModelResidual(
+            self.state, residual_base_velocity)
+
+        if self.pd.base_velocity_tracking_w > 0:
+            costs.addCost(name, base_velocity,
+                            self.pd.base_velocity_tracking_w)
 
         control_residual = crocoddyl.ResidualModelControl(self.state, self.pd.uref)
         control_reg = crocoddyl.CostModelResidual(self.state, control_residual)
@@ -438,9 +453,9 @@ class OCP:
             name = "%s_flyHigh" % self.pd.model.frames[i].name
             costs.changeCostStatus(name, i not in support_feet)
 
-        if base_task and self.pd.base_velocity_tracking_w > 0:
+        if list(base_task) and self.pd.base_velocity_tracking_w > 0:
             name = "base_velocity_tracking"
-            ref = pin.Motion(base_task[0], base_task[1])
+            ref = pin.Motion(base_task[:3], base_task[3:])
             costs.costs[name].cost.residual.reference = ref
 
         # print(f"{name} reference: {costs.costs[name].cost.residual.reference} status:{i in tasks[0]}")
