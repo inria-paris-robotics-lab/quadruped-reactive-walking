@@ -148,11 +148,11 @@ class LoggerControl:
             ] = controller.target_footstep[:, 1]
             self.target_base_linear[
                 self.i + self.params.T * self.params.mpc_wbc_ratio
-            ] = controller.target_base[:][:3]
+            ] = controller.v_ref[:][:3]
 
             self.target_base_angular[
                 self.i + self.params.T * self.params.mpc_wbc_ratio
-            ] = controller.target_base[:][3:]
+            ] = controller.v_ref[:][3:]
 
         if not self.params.enable_multiprocessing:
             self.t_ocp_update[self.i] = controller.mpc.ocp.t_update

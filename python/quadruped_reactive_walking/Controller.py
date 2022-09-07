@@ -88,7 +88,7 @@ class Controller:
         self.base_refs = []
         for k in range(self.params.T * self.params.mpc_wbc_ratio):
             if params.movement == "base_circle" or params.movement == "walk":
-                self.target_base = self.target.compute(k).copy()
+                self.target_base = np.zeros(6)
                 self.target_footstep = np.zeros((3, 4))
             else:
                 self.target_footstep = self.target.compute(k).copy()
@@ -143,9 +143,7 @@ class Controller:
         self.t_measures = t_measures - t_start
 
         if self.params.movement == "base_circle" or self.params.movement == "walk":
-            self.target_base = self.target.compute(
-                self.k + self.params.T * self.params.mpc_wbc_ratio
-            )
+            self.target_base = self.v_ref
             self.target_footstep = np.zeros((3, 4))
         else:
             self.target_base = np.zeros(3)
