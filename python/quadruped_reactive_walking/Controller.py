@@ -72,6 +72,9 @@ class Controller:
         self.error = False
         self.initialized = False
 
+        self.joystick = qrw.Joystick()
+        self.joystick.initialize(params)
+
         self.estimator = qrw.Estimator()
         self.estimator.initialize(params)
         self.q = np.zeros(18)
@@ -131,6 +134,8 @@ class Controller:
             device (object): Interface with the masterboard or the simulation
         """
         t_start = time.time()
+
+        self.joystick.update_v_ref(self.k, False)
 
         oRh, hRb, oTh = self.run_estimator(device)
 
@@ -371,8 +376,7 @@ class Controller:
             b_baseVel_perfect,
         )
 
-        # Add joystck reference velocity when needed
-        self.estimator.update_reference_state(np.zeros(6))
+        self.estimator.update_reference_state(self.joystick.get_v_ref())
 
         oRh = self.estimator.get_oRh()
         hRb = self.estimator.get_hRb()
