@@ -95,7 +95,7 @@ class ProblemData(problemDataAbstract):
         self.control_bound_w = 1e4
         self.control_reg_w = 1e4
         self.state_reg_w = np.array(
-            [0] * 3 + [0] * 3 + [1e2] * 12 + [0] * 6 + [1e1] * 12
+            [0] * 3 + [0] * 3 + [1e2*5 ] * 12 + [0] * 6 + [1e1] * 12
         )
         self.state_bound_w = np.array([0] * 18 + [0] * 6 + [0] * 12)
         self.terminal_velocity_w = np.array([0] * self.nv + [1e3] * self.nv)

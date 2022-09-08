@@ -291,8 +291,18 @@ class LoggerControl:
             # "Predicted"])
         if save:
             plt.savefig(fileName + "/target")
+
+        _, axs = plt.subplots(2, sharex=True)
+        legend = ["x", "y", "z"]
+        for p in range(2):
+            axs[p].set_title("Free foot on z over " + legend[p])
+            [axs[p].plot(m_feet_p_log[18][:, p], m_feet_p_log[18][:, 2]) for foot_id in self.pd.feet_ids]
+            axs[p].legend(self.pd.feet_names)
+            plt.ylabel("z")
+            plt.xlabel(legend[p])
+            # "Predicted"])
         if save:
-            plt.savefig(fileName + "/foot_target")
+            plt.savefig(fileName + "/target")
 
     def plot_riccati_gains(self, n, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
