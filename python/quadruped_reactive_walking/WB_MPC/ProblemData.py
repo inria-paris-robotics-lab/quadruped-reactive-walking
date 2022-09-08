@@ -84,6 +84,7 @@ class ProblemData(problemDataAbstract):
         self.fly_high_slope = 80
         self.fly_high_w = 1e4
         self.ground_collision_w = 1e3
+        self.vertical_velocity_reg_w = 1e3
 
         self.base_velocity_tracking_w = 8 * 1e5
         self.foot_tracking_w = 0

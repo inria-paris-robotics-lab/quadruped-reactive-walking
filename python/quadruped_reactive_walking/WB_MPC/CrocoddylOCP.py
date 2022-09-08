@@ -28,7 +28,9 @@ class OCP:
         self.initialization_gait = np.concatenate(
             [self.starting_gait, self.life_gait, self.ending_gait]
         )
-        self.current_gait = np.append(self.starting_gait, self.ending_gait[0].reshape(1, -1), axis = 0)
+        self.current_gait = np.append(
+            self.starting_gait, self.ending_gait[0].reshape(1, -1), axis=0
+        )
 
         self.life_rm, self.life_tm = self.initialize_models(
             self.life_gait, footsteps, base_refs
@@ -106,7 +108,9 @@ class OCP:
                     self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[t] == 1)[0]
                 ]
                 m = self.life_rm[t]
-                self.current_gait = np.insert(self.current_gait[1:], -1, self.life_gait[t].reshape(1, -1), axis = 0)
+                self.current_gait = np.insert(
+                    self.current_gait[1:], -1, self.life_gait[t].reshape(1, -1), axis=0
+                )
 
             elif (
                 t
@@ -117,8 +121,9 @@ class OCP:
                     self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[-1] == 1)[0]
                 ]
                 m = self.problem.runningModels[0]
-                self.current_gait = np.insert(self.current_gait[1:], -1, self.life_gait[-1].reshape(1, -1), axis = 0)
-
+                self.current_gait = np.insert(
+                    self.current_gait[1:], -1, self.life_gait[-1].reshape(1, -1), axis=0
+                )
 
             else:
                 i = (
@@ -135,10 +140,20 @@ class OCP:
 
                 if i:
                     m = self.end_rm[1]
-                    self.current_gait = np.insert(self.current_gait[1:], -1, self.ending_gait[1].reshape(1, -1), axis = 0)
+                    self.current_gait = np.insert(
+                        self.current_gait[1:],
+                        -1,
+                        self.ending_gait[1].reshape(1, -1),
+                        axis=0,
+                    )
                 else:
                     m = self.end_rm[0]
-                    self.current_gait = np.insert(self.current_gait[1:], -1, self.ending_gait[0].reshape(1, -1), axis = 0)
+                    self.current_gait = np.insert(
+                        self.current_gait[1:],
+                        -1,
+                        self.ending_gait[0].reshape(1, -1),
+                        axis=0,
+                    )
                 base_task = []
 
             self.update_model(m, tasks, base_task, support_feet)
@@ -270,13 +285,17 @@ class OCP:
         state_cost = crocoddyl.CostModelResidual(self.state, activation, residual)
         costs.addCost("state_reg", state_cost, 1)
 
-        state_bound_residual = crocoddyl.ResidualModelState(self.state, self.pd.xref, nu)
-        activation = crocoddyl.ActivationModelWeightedQuadraticBarrier(
-            crocoddyl.ActivationBounds(-self.pd.state_limit, self.pd.state_limit), self.pd.state_bound_w **2
+        state_bound_residual = crocoddyl.ResidualModelState(
+            self.state, self.pd.xref, nu
         )
-        state_bound_cost = crocoddyl.CostModelResidual(self.state, activation, state_bound_residual)
+        activation = crocoddyl.ActivationModelWeightedQuadraticBarrier(
+            crocoddyl.ActivationBounds(-self.pd.state_limit, self.pd.state_limit),
+            self.pd.state_bound_w**2,
+        )
+        state_bound_cost = crocoddyl.CostModelResidual(
+            self.state, activation, state_bound_residual
+        )
         costs.addCost("state_limitBound", state_bound_cost, 1)
-
 
         differential = sobec.DifferentialActionModelContactFwdDynamics(
             self.state, actuation, contacts, costs, 0.0, True
@@ -380,6 +399,29 @@ class OCP:
                 )
             costs.changeCostStatus(name, False)
 
+            vertical_velocity_reg_residual = crocoddyl.ResidualModelFrameVelocity(
+                self.state,
+                i,
+                pin.Motion.Zero(),
+                pin.ReferenceFrame.WORLD,
+                nu,
+            )
+            vertical_velocity_activation = crocoddyl.ActivationModelWeightedQuad(
+                np.array([0, 0, 1, 0, 0, 0])
+            )
+            
+            name = "%s_vel_zReg" % self.pd.model.frames[i].name
+            vertical_velocity_reg_cost = crocoddyl.CostModelResidual(
+                self.state,
+                vertical_velocity_activation,
+                vertical_velocity_reg_residual,
+            )
+            costs.addCost(
+                name,
+                vertical_velocity_reg_cost,
+                self.pd.vertical_velocity_reg_w,
+            )
+
             # Fake impoact
             if i in switch_feet and i in support_feet:
                 impactResidual = crocoddyl.ResidualModelFrameTranslation(
@@ -415,18 +457,17 @@ class OCP:
 
         name = "base_velocity_tracking"
         if list(base_task):
-            ref = pin.Motion(base_task[: 3], base_task[3:])
+            ref = pin.Motion(base_task[:3], base_task[3:])
         else:
             ref = pin.Motion.Zero()
 
         residual_base_velocity = crocoddyl.ResidualModelFrameVelocity(
-            self.state, self.pd.base_id, ref, pin.LOCAL, nu)
-        base_velocity = crocoddyl.CostModelResidual(
-            self.state, residual_base_velocity)
+            self.state, self.pd.base_id, ref, pin.LOCAL, nu
+        )
+        base_velocity = crocoddyl.CostModelResidual(self.state, residual_base_velocity)
 
         if self.pd.base_velocity_tracking_w > 0:
-            costs.addCost(name, base_velocity,
-                            self.pd.base_velocity_tracking_w)
+            costs.addCost(name, base_velocity, self.pd.base_velocity_tracking_w)
 
         control_residual = crocoddyl.ResidualModelControl(self.state, self.pd.uref)
         control_reg = crocoddyl.CostModelResidual(self.state, control_residual)
@@ -461,6 +502,10 @@ class OCP:
 
             name = "%s_flyHigh" % self.pd.model.frames[i].name
             costs.changeCostStatus(name, i not in support_feet)
+
+            name = "%s_vel_zReg" % self.pd.model.frames[i].name
+            costs.changeCostStatus(name, i not in support_feet)
+
 
         if list(base_task) and self.pd.base_velocity_tracking_w > 0:
             name = "base_velocity_tracking"
