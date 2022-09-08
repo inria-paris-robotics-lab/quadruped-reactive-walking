@@ -81,8 +81,8 @@ class ProblemData(problemDataAbstract):
         # self.friction_cone_w = 0.0  # 1e4
         # self.control_bound_w = 0.
 
-        self.fly_high_slope = 80
-        self.fly_high_w = 1e4
+        self.fly_high_slope = 50
+        self.fly_high_w = 5*1e4
         self.ground_collision_w = 1e3
         self.vertical_velocity_reg_w = 1e3
 
@@ -96,7 +96,7 @@ class ProblemData(problemDataAbstract):
         self.control_bound_w = 1e4
         self.control_reg_w = 1e4
         self.state_reg_w = np.array(
-            [0] * 3 + [0] * 3 + [1e2*5 ] * 12 + [0] * 6 + [1e1] * 12
+            [0] * 3 + [0] * 3 + [1e2* 3] * 12 + [0] * 6 + [1e1*2] * 12
         )
         self.state_bound_w = np.array([0] * 18 + [0] * 6 + [0] * 12)
         self.terminal_velocity_w = np.array([0] * self.nv + [1e3] * self.nv)

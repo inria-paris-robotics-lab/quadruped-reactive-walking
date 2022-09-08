@@ -213,7 +213,7 @@ class Controller:
                 t = (self.k - self.k_solve + 1) * self.params.dt_wbc
                 q, v = self.interpolator.interpolate(t)
             else:
-                q, v = self.integrate_x(m)
+                q, v = self.integrate_x()
 
             self.result.q_des = q[:]
             self.result.v_des = v[:]
@@ -428,7 +428,7 @@ class Controller:
         tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
         return tau
 
-    def integrate_x(self, m):
+    def integrate_x(self):
         """
         Integrate the position and velocity using the acceleration computed from the
         feedforward torque
