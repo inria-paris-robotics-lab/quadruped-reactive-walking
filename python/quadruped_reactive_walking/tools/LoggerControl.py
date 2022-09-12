@@ -180,8 +180,8 @@ class LoggerControl:
         self.plot_target(save, fileName)
         # self.plot_riccati_gains(0, save, fileName)
         self.plot_controller_times(save, fileName)
-        if not self.params.enable_multiprocessing:
-            self.plot_OCP_times()
+        # if not self.params.enable_multiprocessing:
+        #     self.plot_OCP_times()
 
         plt.show()
 
@@ -431,6 +431,11 @@ class LoggerControl:
         self.target = self.data["target"]
         self.target_base_linear = self.data["target_base_linear"]
         self.target_base_angular = self.data["target_base_angular"]
+        self.q_estimate_rpy=self.data["q_estimate_rpy"]
+        self.q_estimate=self.data["q_estimate"]
+        self.v_estimate=self.data["v_estimate"]
+        self.q_filtered=self.data["q_filtered"]
+        self.v_filtered=self.data["v_filtered"]
         self.q_mes = self.data["q_mes"]
         self.v_mes = self.data["v_mes"]
         self.baseOrientation = self.data["baseOrientation"]
@@ -451,34 +456,24 @@ class LoggerControl:
         self.energy = self.data["energy"]
 
         # TODO: load your new data
-        self.t_mpc = self.data["mpc_solving_duration"]
+        self.tstamps = self.data["tstamps"]
+        self.t_mpc = self.data["t_mpc"]
         self.t_send = self.data["t_send"]
         self.t_loop = self.data["t_loop"]
-        self.t_measures = self.data["t_meausres"]
-
-        self.q_estimate_rpy = self.data["q_estimate_rpy"]
-        self.q_estimate = self.data["q_estimate"]
+        self.t_ocp_ddp = self.data["t_ocp_ddp"]
+        self.t_measures = self.data["t_measures"]
         self.v_estimate = self.data["v_estimate"]
         self.q_filtered = self.data["q_filtered"]
         self.v_filtered = self.data["v_filtered"]
         self.ocp_xs = self.data["ocp_xs"]
         self.ocp_us = self.data["ocp_us"]
         self.ocp_K = self.data["ocp_K"]
-        self.MPC_equivalent_Kp = self.data["self.MPC_equivalent_Kp"]
-        self.MPC_equivalent_Kd = self.data["self.MPC_equivalent_Kd"]
-
-        self.t_measures = self.data["t_measures"]
         self.t_mpc = self.data["t_mpc"]
         self.t_send = self.data["t_send"]
         self.t_loop = self.data["t_loop"]
         self.wbc_P = self.data["wbc_P"]
         self.wbc_D = self.data["wbc_D"]
         self.wbc_q_des = self.data["wbc_q_des"]
-        self.wbc_v_des = self.data["wbc_v_des"]
-        self.wbc_FF = self.data["wbc_FF"]
-        self.wbc_tau_ff = self.data["wbc_tau_ff"]
-
-        self.tstamps = self.data["tstamps"]
 
 
 if __name__ == "__main__":
@@ -486,14 +481,19 @@ if __name__ == "__main__":
     import os
     import argparse
     import quadruped_reactive_walking as qrw
-    from quadruped_reactive_walking.tools import self
+    from  ..WB_MPC.ProblemData import ProblemData
+    from .Utils import init_robot
 
     sys.path.insert(0, os.getcwd())
 
     parser = argparse.ArgumentParser(description="Process logs.")
     parser.add_argument("--file", type=str, help="A valid log file path")
     args = parser.parse_args()
+    params = qrw.Params()
+    init_robot(params.q_init, params)
+    pd = ProblemData(params)
 
-    logger = LoggerControl(file=args.file)
+    logger = LoggerControl(pd, params, file="/tmp/logs/2022_09_12_16_43/data.npz")
+
     logger.load()
     logger.plot()
