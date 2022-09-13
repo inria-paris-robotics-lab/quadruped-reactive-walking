@@ -244,10 +244,21 @@ class LoggerControl:
     def plot_target(self, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
+        t_range = np.array([k * self.params.dt_wbc for k in range(self.tstamps.shape[0])])
         x = np.concatenate([self.q_filtered, self.v_filtered], axis=1)
         m_feet_p_log = {
             idx: get_translation_array(self.pd, x, idx)[0] for idx in self.pd.feet_ids
         }
+
+        x_mpc = [self.ocp_xs[0][0, :]]
+        [x_mpc.append(x[1, :]) for x in self.ocp_xs[:-1]]
+        x_mpc = np.array(x_mpc)
+
+        feet_p_log = {
+            idx: get_translation_array(self.pd, x_mpc, idx)[0]
+            for idx in self.pd.feet_ids
+        }
+
 
         # Target plot
         _, axs = plt.subplots(3, 2, sharex=True)
@@ -291,16 +302,14 @@ class LoggerControl:
             # "Predicted"])
         if save:
             plt.savefig(fileName + "/target")
-
-        _, axs = plt.subplots(2, sharex=True)
+        
+        _, axs = plt.subplots(3, sharex=True)
         legend = ["x", "y", "z"]
-        for p in range(2):
-            axs[p].set_title("Free foot on z over " + legend[p])
-            [axs[p].plot(m_feet_p_log[18][:, p], m_feet_p_log[18][:, 2]) for foot_id in self.pd.feet_ids]
+        for p in range(3):
+            axs[p].set_title("Predicted free foot on z over " + legend[p])
+            [axs[p].plot(t_range, feet_p_log[foot_id][:, p]) for foot_id in self.pd.feet_ids]
             axs[p].legend(self.pd.feet_names)
-            plt.ylabel("z")
-            plt.xlabel(legend[p])
-            # "Predicted"])
+
         if save:
             plt.savefig(fileName + "/target")
 

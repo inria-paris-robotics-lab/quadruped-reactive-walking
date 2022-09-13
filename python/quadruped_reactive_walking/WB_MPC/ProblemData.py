@@ -39,7 +39,7 @@ class problemDataAbstract:
 
         self.u0 = np.array([0.0, 0.0, 9.81 * params.mass / 4.0] * 4)
 
-        self.baumgarte_gains = np.array([0, 100])
+        self.baumgarte_gains = np.array([0, 50])
 
         self.feet_names = ["FL_FOOT", "FR_FOOT", "HL_FOOT", "HR_FOOT"]
         self.feet_ids = [self.model.getFrameId(f) for f in self.feet_names]
@@ -89,7 +89,7 @@ class ProblemData(problemDataAbstract):
         self.base_velocity_tracking_w = 8 * 1e5
         self.foot_tracking_w = 0
 
-        self.impact_altitude_w = 1e4
+        self.impact_altitude_w = 1e6
         self.impact_velocity_w = 1e4
         self.friction_cone_w = 1e3 * 0.0
 

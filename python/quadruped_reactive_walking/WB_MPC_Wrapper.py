@@ -116,7 +116,11 @@ class MPC_Wrapper:
         Run the MPC (asynchronous version)
         """
         if k == 0:
-            self.last_available_result.xs = [x0 for _ in range(self.T + 1)]
+            if xs is not None:
+                self.last_available_result.xs = xs
+                self.last_available_result.us = us
+            else:
+                self.last_available_result.xs = [x0 for _ in range(self.T + 1)]
             p = Process(target=self.MPC_asynchronous)
             p.start()
 
