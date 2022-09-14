@@ -235,7 +235,7 @@ def control_loop():
 
 if __name__ == "__main__":
     import os
-    # os.nice(-20)
+    os.nice(-20)
 
     log = control_loop()
     # quit()

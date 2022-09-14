@@ -39,7 +39,7 @@ class problemDataAbstract:
 
         self.u0 = np.array([0.0, 0.0, 9.81 * params.mass / 4.0] * 4)
 
-        self.baumgarte_gains = np.array([0, 50])
+        self.baumgarte_gains = np.array([0, 100])
 
         self.feet_names = ["FL_FOOT", "FR_FOOT", "HL_FOOT", "HR_FOOT"]
         self.feet_ids = [self.model.getFrameId(f) for f in self.feet_names]
