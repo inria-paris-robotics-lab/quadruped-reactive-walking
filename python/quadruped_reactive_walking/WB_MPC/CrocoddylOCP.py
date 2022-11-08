@@ -1,6 +1,3 @@
-from tracemalloc import start
-from xxlimited import foo
-
 from .ProblemData import ProblemData
 from .Target import Target
 import crocoddyl
@@ -8,11 +5,12 @@ import sobec
 import pinocchio as pin
 import numpy as np
 from time import time
+from .ocp_abstract import OCPAbstract
 
 
-class OCP:
+class OCP(OCPAbstract):
     def __init__(self, pd: ProblemData, params, footsteps, base_refs):
-        self.pd = pd
+        super().__init__(pd, params)
         self.params = params
         self.max_iter = 1000 if params.save_guess else 1
 
@@ -82,7 +80,7 @@ class OCP:
         t_warm_start = time()
         self.t_warm_start = t_warm_start - t_update
 
-        # self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
+        self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
         self.ddp.solve(xs, us, self.max_iter, False)
 
         t_ddp = time()
