@@ -1,6 +1,6 @@
 robot:
     # General parameters
-    config_file: /home/odri/git/fanny/quadruped-reactive-walking/config/config_solo12.yaml  #  Name of the yaml file containing hardware information
+    config_file: ${HOME}/git-repos/quadruped-reactive-walking/config/config_solo12.yaml  #  Name of the yaml file containing hardware information
 
     interface: enp2s0  # Name of the communication inerface (check with ifconfig)
     LOGGING: true  # Enable/disable logging during the experiment

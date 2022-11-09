@@ -77,7 +77,11 @@ Params::Params()
       footsteps_init(12, 0.0),            // Fill with zeros, will be filled with values later
       footsteps_under_shoulders(12, 0.0)  // Fill with zeros, will be filled with values later
 {
+#ifndef WALK_PARAMETERS_YAML
+  #error Variable WALK_PARAMETERS_YAML not defined.
+#else
   initialize(WALK_PARAMETERS_YAML);
+#endif
 }
 
 void Params::initialize(const std::string& file_path) {
@@ -92,6 +96,9 @@ void Params::initialize(const std::string& file_path) {
   // Retrieve robot parameters
   assert_yaml_parsing(robot_node, "robot", "config_file");
   config_file = robot_node["config_file"].as<std::string>();
+  {
+    config_file = expand_env(config_file);
+  }
 
   assert_yaml_parsing(robot_node, "robot", "interface");
   interface = robot_node["interface"].as<std::string>();

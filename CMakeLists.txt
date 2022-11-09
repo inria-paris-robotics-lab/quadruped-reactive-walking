@@ -57,6 +57,7 @@ set(${PROJECT_NAME}_HEADERS
   include/qrw/Estimator.hpp
   include/qrw/Filter.hpp
   include/qrw/ComplementaryFilter.hpp
+  include/qrw/utils.hpp
   )
 
 set(${PROJECT_NAME}_SOURCES

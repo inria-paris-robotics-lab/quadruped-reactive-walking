@@ -15,8 +15,12 @@
 
 #include <fstream>
 #include <vector>
+#include <cstdlib>
+#include <string>
+#include <regex>
 
 #include "qrw/Types.h"
+#include "qrw/utils.hpp"
 
 class Params {
  public:
