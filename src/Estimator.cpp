@@ -149,6 +149,7 @@ void Estimator::updateFeetStatus(MatrixN const& gait, MatrixN const& feetTargets
   phaseRemainingDuration_ = 1;
   while (feetStatus_.isApprox((Vector4)gait.row(phaseRemainingDuration_))) {
     phaseRemainingDuration_++;
+    if (phaseRemainingDuration_ >= gait.rows()) break;
   }
 }
 
