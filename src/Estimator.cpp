@@ -93,7 +93,7 @@ void Estimator::initialize(Params& params) {
 void Estimator::run(MatrixN const& gait, MatrixN const& feetTargets, VectorN const& baseLinearAcceleration,
                     VectorN const& baseAngularVelocity, VectorN const& baseOrientation, VectorN const& q,
                     VectorN const& v, VectorN const& perfectPosition, Vector3 const& b_perfectVelocity) {
-  updatFeetStatus(gait, feetTargets);
+  updateFeetStatus(gait, feetTargets);
   updateIMUData(baseLinearAcceleration, baseAngularVelocity, baseOrientation, perfectPosition);
   updateJointData(q, v);
 
@@ -139,7 +139,7 @@ void Estimator::updateReferenceState(VectorN const& vRef) {
   h_vFiltered_.tail(3) = hRb_ * vFiltered_.tail(3);
 }
 
-void Estimator::updatFeetStatus(MatrixN const& gait, MatrixN const& feetTargets) {
+void Estimator::updateFeetStatus(MatrixN const& gait, MatrixN const& feetTargets) {
   feetStatus_ = gait.row(0);
   feetTargets_ = feetTargets;
 
