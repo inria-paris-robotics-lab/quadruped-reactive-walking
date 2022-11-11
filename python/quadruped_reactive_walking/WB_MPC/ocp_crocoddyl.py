@@ -1,4 +1,4 @@
-from .ProblemData import ProblemData
+from .problem_data import ProblemData
 from .Target import Target
 import crocoddyl
 import sobec
@@ -8,35 +8,11 @@ from time import time
 from .ocp_abstract import OCPAbstract
 
 
-class OCP(OCPAbstract):
     def __init__(self, pd: ProblemData, params, footsteps, base_refs):
         super().__init__(pd, params)
-        self.params = params
-        self.max_iter = 1000 if params.save_guess else 1
 
         self.state = crocoddyl.StateMultibody(self.pd.model)
-        self.initialized = False
-        self.t_problem_update = 0
-        self.t_update_last_model = 0.0
-        self.t_shift = 0.0
 
-        self.life_gait = params.gait
-        self.starting_gait = np.array([[1, 1, 1, 1]] * params.starting_nodes)
-        self.ending_gait = np.array([[1, 1, 1, 1]] * params.ending_nodes)
-        self.initialization_gait = np.concatenate(
-            [self.starting_gait, self.life_gait, self.ending_gait]
-        )
-        self.current_gait = np.append(
-            self.starting_gait, self.ending_gait[0].reshape(1, -1), axis=0
-        )
-
-        self.life_rm, self.life_tm = self.initialize_models(
-            self.life_gait, footsteps, base_refs
-        )
-        self.start_rm, self.start_tm = self.initialize_models(self.ending_gait)
-        self.end_rm, self.end_tm = self.initialize_models(self.ending_gait)
-
-        self.x0 = self.pd.x0
 
         self.problem = crocoddyl.ShootingProblem(self.x0, self.start_rm, self.start_tm)
         self.ddp = crocoddyl.SolverFDDP(self.problem)
@@ -156,25 +132,10 @@ class OCP(OCPAbstract):
 
             self.update_model(m, tasks, base_task, support_feet)
 
-            self.problem.circularAppend(
-                m,
-                m.createData(),
-            )
-
         self.problem.x0 = self.x0
 
         self.initialized = True
 
-    def make_task(self, footstep):
-        task = [[], []]
-        # if base_ref is not None:
-        #     task[0].append(self.pd.base_id)
-        #     task[1].append(base_ref)
-        for foot in range(4):
-            if footstep[:, foot].any():
-                task[0].append(self.pd.feet_ids[foot])
-                task[1].append(footstep[:, foot])
-        return task
 
     def get_results(self):
         return (
@@ -341,7 +302,6 @@ class OCP(OCPAbstract):
             costs.changeCostStatus(friction_name, i in support_feet)
 
             name = "%s_forceReg" % self.pd.model.frames[i].name
-            nc = len(model.differential.contacts.active.tolist())
             ref_force = np.array([0, 0, self.pd.robot_weight / nc])
             ref_Force = pin.Force(ref_force, ref_force * 0)
             forceRegResidual = sobec.ResidualModelContactForce(
@@ -509,5 +469,3 @@ class OCP(OCPAbstract):
             name = "base_velocity_tracking"
             ref = pin.Motion(base_task[:3], base_task[3:])
             costs.costs[name].cost.residual.reference = ref
-
-        # print(f"{name} reference: {costs.costs[name].cost.residual.reference} status:{i in tasks[0]}")

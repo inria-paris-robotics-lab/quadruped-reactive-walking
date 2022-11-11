@@ -1,6 +1,6 @@
 from tracemalloc import take_snapshot
 import numpy as np
-from .ProblemData import ProblemData
+from .problem_data import ProblemData
 import pinocchio as pin
 from scipy.interpolate import KroghInterpolator
 

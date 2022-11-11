@@ -1,6 +1,6 @@
 import quadruped_reactive_walking as qrw
-from .CrocoddylOCP import OCP
-from .ProblemData import ProblemData, ProblemDataFull
+from .ocp_crocoddyl import OCP
+from .problem_data import ProblemData, ProblemDataFull
 from .Target import Target
 
 import crocoddyl

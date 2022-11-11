@@ -29,14 +29,13 @@ set(${PY_NAME}_PYTHON
 set(${PY_NAME}_WB_MPC_PYTHON
   __init__.py
   BenchmarkCrocoddylOCP.py
-  CrocoddylOCP.py
   ocp_abstract.py
   ocp_proxddp.py
-  CasadiOCP.py
+  ocp_crocoddyl.py
+  ocp_casadi.py
   ShootingNode.py
-  ProblemData.py
+  problem_data.py
   Target.py
-  OcpResult.py
   )
 
 set(${PY_NAME}_TOOLS_PYTHON

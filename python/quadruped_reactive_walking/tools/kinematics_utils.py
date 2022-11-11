@@ -1,6 +1,6 @@
 import pinocchio as pin
 import numpy as np
-from ..WB_MPC.ProblemData import ProblemData
+from ..WB_MPC.problem_data import ProblemData
 
 def get_translation(pd:ProblemData, x, idx, ref_frame=pin.WORLD):
     q = x[: pd.nq]

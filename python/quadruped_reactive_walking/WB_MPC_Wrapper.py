@@ -6,7 +6,9 @@ from time import time, sleep
 
 import numpy as np
 
-from .WB_MPC.CrocoddylOCP import OCP
+from .WB_MPC.ocp_abstract import OCPAbstract
+from .WB_MPC.ocp_crocoddyl import CrocOCP
+from .WB_MPC.ocp_proxddp import ProxOCP
 
 import quadruped_reactive_walking as qrw
 

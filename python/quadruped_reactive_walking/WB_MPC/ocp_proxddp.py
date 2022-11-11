@@ -11,9 +11,10 @@ import pinocchio as pin
 import proxddp
 from proxddp import manifolds, dynamics
 
-from .ProblemData import ProblemData
+from .problem_data import ProblemData
 from .Target import Target
 from .ocp_abstract import OCPAbstract
+from .ocp_crocoddyl import CrocOCP
 
 
 class ProxOCP(OCPAbstract):

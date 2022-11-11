@@ -490,7 +490,7 @@ if __name__ == "__main__":
     import os
     import argparse
     import quadruped_reactive_walking as qrw
-    from  ..WB_MPC.ProblemData import ProblemData
+    from  ..WB_MPC.problem_data import ProblemData
     from .Utils import init_robot
 
     sys.path.insert(0, os.getcwd())
