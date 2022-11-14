@@ -10,8 +10,8 @@ inline std::string expand_env(std::string text)
   while (std::regex_search(text, match, env_re))
   {
     auto const from = match[0];
-    auto const var_name = match[1].str().c_str();
-    text.replace(from.first, from.second, std::getenv(var_name));
+    auto const var_name = match[1].str();
+    text.replace(from.first, from.second, std::getenv(var_name.c_str()));
   }
   return text;
 }
