@@ -44,7 +44,7 @@ def init_robot(q_init, params):
         initial_shoulders[:, i] = solo.data.oMf[indexes[i]].translation
 
     # Saving data
-    params.h_ref = 0.260748 #0.2607495
+    params.h_ref = 0.260748  # 0.2607495
     params.mass = solo.data.mass[0]
     params.I_mat = solo.data.Ycrb[1].inertia.ravel().tolist()
     params.CoM_offset = (solo.data.com[0][:3] - q[0:3, 0]).tolist()

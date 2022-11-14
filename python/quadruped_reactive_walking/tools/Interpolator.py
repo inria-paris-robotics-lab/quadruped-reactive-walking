@@ -1,6 +1,7 @@
+import numpy as np
+
 COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c"]
 
-import numpy as np
 
 class Interpolator:
     def __init__(self, params, x0):

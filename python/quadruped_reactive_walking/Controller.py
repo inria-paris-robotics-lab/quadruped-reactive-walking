@@ -6,11 +6,13 @@ import pybullet as pyb
 
 import quadruped_reactive_walking as qrw
 from . import WB_MPC_Wrapper
+from . import WB_MPC
 from .WB_MPC.Target import Target
 from .tools.Utils import init_robot, quaternionToRPY
 from .WB_MPC.problem_data import ProblemData, ProblemDataFull
 from .tools.kinematics_utils import get_translation_array
 from .tools.Interpolator import Interpolator
+from typing import Type
 
 
 class Result:
@@ -53,7 +55,9 @@ class DummyDevice:
 
 
 class Controller:
-    def __init__(self, params, q_init, t):
+    def __init__(
+        self, params, q_init, t, solver_cls: Type[WB_MPC.OCPAbstract] = WB_MPC.CrocOCP
+    ):
         """
         Function that computes the reference control (tau, q_des, v_des and gains)
 
@@ -99,7 +103,7 @@ class Controller:
                 self.footsteps.append(self.target_footstep.copy())
 
         self.mpc = WB_MPC_Wrapper.MPC_Wrapper(
-            self.pd, params, self.footsteps, self.base_refs
+            self.pd, params, self.footsteps, self.base_refs, solver_cls=solver_cls
         )
         self.gait = np.array([[1, 1, 1, 1]] * params.starting_nodes)
         self.mpc_solved = False
@@ -111,11 +115,11 @@ class Controller:
             file = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
             self.xs_init = list(file["xs"])
             self.us_init = list(file["us"])
-            print("Initial guess loaded \n")
-        except:
+            print("Initial guess loaded.\n")
+        except Exception:
             self.xs_init = None
             self.us_init = None
-            print("No initial guess\n")
+            print("No initial guess found.\n")
 
         self.filter_q = qrw.Filter()
         self.filter_q.initialize(params)
@@ -157,31 +161,22 @@ class Controller:
                 self.mpc_solved = False
 
             if self.params.closed_loop or not self.initialized:
-                try:
-                    self.mpc.solve(
-                        self.k,
-                        self.x,
-                        self.target_footstep.copy(),
-                        self.target_base.copy(),
-                        self.xs_init,
-                        self.us_init,
-                    )
-                except ValueError:
-                    self.error = True
-                    print("MPC Problem")
+                x = self.x_estim
             else:
-                try:
-                    self.mpc.solve(
-                        self.k,
-                        self.mpc_result.xs[1],
-                        self.target_footstep.copy(),
-                        self.target_base.copy(),
-                        self.xs_init,
-                        self.us_init,
-                    )
-                except ValueError:
-                    self.error = True
-                    print("MPC Problem")
+                x = self.mpc_result.xs[1]
+
+            try:
+                self.mpc.solve(
+                    self.k,
+                    x,
+                    self.target_footstep.copy(),
+                    self.target_base.copy(),
+                    self.xs_init,
+                    self.us_init,
+                )
+            except ValueError:
+                self.error = True
+                print("MPC Problem")
 
             # print(self.gait)
             # print("-----------------------")
@@ -262,15 +257,15 @@ class Controller:
                 print(self.q_estimate[7:])
                 print(np.abs(self.q_estimate[7:]) > self.q_security)
                 self.error = True
-            elif (np.abs(self.v_estimate[6:]) > 100.).any():
+            elif (np.abs(self.v_estimate[6:]) > 100.0).any():
                 print("-- VELOCITY TOO HIGH ERROR --")
                 print(self.v_estimate[6:])
-                print(np.abs(self.v_estimate[6:]) > 100.)
+                print(np.abs(self.v_estimate[6:]) > 100.0)
                 self.error = True
-            elif (np.abs(self.result.FF) > 5.).any():
+            elif (np.abs(self.result.FF) > 5.0).any():
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")
                 print(self.result.FF)
-                print(np.abs(self.result.FF) > 5.)
+                print(np.abs(self.result.FF) > 5.0)
                 self.error = True
 
     def clamp(self, num, min_value=None, max_value=None):
@@ -304,6 +299,7 @@ class Controller:
                 print("Clamping knee n " + str(i))
                 self.error = set_error
 
+        clamped_motors = []
         for i in range(12):
             if self.clamp(
                 self.result.q_des[i],
@@ -322,8 +318,10 @@ class Controller:
                 self.error = set_error
 
             if self.clamp(self.result.tau_ff[i], -3.2, 3.2):
-                print("Clamping torque of motor n " + str(i))
+                clamped_motors.append(i)
                 self.error = set_error
+            if len(clamped_motors) > 0:
+                print("Clamping torque of motors {}".format(clamped_motors))
 
     def set_null_control(self):
         """
@@ -408,7 +406,7 @@ class Controller:
         # self.v_filtered[:6] = self.filter_v.filter(self.v_windowed, False)
         self.v_filtered[:6] = self.filter_v.filter(self.v_estimate[:6], False)
 
-        self.x = np.concatenate([self.q_filtered, self.v_filtered])
+        self.x_estim = np.concatenate([self.q_filtered, self.v_filtered])
         return oRh, hRb, oTh
 
     def compute_torque(self):
@@ -419,10 +417,10 @@ class Controller:
             [
                 pin.difference(
                     self.pd.model,
-                    self.x[: self.pd.nq],
+                    self.x_estim[: self.pd.nq],
                     self.mpc_result.xs[0][: self.pd.nq],
                 ),
-                self.mpc_result.xs[0][self.pd.nq :] - self.x[self.pd.nq :],
+                self.mpc_result.xs[0][self.pd.nq :] - self.x_estim[self.pd.nq :],
             ]
         )
         tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)

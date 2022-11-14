@@ -200,7 +200,7 @@ class QualisysClient:
             print("Connected")
             try:
                 await connection.stream_frames(components=["6d"], on_packet=on_packet)
-            except:
+            except Exception:
                 print("connection with qualisys lost")
 
         asyncio.ensure_future(setup())

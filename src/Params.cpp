@@ -377,7 +377,7 @@ void Params::convert_v_switch() {
         "v_switch matrix in yaml is not in the correct format. the same number of colums as t_switch.");
   }
 
-  int n_col = v_switch_vec.size() / 6;
+  uint n_col = v_switch_vec.size() / 6;
 
   // Resize v_switch matrix
   v_switch = MatrixN::Zero(6, n_col);

@@ -244,7 +244,9 @@ class LoggerControl:
     def plot_target(self, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
-        t_range = np.array([k * self.params.dt_wbc for k in range(self.tstamps.shape[0])])
+        t_range = np.array(
+            [k * self.params.dt_wbc for k in range(self.tstamps.shape[0])]
+        )
         x = np.concatenate([self.q_filtered, self.v_filtered], axis=1)
         m_feet_p_log = {
             idx: get_translation_array(self.pd, x, idx)[0] for idx in self.pd.feet_ids
@@ -258,7 +260,6 @@ class LoggerControl:
             idx: get_translation_array(self.pd, x_mpc, idx)[0]
             for idx in self.pd.feet_ids
         }
-
 
         # Target plot
         _, axs = plt.subplots(3, 2, sharex=True)
@@ -302,12 +303,15 @@ class LoggerControl:
             # "Predicted"])
         if save:
             plt.savefig(fileName + "/target")
-        
+
         _, axs = plt.subplots(3, sharex=True)
         legend = ["x", "y", "z"]
         for p in range(3):
             axs[p].set_title("Predicted free foot on z over " + legend[p])
-            [axs[p].plot(t_range, feet_p_log[foot_id][:, p]) for foot_id in self.pd.feet_ids]
+            [
+                axs[p].plot(t_range, feet_p_log[foot_id][:, p])
+                for foot_id in self.pd.feet_ids
+            ]
             axs[p].legend(self.pd.feet_names)
 
         if save:
@@ -440,11 +444,11 @@ class LoggerControl:
         self.target = self.data["target"]
         self.target_base_linear = self.data["target_base_linear"]
         self.target_base_angular = self.data["target_base_angular"]
-        self.q_estimate_rpy=self.data["q_estimate_rpy"]
-        self.q_estimate=self.data["q_estimate"]
-        self.v_estimate=self.data["v_estimate"]
-        self.q_filtered=self.data["q_filtered"]
-        self.v_filtered=self.data["v_filtered"]
+        self.q_estimate_rpy = self.data["q_estimate_rpy"]
+        self.q_estimate = self.data["q_estimate"]
+        self.v_estimate = self.data["v_estimate"]
+        self.q_filtered = self.data["q_filtered"]
+        self.v_filtered = self.data["v_filtered"]
         self.q_mes = self.data["q_mes"]
         self.v_mes = self.data["v_mes"]
         self.baseOrientation = self.data["baseOrientation"]
@@ -490,7 +494,7 @@ if __name__ == "__main__":
     import os
     import argparse
     import quadruped_reactive_walking as qrw
-    from  ..WB_MPC.problem_data import ProblemData
+    from ..WB_MPC.problem_data import ProblemData
     from .Utils import init_robot
 
     sys.path.insert(0, os.getcwd())
