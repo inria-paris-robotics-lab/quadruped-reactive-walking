@@ -17,6 +17,8 @@ from .Target import Target
 from .ocp_abstract import OCPAbstract
 from .ocp_crocoddyl import CrocOCP
 
+import yaml
+
 
 class ProxOCP(CrocOCP):
     """Solve the OCP using proxddp."""
@@ -28,22 +30,20 @@ class ProxOCP(CrocOCP):
         self.my_problem: proxddp.TrajOptProblem = proxddp.croc.convertCrocoddylProblem(
             self.problem
         )
-        nsteps = self.my_problem.num_steps
+
+        with open("config/ocp.yaml") as f:
+            config = yaml.safe_load(f)["prox_fddp"]
+        self.run_croc_compare = config["run_croc"]
+
         verbose = proxddp.VerboseLevel.QUIET
         self.verbose = verbose
         self.tol = 1e-3
         self.max_iter = 50
         self.mu_init = 1e-5
-        # self.my_ddp = proxddp.SolverProxDDP(
-        #     self.tol, self.mu_init, verbose=verbose, max_iters=self.max_iter
-        # )
-        self.my_ddp = proxddp.SolverFDDP(
-            self.tol, verbose=self.verbose, max_iters=self.max_iter
+        self.prox_ddp = proxddp.SolverFDDP(
+            self.tol, self.verbose, max_iters=self.max_iter
         )
-        self.my_ddp.setup(self.my_problem)
-
-        # self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
-        self.ddp.th_stop = self.tol**2.0 * nsteps
+        self.prox_ddp.setup(self.my_problem)
 
         self.x_solver_errs = []
         self.u_solver_errs = []
@@ -76,39 +76,32 @@ class ProxOCP(CrocOCP):
         t_warm_start = time.time()
         self.t_warm_start = t_warm_start - t_update
 
-        # self.ddp.solve(xs, us, self.max_iter, False)
-
-        # Qus = self.ddp.Qu.tolist().copy()
-        # croc_infty_norms_ = max([np.linalg.norm(Q, np.inf) for Q in Qus])
-        # print("grad l∞ norm = {:.4e}".format(croc_infty_norms_))
-        # self.croc_stops.append(croc_infty_norms_)
-
-        # self.my_ddp.target_tol = croc_infty_norms_
-        self.my_ddp.run(self.my_problem, xs, us)
-        self.my_ddp.reg_init = self.my_ddp.xreg
+        self.prox_ddp.run(self.my_problem, xs, us)
+        self.prox_ddp.reg_init = self.prox_ddp.xreg
 
         # compute proxddp's criteria
-        ws = self.my_ddp.getWorkspace()
+        ws = self.prox_ddp.getWorkspace()
         qparams = ws.q_params
         Qus = [qp.Qu for qp in qparams]
         prox_norm_2 = sum(q.dot(q) for q in Qus)
 
-        res = self.my_ddp.getResults()
+        res = self.prox_ddp.getResults()
         prox_norm_inf = max(res.primal_infeas, res.dual_infeas)
         self.prox_stops.append(prox_norm_inf)
         self.prox_stops_2.append(prox_norm_2)
         self.prox_iters.append(res.num_iters)
 
-        # run crocoddyl
-        self.ddp.th_stop = prox_norm_2
-        self.ddp.solve(xs, us, self.max_iter, False)
+        if self.run_croc_compare:
+            # run crocoddyl
+            self.ddp.th_stop = prox_norm_2
+            self.ddp.solve(xs, us, self.max_iter, False)
 
-        croc_norm_inf = max([np.linalg.norm(q, np.inf) for q in self.ddp.Qu])
-        croc_norm_2 = self.ddp.stop
+            croc_norm_inf = max([np.linalg.norm(q, np.inf) for q in self.ddp.Qu])
+            croc_norm_2 = self.ddp.stop
 
-        self.croc_stops.append(croc_norm_inf)
-        self.croc_stops_2.append(croc_norm_2)
-        self.croc_iters.append(self.ddp.iter + 1)
+            self.croc_stops.append(croc_norm_inf)
+            self.croc_stops_2.append(croc_norm_2)
+            self.croc_iters.append(self.ddp.iter + 1)
 
         t_ddp = time.time()
         self.t_ddp = t_ddp - t_warm_start
@@ -121,20 +114,23 @@ class ProxOCP(CrocOCP):
 
         sm = proxddp.croc.ActionModelWrapper(action_model)
         self.my_problem.replaceStageCircular(sm)
-        # self.my_ddp.setup(self.my_problem)
-        ws = self.my_ddp.getWorkspace()
+        ws = self.prox_ddp.getWorkspace()
         ws.cycle_append(sm)
 
     def get_results(self):
-        res = self.my_ddp.getResults()
+        res = self.prox_ddp.getResults()
         nsteps = self.problem.T
-        X_err = [np.linalg.norm(res.xs[i] - self.ddp.xs[i]) for i in range(nsteps + 1)]
-        U_err = [np.linalg.norm(res.us[i] - self.ddp.us[i]) for i in range(nsteps)]
-        self.x_solver_errs.append(max(X_err))
-        self.u_solver_errs.append(max(U_err))
 
-        print("X ERR = {:.3e}".format(self.u_solver_errs[-1]), end=" ")
-        print("U ERR = {:.3e}".format(self.x_solver_errs[-1]))
+        if self.run_croc_compare:
+            X_err = [
+                np.linalg.norm(res.xs[i] - self.ddp.xs[i]) for i in range(nsteps + 1)
+            ]
+            U_err = [np.linalg.norm(res.us[i] - self.ddp.us[i]) for i in range(nsteps)]
+            self.x_solver_errs.append(max(X_err))
+            self.u_solver_errs.append(max(U_err))
+
+            print("X ERR = {:.3e}".format(self.u_solver_errs[-1]), end=" ")
+            print("U ERR = {:.3e}".format(self.x_solver_errs[-1]))
 
         # return super().get_results()
 
