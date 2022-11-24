@@ -225,26 +225,11 @@ class Controller:
         if self.error:
             self.set_null_control()
 
-        # self.pyb_camera(device)
-
         self.t_loop = time.time() - t_start
         self.k += 1
         self.initialized = True
 
         return self.error
-
-    def pyb_camera(self, device):
-        """
-        Update position of PyBullet camera on the robot position to do as if it was
-        attached to the robot
-        """
-        if self.k > 10 and self.params.enable_pyb_GUI:
-            pyb.resetDebugVisualizerCamera(
-                cameraDistance=0.6,
-                cameraYaw=45,
-                cameraPitch=-39.9,
-                cameraTargetPosition=[device.height[0], device.height[1], 0.0],
-            )
 
     def security_check(self):
         """

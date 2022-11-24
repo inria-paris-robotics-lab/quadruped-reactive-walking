@@ -42,7 +42,7 @@ set(${PY_NAME}_TOOLS_PYTHON
   gamepadClient.py
   __init__.py
   LoggerControl.py
-  PyBulletSimulator.py
+  pybullet_sim.py
   Utils.py
   qualisysClient.py
   kinematics_utils.py

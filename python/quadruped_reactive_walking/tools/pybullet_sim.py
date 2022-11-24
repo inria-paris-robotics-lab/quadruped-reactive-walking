@@ -8,6 +8,9 @@ import pinocchio as pin
 from example_robot_data.path import EXAMPLE_ROBOT_DATA_MODEL_DIR
 
 
+VIDEO_CONFIG = {"width": 1280, "height": 720, "fov": 75, "record": False}
+
+
 class pybullet_simulator:
     """
     Wrapper for the PyBullet simulator to initialize the simulation, interact with it
@@ -352,6 +355,25 @@ class pybullet_simulator:
             cameraTargetPosition=[0.0, 0.0, robotStartPos[2] - 0.2],
         )
 
+    def get_image(self):
+        width = VIDEO_CONFIG["width"]
+        height = VIDEO_CONFIG["height"]
+        aspect = width / height
+        fov = VIDEO_CONFIG["fov"]
+        near = 0.02
+        far = 10
+        proj_matrix = pyb.computeProjectionMatrixFOV(fov, aspect, near, far)
+        renderer = pyb.ER_BULLET_HARDWARE_OPENGL
+        lightDirection = [0.0, 0.0, 4.0]
+        _, _, rgb, depthimg, _ = pyb.getCameraImage(
+            width,
+            height,
+            projectionMatrix=proj_matrix,
+            lightDirection=lightDirection,
+            renderer=renderer,
+        )
+        return rgb
+
     def check_pyb_env(self, k, envID, q):
         """
         Check the state of the robot to trigger events and update camera
@@ -408,17 +430,42 @@ class pybullet_simulator:
                     self.robotId, [0, 0, 0.25], [0, 0, 0, 1]
                 )
 
+        self.set_debug_camera(q)
+
+    def set_debug_camera(self, q):
         # Get the orientation of the robot to change the orientation of the camera with the rotation of the robot
-        oMb_tmp = pin.SE3(pin.Quaternion(q[3:7]), np.array([0.0, 0.0, 0.0]))
-        RPY = pin.rpy.matrixToRpy(oMb_tmp.rotation)
+        oMb_tmp = pin.XYZQUATToSE3(q)
+        rpy = pin.rpy.matrixToRpy(oMb_tmp.rotation)
+        rpy = np.rad2deg(rpy)
 
         # Update the PyBullet camera on the robot position to do as if it was attached to the robot
+        cam_pos = oMb_tmp.translation
+        cam_pos[2] = 0.0
+        [
+            _w,
+            _h,
+            _vmat,
+            _pmat,
+            _camup,
+            _camfwd,
+            _,
+            _,
+            _yaw,
+            _pitch,
+            cam_dist,
+            _old_cam_tgt,
+        ] = pyb.getDebugVisualizerCamera()
         pyb.resetDebugVisualizerCamera(
-            cameraDistance=0.6,
-            cameraYaw=(0.0 * RPY[2] * (180 / 3.1415) + 45),
-            cameraPitch=-39.9,
-            cameraTargetPosition=[q[0, 0], q[1, 0] + 0.0, 0.0],
+            cameraDistance=cam_dist,
+            cameraYaw=_yaw,
+            cameraPitch=_pitch,
+            cameraTargetPosition=cam_pos,
         )
+
+    def update_debug_camera(self):
+        base_state = pyb.getBasePositionAndOrientation(self.robotId)
+        q = np.concatenate(base_state)
+        self.set_debug_camera(q)
 
     def retrieve_pyb_data(self):
         """
@@ -458,9 +505,9 @@ class pybullet_simulator:
 
     def get_to_default_position(self, qtarget):
         """
-        Controler that tries to get the robot back to a default angular positions
-        of its 12 actuators using polynomials to generate trajectories and a PD controller
-        to make the actuators follow them
+        Controller that tries to get the robot back to a default angular positions
+        of its 12 actuators using polynomials to generate trajectories, and a PD controller
+        to make the actuators follow them.
 
         Args:
             qtarget (12x1 array): the target position for the 12 actuators
@@ -668,6 +715,12 @@ class PyBulletSimulator:
         self.tau_ff = np.zeros(12)
         self.g = np.array([[0.0], [0.0], [-9.81]])
 
+        self.video_fps = 30
+        self.video_rate_factor = 2
+        self.video_record_every = self.video_fps / self.video_rate_factor
+
+        self.record_video = VIDEO_CONFIG["record"]
+
     def Init(self, q, envID, use_flat_plane, enable_pyb_GUI, dt):
         """
         Initialize the PyBullet simultor with a given environment and a given state of the robot
@@ -685,6 +738,11 @@ class PyBulletSimulator:
         self.joints.positions[:] = q
         self.dt = dt
         self.time_loop = time.time()
+
+        import imageio
+
+        vid_kwargs = dict(fps=self.video_fps)
+        self.video_buffer = imageio.get_writer("sim_video.mp4", **vid_kwargs)
 
     def cross3(self, left, right):
         """
@@ -786,6 +844,10 @@ class PyBulletSimulator:
         )
 
         pyb.stepSimulation()
+        self.pyb_sim.update_debug_camera()
+        if self.record_video and self.cpt % self.video_record_every == 0:
+            img = self.pyb_sim.get_image()
+            self.video_buffer.append_data(img)
 
         if WaitEndOfCycle:
             while (time.time() - self.time_loop) < self.dt:
@@ -812,4 +874,5 @@ class PyBulletSimulator:
         """
         Stop the simulation environment
         """
+        self.video_buffer.close()
         pyb.disconnect()

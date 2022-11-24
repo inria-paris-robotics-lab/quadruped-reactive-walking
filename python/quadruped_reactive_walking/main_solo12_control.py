@@ -32,7 +32,7 @@ sha = repo.head.object.hexsha
 msg = repo.head.object.message + "\nCommit: " + sha
 
 if params.SIMULATION:
-    from .tools.PyBulletSimulator import PyBulletSimulator
+    from .tools.pybullet_sim import PyBulletSimulator
 else:
     import libodri_control_interface_pywrap as oci
     from .tools.qualisysClient import QualisysClient
