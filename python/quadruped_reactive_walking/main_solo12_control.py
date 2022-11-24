@@ -12,6 +12,7 @@ from .tools.LoggerControl import LoggerControl
 from typing import Type, Literal
 from .WB_MPC import CrocOCP, ProxOCP
 import tap
+import tqdm
 import argparse
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -187,38 +188,41 @@ def control_loop(args):
     k_log_whole = 0
     T_whole = time.time()
     dT_whole = 0.0
-    while (not device.is_timeout) and (t < t_max) and (not controller.error):
-        t_start_whole = time.time()
 
-        device.parse_sensor_data()
-        if controller.compute(device, qc):
-            break
+    with tqdm.tqdm(desc="MPC cycles", total=t_max) as prog_bar:
+        while (not device.is_timeout) and (t < t_max) and (not controller.error):
+            t_start_whole = time.time()
 
-        if t <= 10 * params.dt_wbc and check_position_error(device, controller):
-            break
+            device.parse_sensor_data()
+            if controller.compute(device, qc):
+                break
 
-        device.joints.set_position_gains(controller.result.P)
-        device.joints.set_velocity_gains(controller.result.D)
-        device.joints.set_desired_positions(controller.result.q_des)
-        device.joints.set_desired_velocities(controller.result.v_des)
-        device.joints.set_torques(
-            controller.result.FF * controller.result.tau_ff.ravel()
-        )
-        device.send_command_and_wait_end_of_cycle(params.dt_wbc)
+            if t <= 10 * params.dt_wbc and check_position_error(device, controller):
+                break
 
-        if params.LOGGING or params.PLOTTING:
-            loggerControl.sample(controller, device, qc)
+            device.joints.set_position_gains(controller.result.P)
+            device.joints.set_velocity_gains(controller.result.D)
+            device.joints.set_desired_positions(controller.result.q_des)
+            device.joints.set_desired_velocities(controller.result.v_des)
+            device.joints.set_torques(
+                controller.result.FF * controller.result.tau_ff.ravel()
+            )
+            device.send_command_and_wait_end_of_cycle(params.dt_wbc)
 
-        t_end_whole = time.time()
+            if params.LOGGING or params.PLOTTING:
+                loggerControl.sample(controller, device, qc)
 
-        t += params.dt_wbc
+            t_end_whole = time.time()
 
-        dT_whole = T_whole
-        T_whole = time.time()
-        dT_whole = T_whole - dT_whole
+            t += params.dt_wbc
 
-        t_log_whole[k_log_whole] = t_end_whole - t_start_whole
-        k_log_whole += 1
+            dT_whole = T_whole
+            T_whole = time.time()
+            dT_whole = T_whole - dT_whole
+
+            t_log_whole[k_log_whole] = t_end_whole - t_start_whole
+            k_log_whole += 1
+            prog_bar.update(params.dt_wbc)
 
     # ****************************************************************
     damp_control(device, 12)
@@ -248,6 +252,43 @@ def control_loop(args):
             loggerControl.plot(save=True, fileName=str(log_path))
             print("Plots saved in ", str(log_path) + "/")
 
+            mpc = controller.mpc
+            ocp = mpc.ocp
+            if isinstance(ocp, ProxOCP):
+                ocp: ProxOCP
+                nplt = 4
+                h = 7.2
+                fig, axs = plt.subplots(nplt, 1, figsize=(6.4, h), layout="constrained")
+                fig: plt.Figure
+                plt.sca(axs[0])
+                plt.plot(ocp.x_solver_errs, label="state $x$")
+                plt.plot(ocp.u_solver_errs, label="control $u$")
+                plt.legend()
+                plt.yscale("log")
+                plt.title("$\\ell_\\infty$ error between solver solutions")
+                fig.supxlabel("MPC cycle $k$")
+
+                plt.sca(axs[1])
+                plt.plot(ocp.prox_stops, label="proxddp", ls="dotted")
+                plt.plot(ocp.croc_stops, label="crocoddyl", ls="-")
+                plt.yscale("log")
+                plt.title("$\\ell_\\infty$-norm of stopping criterion")
+                plt.legend()
+
+                plt.sca(axs[2])
+                plt.plot(ocp.prox_stops_2, label="prox", ls="dotted")
+                plt.plot(ocp.croc_stops_2, label="croc", ls="-")
+                plt.title("Squared norm stopping criterion")
+                plt.yscale("log")
+                plt.legend()
+
+                plt.sca(axs[3])
+                plt.plot(ocp.prox_iters, label="proxddp")
+                plt.plot(ocp.croc_iters, label="crocoddyl")
+                plt.title("Number of OCP iterations")
+                plt.grid(visible=True, which="minor", axis="y")
+                plt.legend()
+
             plt.show()
 
     if params.SIMULATION and params.enable_pyb_GUI:
@@ -258,8 +299,9 @@ def control_loop(args):
 
 
 if __name__ == "__main__":
-    import os
-    os.nice(-20)
+    # that's illegal?
+    # import os
+    # os.nice(-20)
 
     args = parse_args()
     log = control_loop(args)

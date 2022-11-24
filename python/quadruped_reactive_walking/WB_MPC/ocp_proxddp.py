@@ -129,9 +129,6 @@ class ProxOCP(CrocOCP):
             self.x_solver_errs.append(max(X_err))
             self.u_solver_errs.append(max(U_err))
 
-            print("X ERR = {:.3e}".format(self.u_solver_errs[-1]), end=" ")
-            print("U ERR = {:.3e}".format(self.x_solver_errs[-1]))
-
         # return super().get_results()
 
         feedbacks = [-K.copy() for K in res.ctrl_feedbacks]
