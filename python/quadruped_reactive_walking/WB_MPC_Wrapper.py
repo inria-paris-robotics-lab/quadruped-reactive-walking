@@ -1,6 +1,3 @@
-import ctypes
-from ctypes import Structure
-from enum import Enum
 from multiprocessing import Process, Value, Array
 from time import time, sleep
 
@@ -10,12 +7,12 @@ from .WB_MPC.ocp_abstract import OCPAbstract
 from .WB_MPC.ocp_crocoddyl import CrocOCP
 from .WB_MPC.ocp_proxddp import ProxOCP
 
-import quadruped_reactive_walking as qrw
+from typing import Type
 
 
 class Result:
     def __init__(self, pd, params):
-        self.gait = (np.zeros((params.T + 1, 4)))
+        self.gait = np.zeros((params.T + 1, 4))
         self.xs = list(np.zeros((params.T + 1, pd.nx)))
         self.us = list(np.zeros((params.T, pd.nu)))
         self.K = list(np.zeros([params.T, pd.nu, pd.ndx]))
@@ -29,13 +26,16 @@ class MPC_Wrapper:
     a parallel process
     """
 
-    def __init__(self, pd, params, footsteps, base_refs):
+    def __init__(
+        self, pd, params, footsteps, base_refs, solver_cls: Type[OCPAbstract] = CrocOCP
+    ):
         self.params = params
         self.pd = pd
         self.T = params.T
         self.nu = pd.nu
         self.nx = pd.nx
         self.ndx = pd.ndx
+        self.solver_cls = solver_cls
 
         self.multiprocessing = params.enable_multiprocessing
 
@@ -58,7 +58,7 @@ class MPC_Wrapper:
             self.out_k = Array("d", [0] * (self.T * self.nu * self.ndx))
             self.out_solving_time = Value("d", 0.0)
         else:
-            self.ocp = OCP(pd, params, footsteps, base_refs)
+            self.ocp = solver_cls(pd, params, footsteps, base_refs)
 
         self.last_available_result = Result(pd, params)
         self.new_result = Value("b", False)
@@ -105,7 +105,8 @@ class MPC_Wrapper:
         Run the MPC (synchronous version)
         """
         self.ocp.solve(k, x0, footstep, base_ref, xs, us)
-        (   self.last_available_result.gait,
+        (
+            self.last_available_result.gait,
             self.last_available_result.xs,
             self.last_available_result.us,
             self.last_available_result.K,
@@ -123,12 +124,12 @@ class MPC_Wrapper:
                 self.last_available_result.us = us
             else:
                 self.last_available_result.xs = [x0 for _ in range(self.T + 1)]
-            p = Process(target=self.MPC_asynchronous)
+            p = Process(target=self._mpc_asynchronous)
             p.start()
 
         self.add_new_data(k, x0, footstep, base_ref, xs, us)
 
-    def MPC_asynchronous(self):
+    def _mpc_asynchronous(self):
         """
         Parallel process with an infinite loop that run the asynchronous MPC
         """
@@ -141,8 +142,9 @@ class MPC_Wrapper:
             k, x0, footstep, base_ref, xs, us = self.decompress_dataIn()
 
             if k == 0:
-                loop_ocp = OCP(
-                    self.pd, self.params, self.footsteps_plan, self.base_refs)
+                loop_ocp = self.solver_cls(
+                    self.pd, self.params, self.footsteps_plan, self.base_refs
+                )
 
             loop_ocp.solve(k, x0, footstep, base_ref, xs, us)
             gait, xs, us, K, solving_time = loop_ocp.get_results()
@@ -201,7 +203,7 @@ class MPC_Wrapper:
             footstep = np.frombuffer(self.in_footstep.get_obj()).reshape((3, 4))
         with self.in_base_ref.get_lock():
             base_ref = np.frombuffer(self.in_base_ref.get_obj()).reshape(6)
-        
+
         if not self.in_warm_start.value:
             return k, x0, footstep, base_ref, None, None
 

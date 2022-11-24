@@ -8,11 +8,13 @@ from time import time
 from .ocp_abstract import OCPAbstract
 
 
+class CrocOCP(OCPAbstract):
     def __init__(self, pd: ProblemData, params, footsteps, base_refs):
         super().__init__(pd, params)
 
         self.state = crocoddyl.StateMultibody(self.pd.model)
 
+        self._init_impl(footsteps, base_refs)
 
         self.problem = crocoddyl.ShootingProblem(self.x0, self.start_rm, self.start_tm)
         self.ddp = crocoddyl.SolverFDDP(self.problem)
@@ -131,11 +133,15 @@ from .ocp_abstract import OCPAbstract
                 base_task = []
 
             self.update_model(m, tasks, base_task, support_feet)
+            self.circular_append(m)
 
         self.problem.x0 = self.x0
 
         self.initialized = True
 
+    def circular_append(self, m):
+        d = m.createData()
+        self.problem.circularAppend(m, d)
 
     def get_results(self):
         return (
@@ -302,6 +308,7 @@ from .ocp_abstract import OCPAbstract
             costs.changeCostStatus(friction_name, i in support_feet)
 
             name = "%s_forceReg" % self.pd.model.frames[i].name
+            nc = len(model.differential.contacts.active_set)
             ref_force = np.array([0, 0, self.pd.robot_weight / nc])
             ref_Force = pin.Force(ref_force, ref_force * 0)
             forceRegResidual = sobec.ResidualModelContactForce(
@@ -367,7 +374,7 @@ from .ocp_abstract import OCPAbstract
             vertical_velocity_activation = crocoddyl.ActivationModelWeightedQuad(
                 np.array([0, 0, 1, 0, 0, 0])
             )
-            
+
             name = "%s_vel_zReg" % self.pd.model.frames[i].name
             vertical_velocity_reg_cost = crocoddyl.CostModelResidual(
                 self.state,
@@ -463,7 +470,6 @@ from .ocp_abstract import OCPAbstract
 
             name = "%s_vel_zReg" % self.pd.model.frames[i].name
             costs.changeCostStatus(name, i not in support_feet)
-
 
         if list(base_task) and self.pd.base_velocity_tracking_w > 0:
             name = "base_velocity_tracking"

@@ -9,6 +9,22 @@ import quadruped_reactive_walking as qrw
 from .Controller import Controller
 from .tools.LoggerControl import LoggerControl
 
+from typing import Type, Literal
+from .WB_MPC import CrocOCP, ProxOCP
+import tap
+import argparse
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set_style("whitegrid")
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--solver", default="croc", choices=["croc", "prox"])
+    return parser.parse_args()
+
+
 params = qrw.Params()  # Object that holds all controller parameters
 
 repo = git.Repo(search_parent_directories=True)
@@ -118,7 +134,7 @@ def damp_control(device, nb_motors):
         t += params.dt_wbc
 
 
-def control_loop():
+def control_loop(args):
     """
     Main function that calibrates the robot, get it into a default waiting position then launch
     the main control loop once the user has pressed the Enter key
@@ -131,7 +147,11 @@ def control_loop():
 
     # Default position after calibration
     q_init = np.array(params.q_init.tolist())
-    controller = Controller(params, q_init, 0.0)
+    if args.solver == "croc":
+        solver_t = CrocOCP
+    else:
+        solver_t = ProxOCP
+    controller = Controller(params, q_init, 0.0, solver_t)
 
     if params.SIMULATION:
         device = PyBulletSimulator()
@@ -141,7 +161,9 @@ def control_loop():
         qc = QualisysClient(ip="140.93.16.160", body_id=0)
 
     if params.LOGGING or params.PLOTTING:
-        loggerControl = LoggerControl(controller.pd, params, log_size=params.N_SIMULATION)
+        loggerControl = LoggerControl(
+            controller.pd, params, log_size=params.N_SIMULATION
+        )
 
     if params.SIMULATION:
         device.Init(
@@ -226,6 +248,8 @@ def control_loop():
             loggerControl.plot(save=True, fileName=str(log_path))
             print("Plots saved in ", str(log_path) + "/")
 
+            plt.show()
+
     if params.SIMULATION and params.enable_pyb_GUI:
         device.Stop()
 
@@ -237,5 +261,5 @@ if __name__ == "__main__":
     import os
     os.nice(-20)
 
-    log = control_loop()
-    # quit()
+    args = parse_args()
+    log = control_loop(args)

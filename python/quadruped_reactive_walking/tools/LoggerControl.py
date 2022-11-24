@@ -183,8 +183,6 @@ class LoggerControl:
         # if not self.params.enable_multiprocessing:
         #     self.plot_OCP_times()
 
-        plt.show()
-
     def plot_states(self, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
