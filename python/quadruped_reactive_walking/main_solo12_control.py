@@ -239,7 +239,7 @@ def control_loop(args):
     if params.LOGGING:
         date_str = datetime.now().strftime("%Y_%m_%d_%H_%M")
         log_path = Path("/tmp") / "logs" / date_str
-        log_path.mkdir(parents=True)
+        log_path.mkdir(parents=True, exist_ok=True)
         loggerControl.save(str(log_path))
         with open(str(log_path / "readme.txt"), "w") as f:
             f.write(msg)
