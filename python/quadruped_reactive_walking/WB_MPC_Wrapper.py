@@ -27,7 +27,13 @@ class MPC_Wrapper:
     """
 
     def __init__(
-        self, pd, params, footsteps, base_refs, solver_cls: Type[OCPAbstract] = CrocOCP
+        self,
+        pd,
+        params,
+        footsteps,
+        base_refs,
+        solver_cls: Type[OCPAbstract] = CrocOCP,
+        **kwargs
     ):
         self.params = params
         self.pd = pd
@@ -58,7 +64,7 @@ class MPC_Wrapper:
             self.out_k = Array("d", [0] * (self.T * self.nu * self.ndx))
             self.out_solving_time = Value("d", 0.0)
         else:
-            self.ocp = solver_cls(pd, params, footsteps, base_refs)
+            self.ocp = solver_cls(pd, params, footsteps, base_refs, **kwargs)
 
         self.last_available_result = Result(pd, params)
         self.new_result = Value("b", False)

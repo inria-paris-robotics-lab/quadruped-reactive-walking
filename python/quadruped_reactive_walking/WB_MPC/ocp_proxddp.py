@@ -17,13 +17,11 @@ from .Target import Target
 from .ocp_abstract import OCPAbstract
 from .ocp_crocoddyl import CrocOCP
 
-import yaml
-
 
 class ProxOCP(CrocOCP):
     """Solve the OCP using proxddp."""
 
-    def __init__(self, pd: ProblemData, params, footsteps, base_refs):
+    def __init__(self, pd: ProblemData, params, footsteps, base_refs, run_croc=False):
         super().__init__(pd, params, footsteps, base_refs)
 
         self.rdata = self.rmodel.createData()
@@ -31,9 +29,7 @@ class ProxOCP(CrocOCP):
             self.problem
         )
 
-        with open("config/ocp.yaml") as f:
-            config = yaml.safe_load(f)["prox_fddp"]
-        self.run_croc_compare = config["run_croc"]
+        self.run_croc_compare = run_croc
 
         verbose = proxddp.VerboseLevel.QUIET
         self.verbose = verbose

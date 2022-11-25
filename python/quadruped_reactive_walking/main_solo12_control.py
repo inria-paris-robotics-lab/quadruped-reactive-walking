@@ -18,11 +18,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 sns.set_style("whitegrid")
+plt.rcParams["lines.linewidth"] = 1.0
 
 
 def parse_args():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument("--solver", default="croc", choices=["croc", "prox"])
+    parser.add_argument("--run_croc", action="store_true")
     return parser.parse_args()
 
 
@@ -146,13 +148,15 @@ def control_loop(args):
     if not params.SIMULATION:
         params.enable_pyb_GUI = False
 
+    solver_kwargs = {"run_croc": args.run_croc}
+
     # Default position after calibration
     q_init = np.array(params.q_init.tolist())
     if args.solver == "croc":
         solver_t = CrocOCP
     else:
         solver_t = ProxOCP
-    controller = Controller(params, q_init, 0.0, solver_t)
+    controller = Controller(params, q_init, 0.0, solver_t, solver_kwargs=solver_kwargs)
 
     if params.SIMULATION:
         device = PyBulletSimulator()
@@ -249,7 +253,7 @@ def control_loop(args):
             f.write(msg)
 
         if params.PLOTTING:
-            loggerControl.plot(save=True, fileName=str(log_path))
+            # loggerControl.plot(save=True, fileName=str(log_path))
             print("Plots saved in ", str(log_path) + "/")
 
             mpc = controller.mpc
@@ -269,15 +273,15 @@ def control_loop(args):
                 fig.supxlabel("MPC cycle $k$")
 
                 plt.sca(axs[1])
-                plt.plot(ocp.prox_stops, label="proxddp", ls="dotted")
-                plt.plot(ocp.croc_stops, label="crocoddyl", ls="-")
+                plt.plot(ocp.prox_stops, label="proxddp", ls="-")
+                plt.plot(ocp.croc_stops, label="crocoddyl", ls="dotted")
                 plt.yscale("log")
                 plt.title("$\\ell_\\infty$-norm of stopping criterion")
                 plt.legend()
 
                 plt.sca(axs[2])
-                plt.plot(ocp.prox_stops_2, label="prox", ls="dotted")
-                plt.plot(ocp.croc_stops_2, label="croc", ls="-")
+                plt.plot(ocp.prox_stops_2, label="prox", ls="-")
+                plt.plot(ocp.croc_stops_2, label="croc", ls="dotted")
                 plt.title("Squared norm stopping criterion")
                 plt.yscale("log")
                 plt.legend()

@@ -9,7 +9,7 @@ from .ocp_abstract import OCPAbstract
 
 
 class CrocOCP(OCPAbstract):
-    def __init__(self, pd: ProblemData, params, footsteps, base_refs):
+    def __init__(self, pd: ProblemData, params, footsteps, base_refs, **kwargs):
         super().__init__(pd, params)
 
         self.state = crocoddyl.StateMultibody(self.pd.model)

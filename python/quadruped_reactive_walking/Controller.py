@@ -56,7 +56,12 @@ class DummyDevice:
 
 class Controller:
     def __init__(
-        self, params, q_init, t, solver_cls: Type[WB_MPC.OCPAbstract] = WB_MPC.CrocOCP
+        self,
+        params,
+        q_init,
+        t,
+        solver_cls: Type[WB_MPC.OCPAbstract] = WB_MPC.CrocOCP,
+        solver_kwargs={},
     ):
         """
         Function that computes the reference control (tau, q_des, v_des and gains)
@@ -103,7 +108,12 @@ class Controller:
                 self.footsteps.append(self.target_footstep.copy())
 
         self.mpc = WB_MPC_Wrapper.MPC_Wrapper(
-            self.pd, params, self.footsteps, self.base_refs, solver_cls=solver_cls
+            self.pd,
+            params,
+            self.footsteps,
+            self.base_refs,
+            solver_cls=solver_cls,
+            **solver_kwargs
         )
         self.gait = np.array([[1, 1, 1, 1]] * params.starting_nodes)
         self.mpc_solved = False
