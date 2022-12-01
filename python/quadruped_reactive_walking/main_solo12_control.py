@@ -192,8 +192,8 @@ def control_loop(args):
     k_log_whole = 0
     T_whole = time.time()
     dT_whole = 0.0
-
-    with tqdm.tqdm(desc="MPC cycles", total=t_max) as prog_bar:
+    disable = False
+    with tqdm.tqdm(desc="MPC cycles", total=t_max, disable=disable) as prog_bar:
         while (not device.is_timeout) and (t < t_max) and (not controller.error):
             t_start_whole = time.time()
 
@@ -273,22 +273,22 @@ def control_loop(args):
                 fig.supxlabel("MPC cycle $k$")
 
                 plt.sca(axs[1])
-                plt.plot(ocp.prox_stops, label="proxddp", ls="-")
-                plt.plot(ocp.croc_stops, label="crocoddyl", ls="dotted")
+                plt.plot(ocp.prox_stops, label="algtr", ls="-")
+                plt.plot(ocp.croc_stops, label="croco", ls="dotted")
                 plt.yscale("log")
                 plt.title("$\\ell_\\infty$-norm of stopping criterion")
                 plt.legend()
 
                 plt.sca(axs[2])
-                plt.plot(ocp.prox_stops_2, label="prox", ls="-")
-                plt.plot(ocp.croc_stops_2, label="croc", ls="dotted")
+                plt.plot(ocp.prox_stops_2, label="algtr", ls="-")
+                plt.plot(ocp.croc_stops_2, label="croco", ls="dotted")
                 plt.title("Squared norm stopping criterion")
                 plt.yscale("log")
                 plt.legend()
 
                 plt.sca(axs[3])
-                plt.plot(ocp.prox_iters, label="proxddp")
-                plt.plot(ocp.croc_iters, label="crocoddyl")
+                plt.plot(ocp.prox_iters, label="algtr")
+                plt.plot(ocp.croc_iters, label="croco")
                 plt.title("Number of OCP iterations")
                 plt.grid(visible=True, which="minor", axis="y")
                 plt.legend()
