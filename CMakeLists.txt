@@ -21,6 +21,7 @@ endif()
 # Project options
 option(BUILD_PYTHON_INTERFACE "Build the python binding" ON)
 cmake_dependent_option(INSTALL_PYTHON_INTERFACE_ONLY "Install *ONLY* the python bindings" OFF BUILD_PYTHON_INTERFACE OFF)
+cmake_dependent_option(GENERATE_PYTHON_STUBS "Generate the Python stubs associated to the Python library" ON BUILD_PYTHON_INTERFACE OFF)
 option(SUFFIX_SO_VERSION "Suffix library name with its version" ON)
 
 # Project configuration

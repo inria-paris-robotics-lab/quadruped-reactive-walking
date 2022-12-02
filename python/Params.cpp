@@ -6,9 +6,10 @@ template <typename Params>
 struct ParamsVisitor : public bp::def_visitor<ParamsVisitor<Params>> {
   template <class PyClassParams>
   void visit(PyClassParams& cl) const {
-    cl.def(bp::init<>(bp::arg(""), "Default constructor."))
-
-        .def("initialize", &Params::initialize, bp::args("file_path"), "Initialize Params from Python.\n")
+    cl
+        .def(bp::init<std::string>(bp::args("self", "config_path")))
+        .def(bp::init<>(bp::args("self"), "Default constructor."))
+        .def("initialize", &Params::initialize, bp::args("self", "file_path"), "Initialize Params from Python.\n")
 
         // Read Params from Python
         .def_readwrite("config_file", &Params::config_file)
@@ -43,7 +44,7 @@ struct ParamsVisitor : public bp::def_visitor<ParamsVisitor<Params>> {
         .def_readonly("gait", &Params::get_gait)
         .def_readonly("t_switch", &Params::get_t_switch)
         .def_readonly("v_switch", &Params::get_v_switch)
-        .def("set_v_switch", &Params::set_v_switch, bp::args("v_switch"), "Set v_switch matrix from Python.\n")
+        .def("set_v_switch", &Params::set_v_switch, bp::args("self", "v_switch"), "Set v_switch matrix from Python.\n")
         .def_readwrite("enable_pyb_GUI", &Params::enable_pyb_GUI)
         .def_readwrite("enable_corba_viewer", &Params::enable_corba_viewer)
         .def_readwrite("enable_multiprocessing", &Params::enable_multiprocessing)

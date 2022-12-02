@@ -1,3 +1,7 @@
+if (GENERATE_PYTHON_STUBS)
+  include(${PROJECT_SOURCE_DIR}/cmake/stubs.cmake)
+endif (GENERATE_PYTHON_STUBS)
+
 set(${PY_NAME}_SOURCES
   main.cpp
   Joystick.cpp
@@ -48,6 +52,11 @@ set(${PY_NAME}_TOOLS_PYTHON
   kinematics_utils.py
   Interpolator.py
   )
+
+if(GENERATE_PYTHON_STUBS)
+  load_stubgen()
+  generate_stubs(${CMAKE_CURRENT_BINARY_DIR} ${PY_NAME} ${PYTHON_SITELIB})
+endif(GENERATE_PYTHON_STUBS)
 
 foreach(python ${${PY_NAME}_PYTHON})
   PYTHON_INSTALL_ON_SITE(${PY_NAME} ${python})
