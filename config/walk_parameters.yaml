@@ -2,7 +2,7 @@ robot:
     # General parameters
     config_file: ${HOME}/git-repos/quadruped-reactive-walking/config/config_solo12.yaml  #  Name of the yaml file containing hardware information
 
-    interface: enp2s0  # Name of the communication inerface (check with ifconfig)
+    interface: enp2s0  # Name of the communication interface (check with ifconfig)
     LOGGING: true  # Enable/disable logging during the experiment
     PLOTTING: true  # Enable/disable automatic plotting at the end of the experiment
     DEMONSTRATION: false  # Enable/disable demonstration functionalities
