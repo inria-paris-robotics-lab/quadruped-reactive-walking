@@ -34,12 +34,6 @@ repo = git.Repo(search_parent_directories=True)
 sha = repo.head.object.hexsha
 msg = repo.head.object.message + "\nCommit: " + sha
 
-if params.SIMULATION:
-    from .tools.pybullet_sim import PyBulletSimulator
-else:
-    import libodri_control_interface_pywrap as oci
-    from .tools.qualisysClient import QualisysClient
-
 
 def get_input():
     """
@@ -137,6 +131,21 @@ def damp_control(device, nb_motors):
         t += params.dt_wbc
 
 
+def get_device(is_simulation: bool) -> tuple:
+    if is_simulation:
+        from .tools.pybullet_sim import PyBulletSimulator
+
+        device = PyBulletSimulator()
+        qc = None
+    else:
+        import libodri_control_interface_pywrap as oci
+        from .tools.qualisysClient import QualisysClient
+
+        device = oci.robot_from_yaml_file(params.config_file)
+        qc = QualisysClient(ip="140.93.16.160", body_id=0)
+    return (device, qc)
+
+
 def control_loop(args):
     """
     Main function that calibrates the robot, get it into a default waiting position then launch
@@ -156,14 +165,9 @@ def control_loop(args):
         solver_t = CrocOCP
     else:
         solver_t = ProxOCP
-    controller = Controller(params, q_init, 0.0, solver_t, solver_kwargs=solver_kwargs)
 
-    if params.SIMULATION:
-        device = PyBulletSimulator()
-        qc = None
-    else:
-        device = oci.robot_from_yaml_file(params.config_file)
-        qc = QualisysClient(ip="140.93.16.160", body_id=0)
+    controller = Controller(params, q_init, 0.0, solver_t, solver_kwargs=solver_kwargs)
+    device, qc = get_device(params.SIMULATION)
 
     if params.LOGGING or params.PLOTTING:
         loggerControl = LoggerControl(
@@ -193,7 +197,16 @@ def control_loop(args):
     T_whole = time.time()
     dT_whole = 0.0
     disable = False
-    with tqdm.tqdm(desc="MPC cycles", total=t_max, disable=disable) as prog_bar:
+    bar_format = (
+        "{desc}: {percentage:.4f}%|{bar}| {n:.3f}/{total:.3f} [{elapsed}<{remaining}]"
+    )
+    with tqdm.tqdm(
+        desc="MPC cycles",
+        total=t_max + params.dt_wbc,
+        unit="s",
+        disable=disable,
+        bar_format=bar_format,
+    ) as prog_bar:
         while (not device.is_timeout) and (t < t_max) and (not controller.error):
             t_start_whole = time.time()
 
@@ -257,16 +270,15 @@ def control_loop(args):
             print("Plots saved in ", str(log_path) + "/")
 
             mpc = controller.mpc
-            ocp = mpc.ocp
-            if isinstance(ocp, ProxOCP):
-                ocp: ProxOCP
+
+            def plot_prox_ocp(ocp: ProxOCP):
                 nplt = 4
                 h = 7.2
                 fig, axs = plt.subplots(nplt, 1, figsize=(6.4, h), layout="constrained")
                 fig: plt.Figure
                 plt.sca(axs[0])
-                plt.plot(ocp.x_solver_errs, label="state $x$")
-                plt.plot(ocp.u_solver_errs, label="control $u$")
+                plt.plot(ocp.x_solver_errs, label="state $x$", c="b")
+                plt.plot(ocp.u_solver_errs, label="control $u$", c="r", ls="dotted")
                 plt.legend()
                 plt.yscale("log")
                 plt.title("$\\ell_\\infty$ error between solver solutions")
@@ -292,6 +304,9 @@ def control_loop(args):
                 plt.title("Number of OCP iterations")
                 plt.grid(visible=True, which="minor", axis="y")
                 plt.legend()
+
+            if hasattr(mpc, "ocp") and isinstance(mpc.ocp, ProxOCP):
+                plot_prox_ocp(mpc.ocp)
 
             plt.show()
 
