@@ -287,8 +287,8 @@ def control_loop(args):
                 plt.legend()
 
                 plt.sca(axs[3])
-                plt.plot(ocp.prox_iters, label="algtr")
-                plt.plot(ocp.croc_iters, label="croco")
+                plt.plot(ocp.prox_iters, label="algtr", ls="-")
+                plt.plot(ocp.croc_iters, label="croco", ls="dotted")
                 plt.title("Number of OCP iterations")
                 plt.grid(visible=True, which="minor", axis="y")
                 plt.legend()

@@ -783,7 +783,6 @@ class PyBulletSimulator:
 
         # Linear and angular velocity of the trunk (PyBullet world frame)
         self.baseVel = pyb.getBaseVelocity(self.pyb_sim.robotId)
-        # print("baseVel: ", np.array([self.baseVel[0]]))
 
         # Orientation of the base (quaternion)
         self.imu.attitude_quaternion[:] = np.array(self.baseState[1])

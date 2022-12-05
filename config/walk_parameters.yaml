@@ -25,6 +25,7 @@ robot:
     dt_mpc: 0.012  # Time step of the model predictive control
     type_MPC: 3  # Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
     save_guess: false # true to interpolate the impedance quantities between nodes of the MPC
+    max_iter: 1  # maximum number of solver iterations
     movement: "walk" # name of the movement to perform
     interpolate_mpc: true # true to interpolate the impedance quantities between nodes of the MPC
     interpolation_type: 3 # 0,1,2,3 decide which kind of interpolation is used
@@ -40,13 +41,13 @@ robot:
     gait: [20, 1, 0, 0, 1,
            20, 0, 1, 1, 0]
     gait_repetitions: 200
-       
+
 
     # Parameters of Joystick
     gp_alpha_vel: 0.003  # Coefficient of the low pass filter applied to gamepad velocity
     gp_alpha_pos: 0.005  # Coefficient of the low pass filter applied to gamepad position
     t_switch: [  0,   1,   3,  4,  5,   8,   9,   10]
-    v_switch: [0.0, 0.3,  0.3,  0, -0.3,  -0.3, 0.0,  0.0, 
+    v_switch: [0.0, 0.3,  0.3,  0, -0.3,  -0.3, 0.0,  0.0,
                0.0, 0.00, 0.0, 0.0, 0.0,  0.0,  0.0,  0.0,
                0.0, 0.0, 0.0, 0.0, 0.0,  0.0,  0.0,  0.0,
                0.0, 0.0, 0.0, 0.0, 0.0,  0.0,  0.0,  0.0,

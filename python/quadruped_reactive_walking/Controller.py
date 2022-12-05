@@ -188,21 +188,16 @@ class Controller:
                 self.error = True
                 print("MPC Problem")
 
-            # print(self.gait)
-            # print("-----------------------")
-
         t_mpc = time.time()
         self.t_mpc = t_mpc - t_measures
 
         if not self.error:
-            self.mpc_result = self.mpc.get_latest_result()
+            self.mpc_result: Result = self.mpc.get_latest_result()
             self.gait = self.mpc_result.gait
             xs = self.mpc_result.xs
             if self.mpc_result.new_result:
                 self.mpc_solved = True
                 self.k_new = self.k
-                # print(f"MPC solved in {self.k - self.k_solve} iterations")
-                # self.plot_mpc()
 
             if not self.initialized and self.params.save_guess:
                 self.save_guess()

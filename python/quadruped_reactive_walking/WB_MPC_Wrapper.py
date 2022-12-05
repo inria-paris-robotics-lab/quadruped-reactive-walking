@@ -66,7 +66,7 @@ class MPC_Wrapper:
         else:
             self.ocp = solver_cls(pd, params, footsteps, base_refs, **kwargs)
 
-        self.last_available_result = Result(pd, params)
+        self.last_available_result: Result = Result(pd, params)
         self.new_result = Value("b", False)
 
     def solve(self, k, x0, footstep, base_ref, xs=None, us=None):

@@ -16,12 +16,13 @@ from .problem_data import ProblemData
 from .Target import Target
 from .ocp_abstract import OCPAbstract
 from .ocp_crocoddyl import CrocOCP
+from quadruped_reactive_walking import Params
 
 
 class ProxOCP(CrocOCP):
     """Solve the OCP using proxddp."""
 
-    def __init__(self, pd: ProblemData, params, footsteps, base_refs, run_croc=False):
+    def __init__(self, pd: ProblemData, params: Params, footsteps, base_refs, run_croc=False):
         super().__init__(pd, params, footsteps, base_refs)
 
         self.rdata = self.rmodel.createData()
@@ -31,15 +32,16 @@ class ProxOCP(CrocOCP):
 
         self.run_croc_compare = run_croc
 
-        verbose = proxddp.VerboseLevel.QUIET
-        self.verbose = verbose
+        self.verbose = proxddp.VerboseLevel.QUIET
         self.tol = 1e-3
-        self.max_iter = 50
         self.mu_init = 1e-5
-        self.prox_ddp = proxddp.SolverFDDP(
-            self.tol, self.verbose, max_iters=self.max_iter
-        )
+        # self.prox_ddp = proxddp.SolverProxDDP(self.tol, self.mu_init)
+        self.prox_ddp = proxddp.SolverFDDP(self.tol)
+        self.prox_ddp.verbose = self.verbose
+        self.prox_ddp.max_iters = self.max_iter
         self.prox_ddp.setup(self.my_problem)
+
+        # self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
 
         self.x_solver_errs = []
         self.u_solver_errs = []

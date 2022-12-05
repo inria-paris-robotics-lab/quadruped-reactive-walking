@@ -2,6 +2,7 @@ from datetime import datetime
 from time import time
 import numpy as np
 from .kinematics_utils import get_translation, get_translation_array
+from ..Controller import Controller
 
 
 class LoggerControl:
@@ -78,7 +79,7 @@ class LoggerControl:
         self.wbc_FF = np.zeros([size, 12])  # gains for the feedforward torques
         self.wbc_tau_ff = np.zeros([size, 12])  # feedforward torques
 
-    def sample(self, controller, device, qualisys=None):
+    def sample(self, controller: Controller, device, qualisys=None):
         # Logging from the device (data coming from the robot)
         self.q_mes[self.i] = device.joints.positions
         self.v_mes[self.i] = device.joints.velocities

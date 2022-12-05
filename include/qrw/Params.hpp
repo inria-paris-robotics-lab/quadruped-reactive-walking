@@ -24,11 +24,10 @@
 
 class Params {
  public:
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
+  /// \brief Constructor using a path to a configuration file.
+  Params(const std::string &file_path);
+
   /// \brief Empty constructor
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
   Params();
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -36,7 +35,7 @@ class Params {
   /// \brief Destructor.
   ///
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  ~Params() {}
+  ~Params() = default;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ///
@@ -97,6 +96,7 @@ class Params {
   int N_periods;                // Number of gait periods in the MPC prediction horizon
   int type_MPC;                 // Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
   bool save_guess;              // true to save the initial result of the mpc
+  int max_iter;                 // maximum iters
   std::string movement;         // Name of the mmovemnet to perform
   bool interpolate_mpc;         // true to interpolate the impedance quantities, otherwise integrate
   int interpolation_type;       // type of interpolation used
@@ -216,7 +216,7 @@ namespace yaml_control_interface {
   if (!f.good()) {                                                                                          \
     std::ostringstream oss;                                                                                 \
     oss << "Error: Problem opening the file [" << filename << "], from src file: [" << __FILE__             \
-        << "], in function: [" << __FUNCTION__ << "], line: [" << __LINE__ << ". The file may not exists."; \
+        << "], in function: [" << __FUNCTION__ << "], line: [" << __LINE__ << ". The file may not exist."; \
     throw std::runtime_error(oss.str());                                                                    \
   }                                                                                                         \
   assert(true)

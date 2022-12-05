@@ -9,7 +9,7 @@ class OCPAbstract(abc.ABC):
     def __init__(self, pd: ProblemData, params: qrw.Params):
         self.pd = pd
         self.params = params
-        self.max_iter = 1000 if params.save_guess else 1
+        self.max_iter = 1000 if params.save_guess else params.max_iter
 
     def _init_impl(self, footsteps, base_refs):
         """Set the problem parameters."""

@@ -2,7 +2,7 @@
 
 using namespace yaml_control_interface;
 
-Params::Params()
+Params::Params(const std::string &file_path)
     : config_file(""),
       interface(""),
       DEMONSTRATION(false),
@@ -24,6 +24,7 @@ Params::Params()
       N_periods(0),
       type_MPC(0),
       save_guess(false),
+      max_iter(0),
       movement(""),
       interpolate_mpc(true),
       interpolation_type(0),
@@ -77,12 +78,15 @@ Params::Params()
       footsteps_init(12, 0.0),            // Fill with zeros, will be filled with values later
       footsteps_under_shoulders(12, 0.0)  // Fill with zeros, will be filled with values later
 {
+  auto fp = expand_env(file_path);
+  initialize(fp);
+}
+
 #ifndef WALK_PARAMETERS_YAML
   #error Variable WALK_PARAMETERS_YAML not defined.
-#else
-  initialize(WALK_PARAMETERS_YAML);
 #endif
-}
+Params::Params() : Params(WALK_PARAMETERS_YAML) {}
+
 
 void Params::initialize(const std::string& file_path) {
   // Load YAML file
@@ -95,10 +99,7 @@ void Params::initialize(const std::string& file_path) {
 
   // Retrieve robot parameters
   assert_yaml_parsing(robot_node, "robot", "config_file");
-  config_file = robot_node["config_file"].as<std::string>();
-  {
-    config_file = expand_env(config_file);
-  }
+  config_file = expand_env(robot_node["config_file"].as<std::string>());
 
   assert_yaml_parsing(robot_node, "robot", "interface");
   interface = robot_node["interface"].as<std::string>();
@@ -156,6 +157,9 @@ void Params::initialize(const std::string& file_path) {
 
   assert_yaml_parsing(robot_node, "robot", "save_guess");
   save_guess = robot_node["save_guess"].as<bool>();
+
+  assert_yaml_parsing(robot_node, "robot", "max_iter");
+  max_iter = robot_node["max_iter"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "movement");
   movement = robot_node["movement"].as<std::string>();
