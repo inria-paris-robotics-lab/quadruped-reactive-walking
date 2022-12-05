@@ -26,6 +26,7 @@ robot:
     type_MPC: 3  # Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
     save_guess: false # true to interpolate the impedance quantities between nodes of the MPC
     max_iter: 1  # maximum number of solver iterations
+    verbose: false  # solver verbosity
     movement: "walk" # name of the movement to perform
     interpolate_mpc: true # true to interpolate the impedance quantities between nodes of the MPC
     interpolation_type: 3 # 0,1,2,3 decide which kind of interpolation is used

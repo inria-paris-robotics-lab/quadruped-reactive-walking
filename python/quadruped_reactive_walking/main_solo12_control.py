@@ -196,7 +196,7 @@ def control_loop(args):
     k_log_whole = 0
     T_whole = time.time()
     dT_whole = 0.0
-    disable = False
+    disable = params.verbose
     bar_format = (
         "{desc}: {percentage:.4f}%|{bar}| {n:.3f}/{total:.3f} [{elapsed}<{remaining}]"
     )
@@ -279,6 +279,7 @@ def control_loop(args):
                 plt.sca(axs[0])
                 plt.plot(ocp.x_solver_errs, label="state $x$", c="b")
                 plt.plot(ocp.u_solver_errs, label="control $u$", c="r", ls="dotted")
+                plt.plot(ocp.fb_errs, label="feedbacks $K$", c="g", ls="dotted")
                 plt.legend()
                 plt.yscale("log")
                 plt.title("$\\ell_\\infty$ error between solver solutions")

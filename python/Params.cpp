@@ -29,6 +29,7 @@ struct ParamsVisitor : public bp::def_visitor<ParamsVisitor<Params>> {
         .def_readwrite("predefined_vel", &Params::predefined_vel)
         .def_readwrite("save_guess", &Params::save_guess)
         .def_readwrite("max_iter", &Params::max_iter)
+        .def_readwrite("verbose", &Params::verbose)
         .def_readwrite("movement", &Params::movement)
         .def_readwrite("interpolate_mpc", &Params::interpolate_mpc)
         .def_readwrite("interpolation_type", &Params::interpolation_type)

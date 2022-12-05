@@ -97,6 +97,7 @@ class Params {
   int type_MPC;                 // Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
   bool save_guess;              // true to save the initial result of the mpc
   int max_iter;                 // maximum iters
+  bool verbose;                 // verbosity
   std::string movement;         // Name of the mmovemnet to perform
   bool interpolate_mpc;         // true to interpolate the impedance quantities, otherwise integrate
   int interpolation_type;       // type of interpolation used

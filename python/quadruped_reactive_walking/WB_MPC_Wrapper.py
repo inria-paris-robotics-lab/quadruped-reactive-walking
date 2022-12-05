@@ -17,6 +17,7 @@ class Result:
         self.us = list(np.zeros((params.T, pd.nu)))
         self.K = list(np.zeros([params.T, pd.nu, pd.ndx]))
         self.solving_duration = 0.0
+        self.num_iters = 0
         self.new_result = False
 
 
@@ -62,6 +63,7 @@ class MPC_Wrapper:
             self.out_xs = Array("d", [0] * ((self.T + 1) * self.nx))
             self.out_us = Array("d", [0] * (self.T * self.nu))
             self.out_k = Array("d", [0] * (self.T * self.nu * self.ndx))
+            self.out_num_iters = Value("i", 0)
             self.out_solving_time = Value("d", 0.0)
         else:
             self.ocp = solver_cls(pd, params, footsteps, base_refs, **kwargs)
@@ -97,6 +99,7 @@ class MPC_Wrapper:
                     self.last_available_result.us,
                     self.last_available_result.K,
                     self.last_available_result.solving_duration,
+                    self.last_available_result.num_iters,
                 ) = self.decompress_dataOut()
 
             self.last_available_result.new_result = True
@@ -154,7 +157,7 @@ class MPC_Wrapper:
 
             loop_ocp.solve(k, x0, footstep, base_ref, xs, us)
             gait, xs, us, K, solving_time = loop_ocp.get_results()
-            self.compress_dataOut(gait, xs, us, K, solving_time)
+            self.compress_dataOut(gait, xs, us, K, loop_ocp.num_iters, solving_time)
             self.new_result.value = True
 
     def add_new_data(self, k, x0, footstep, base_ref, xs, us):
@@ -222,7 +225,7 @@ class MPC_Wrapper:
 
         return k, x0, footstep, base_ref, xs, us
 
-    def compress_dataOut(self, gait, xs, us, K, solving_time):
+    def compress_dataOut(self, gait, xs, us, K, num_iters, solving_time):
         """
         Compress data to a C-type structure that belongs to the shared memory to
         retrieve data in the main control loop from the asynchronous MPC
@@ -244,6 +247,7 @@ class MPC_Wrapper:
             np.frombuffer(self.out_k.get_obj()).reshape([self.T, self.nu, self.ndx])[
                 :, :, :
             ] = np.array(K)
+        self.out_num_iters = num_iters
         self.out_solving_time.value = solving_time
 
     def decompress_dataOut(self):
@@ -257,9 +261,10 @@ class MPC_Wrapper:
         K = list(
             np.frombuffer(self.out_k.get_obj()).reshape([self.T, self.nu, self.ndx])
         )
+        num_iters = self.out_num_iters.value
         solving_time = self.out_solving_time.value
 
-        return gait, xs, us, K, solving_time
+        return gait, xs, us, K, solving_time, num_iters
 
     def stop_parallel_loop(self):
         """

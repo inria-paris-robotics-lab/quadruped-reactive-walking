@@ -64,6 +64,7 @@ class LoggerControl:
         self.ocp_xs = np.zeros([size, params.T + 1, pd.nx])
         self.ocp_us = np.zeros([size, params.T, pd.nu])
         self.ocp_K = np.zeros([size, self.pd.nu, self.pd.ndx])
+        self.ocp_num_iters = np.zeros([size], dtype=int)
         self.MPC_equivalent_Kp = np.zeros([size, self.pd.nu])
         self.MPC_equivalent_Kd = np.zeros([size, self.pd.nu])
 
@@ -122,6 +123,7 @@ class LoggerControl:
         self.ocp_xs[self.i] = np.array(controller.mpc_result.xs)
         self.ocp_us[self.i] = np.array(controller.mpc_result.us)
         self.ocp_K[self.i] = controller.mpc_result.K[0]
+        self.ocp_num_iters[self.i] = controller.mpc_result.num_iters
         self.MPC_equivalent_Kp[self.i] = controller.mpc_result.K[0].diagonal()
         self.MPC_equivalent_Kd[self.i] = controller.mpc_result.K[0].diagonal(3)
 

@@ -14,10 +14,34 @@ class CrocOCP(OCPAbstract):
 
         self.state = crocoddyl.StateMultibody(self.pd.model)
 
-        self._init_impl(footsteps, base_refs)
+        # Set the problem parameters
+        self.initialized = False
+        self.t_problem_update = 0
+        self.t_update_last_model = 0.0
+        self.t_shift = 0.0
+
+        params = self.params
+        self.life_gait = params.gait
+        self.starting_gait = np.array([[1, 1, 1, 1]] * params.starting_nodes)
+        self.ending_gait = np.array([[1, 1, 1, 1]] * params.ending_nodes)
+        self.initialization_gait = np.concatenate(
+            [self.starting_gait, self.life_gait, self.ending_gait]
+        )
+        self.current_gait = np.append(
+            self.starting_gait, self.ending_gait[0].reshape(1, -1), axis=0
+        )
+        self.x0 = self.pd.x0
+
+        self.life_rm, self.life_tm = self.initialize_models(
+            self.life_gait, footsteps, base_refs
+        )
+        self.start_rm, self.start_tm = self.initialize_models(self.ending_gait)
+        self.end_rm, self.end_tm = self.initialize_models(self.ending_gait)
 
         self.problem = crocoddyl.ShootingProblem(self.x0, self.start_rm, self.start_tm)
         self.ddp = crocoddyl.SolverFDDP(self.problem)
+        if params.verbose:
+            self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
 
     def initialize_models(self, gait, footsteps=[], base_refs=[]):
         models = []
@@ -58,13 +82,13 @@ class CrocOCP(OCPAbstract):
         t_warm_start = time()
         self.t_warm_start = t_warm_start - t_update
 
-        self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
         self.ddp.solve(xs, us, self.max_iter, False)
 
         t_ddp = time()
         self.t_ddp = t_ddp - t_warm_start
 
         self.t_solve = time() - t_start
+        self.num_iters = self.ddp.iter
 
     def make_ocp(self, k, footstep, base_task):
         """

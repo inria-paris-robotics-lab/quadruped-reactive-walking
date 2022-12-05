@@ -22,10 +22,11 @@ from quadruped_reactive_walking import Params
 class ProxOCP(CrocOCP):
     """Solve the OCP using proxddp."""
 
-    def __init__(self, pd: ProblemData, params: Params, footsteps, base_refs, run_croc=False):
+    def __init__(
+        self, pd: ProblemData, params: Params, footsteps, base_refs, run_croc=False
+    ):
         super().__init__(pd, params, footsteps, base_refs)
 
-        self.rdata = self.rmodel.createData()
         self.my_problem: proxddp.TrajOptProblem = proxddp.croc.convertCrocoddylProblem(
             self.problem
         )
@@ -33,6 +34,9 @@ class ProxOCP(CrocOCP):
         self.run_croc_compare = run_croc
 
         self.verbose = proxddp.VerboseLevel.QUIET
+        if params.verbose:
+            self.verbose = proxddp.VerboseLevel.VERBOSE
+            self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
         self.tol = 1e-3
         self.mu_init = 1e-5
         # self.prox_ddp = proxddp.SolverProxDDP(self.tol, self.mu_init)
@@ -41,10 +45,9 @@ class ProxOCP(CrocOCP):
         self.prox_ddp.max_iters = self.max_iter
         self.prox_ddp.setup(self.my_problem)
 
-        # self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
-
         self.x_solver_errs = []
         self.u_solver_errs = []
+        self.fb_errs = []
         self.prox_stops_2 = []
         self.croc_stops_2 = []
         self.prox_stops = []
@@ -53,8 +56,7 @@ class ProxOCP(CrocOCP):
         self.croc_iters = []
 
     def solve(self, k, x0, footstep, base_ref, xs_init=None, us_init=None):
-        import pprint
-
+        max_iter = self.max_iter
         t_start = time.time()
         self.x0 = x0
         self.make_ocp(k, footstep, base_ref)
@@ -74,13 +76,15 @@ class ProxOCP(CrocOCP):
         t_warm_start = time.time()
         self.t_warm_start = t_warm_start - t_update
 
+        self.prox_ddp.max_iters = max_iter
         self.prox_ddp.run(self.my_problem, xs, us)
-        self.prox_ddp.reg_init = self.prox_ddp.xreg
 
         # compute proxddp's criteria
         ws = self.prox_ddp.getWorkspace()
-        qparams = ws.q_params
-        Qus = [qp.Qu for qp in qparams]
+        if hasattr(ws, "Qus_ddp"):
+            Qus = ws.Qus_ddp
+        else:
+            Qus = [q.Qu for q in ws.q_params]
         prox_norm_2 = sum(q.dot(q) for q in Qus)
 
         res = self.prox_ddp.getResults()
@@ -92,19 +96,20 @@ class ProxOCP(CrocOCP):
         if self.run_croc_compare:
             # run crocoddyl
             self.ddp.th_stop = prox_norm_2
-            self.ddp.solve(xs, us, self.max_iter, False)
+            self.ddp.solve(xs, us, max_iter, False)
 
-            croc_norm_inf = max([np.linalg.norm(q, np.inf) for q in self.ddp.Qu])
-            croc_norm_2 = self.ddp.stop
+            croc_norm_inf = max([infNorm(q) for q in Qus])
+            croc_norm_2 = sum([q.dot(q) for q in Qus])
 
             self.croc_stops.append(croc_norm_inf)
             self.croc_stops_2.append(croc_norm_2)
-            self.croc_iters.append(self.ddp.iter + 1)
+            self.croc_iters.append(self.ddp.iter)
 
         t_ddp = time.time()
         self.t_ddp = t_ddp - t_warm_start
 
         self.t_solve = time.time() - t_start
+        self.num_iters = res.num_iters
 
     def circular_append(self, action_model: crocoddyl.ActionModelAbstract):
         d = action_model.createData()
@@ -117,23 +122,33 @@ class ProxOCP(CrocOCP):
 
     def get_results(self):
         res = self.prox_ddp.getResults()
+        ws = self.prox_ddp.getWorkspace()  # noqa
         nsteps = self.problem.T
+        feedbacks = [-K.copy() for K in res.controlFeedbacks()]
+        xs = res.xs.tolist()
+        us = res.us.tolist()
 
-        if self.run_croc_compare:
+        if self.params.LOGGING and self.run_croc_compare:
+            np.set_printoptions(precision=4, linewidth=250)
             X_err = [
-                np.linalg.norm(res.xs[i] - self.ddp.xs[i]) for i in range(nsteps + 1)
+                infNorm(self.state.diff(xs[i], self.ddp.xs[i]))
+                for i in range(nsteps + 1)
             ]
-            U_err = [np.linalg.norm(res.us[i] - self.ddp.us[i]) for i in range(nsteps)]
+            U_err = [infNorm(us[i] - self.ddp.us[i]) for i in range(nsteps)]
             self.x_solver_errs.append(max(X_err))
             self.u_solver_errs.append(max(U_err))
 
-        # return super().get_results()
+            croc_fb = self.ddp.K
+            fb_err = [infNorm(feedbacks[i] - croc_fb[i]) for i in range(nsteps)]
+            self.fb_errs.append(max(fb_err))
+            # if max(self.x_solver_errs[-1], self.u_solver_errs[-1]) > 1e-7:
+            #     import ipdb;
+            #     ipdb.set_trace()
 
-        feedbacks = [-K.copy() for K in res.ctrl_feedbacks]
         return (
             self.current_gait.copy(),
-            res.xs.tolist().copy(),
-            res.us.tolist().copy(),
+            xs,
+            us,
             feedbacks,
             self.t_ddp,
         )
@@ -141,6 +156,7 @@ class ProxOCP(CrocOCP):
     def clear(self):
         self.x_solver_errs.clear()
         self.u_solver_errs.clear()
+        self.fb_errs.clear()
 
         self.prox_stops.clear()
         self.prox_stops_2.clear()

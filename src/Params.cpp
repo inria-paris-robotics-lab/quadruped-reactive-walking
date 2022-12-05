@@ -161,6 +161,9 @@ void Params::initialize(const std::string& file_path) {
   assert_yaml_parsing(robot_node, "robot", "max_iter");
   max_iter = robot_node["max_iter"].as<int>();
 
+  assert_yaml_parsing(robot_node, "robot", "verbose");
+  verbose = robot_node["verbose"].as<bool>();
+
   assert_yaml_parsing(robot_node, "robot", "movement");
   movement = robot_node["movement"].as<std::string>();
 
