@@ -6,18 +6,14 @@ Implementation of a reactive walking controller for quadruped robots. Architectu
 
 ### Common dependencies
 
-* `python>=3.5`
 * [Pinocchio](https://github.com/stack-of-tasks/pinocchio)
 * [Crocoddyl](https://github.com/loco-3d/crocoddyl)
-* Install Gepetto Viewer: `sudo apt install robotpkg-py36-qt4-gepetto-viewer-corba`
-
+* Gepetto Viewer: `sudo apt install robotpkg-py36-qt4-gepetto-viewer-corba`
 * [example-robot-data](https://github.com/Gepetto/example-robot-data) | apt: `sudo apt install robotpkg-example-robot-data`
-
-* Install Scipy, Numpy, Matplotlib, IPython: `python3.6 -m pip install --user numpy scipy matplotlib ipython`
+* Install Scipy, Numpy, Matplotlib, IPython
 * [Sobec](https://github.com/MeMory-of-MOtion/sobec)
 * Bullet: `pip install --user pybullet`
 * [`yaml-cpp`](https://github.com/jbeder/yaml-cpp) | apt: `sudo apt install libyaml-cpp-dev`
-* Clone interface repository: in `/scripts`, `git clone https://github.com/paLeziart/solopython`
 
 ### Dependencies for real system
 
@@ -37,9 +33,8 @@ cp python/quadruped_reactive_walking/libquadruped_reactive_walking.so ../scripts
 
 ## Run the simulation
 
-* Run `python3.6 -m quadruped_reactive_walking.main_solo12_control -i test` while being in the `scripts` folder
-
-* Sometimes the parallel process that runs the MPC does not end properly so it will keep running in the background forever, you can manually end all python processes with `pkill -9 python3`
+* Run `python -m quadruped_reactive_walking.main_solo12_control -i test` while being in the `scripts` folder
+* Sometimes the parallel process that runs the MPC does not terminate properly so it will keep running in the background forever, you can manually end all python processes with `pkill -9 python3`
 
 ## Run with sl1m using rbprm
 

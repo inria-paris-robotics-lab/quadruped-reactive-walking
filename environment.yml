@@ -1,0 +1,13 @@
+name: qrw
+dependencies:
+  - scipy
+  - example-robot-data
+  - pinocchio
+  - crocoddyl
+  - yaml-cpp
+  - matplotlib
+  - gitpython
+  - inputs
+  - imageio-ffmpeg
+  - pip:
+    - pybullet
