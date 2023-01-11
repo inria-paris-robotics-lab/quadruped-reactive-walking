@@ -18,13 +18,13 @@ class pybullet_simulator:
 
     Args:
         q_init (array): the default position of the robot
-        envID (int): identifier of the current environment to be able to handle different scenarios
+        env_id (int): identifier of the current environment to be able to handle different scenarios
         use_flat_plane (bool): to use either a flat ground or a rough ground
         enable_pyb_GUI (bool): to display PyBullet GUI or not
         dt (float): time step of the inverse dynamics
     """
 
-    def __init__(self, q_init, envID, use_flat_plane, enable_pyb_GUI, dt=0.001):
+    def __init__(self, q_init, env_id, use_flat_plane, enable_pyb_GUI, dt=0.001):
         self.applied_force = np.zeros(3)
 
         # Start the client for PyBullet
@@ -99,7 +99,7 @@ class pybullet_simulator:
             pyb.resetBasePositionAndOrientation(self.planeId, [0, 0, 0], [0, 0, 0, 1])
             pyb.changeVisualShape(self.planeId, -1, rgbaColor=[1, 1, 1, 1])
 
-        if envID == 1:
+        if env_id == 1:
             # Add stairs with platform and bridge
 
             # Create the red steps to act as small perturbations
@@ -374,18 +374,18 @@ class pybullet_simulator:
         )
         return rgb
 
-    def check_pyb_env(self, k, envID, q):
+    def check_pyb_env(self, k, env_id, q):
         """
         Check the state of the robot to trigger events and update camera
 
         Args:
             k (int): Number of inv dynamics iterations since the start of the simulation
-            envID (int): Identifier of the current environment to be able to handle different scenarios
+            env_id (int): Identifier of the current environment to be able to handle different scenarios
             q (19x1 array): the position/orientation of the trunk and angular position of actuators
 
         """
         # If spheres are loaded
-        if envID == 1:
+        if env_id == 1:
             # Check if the robot is in front of the first sphere to trigger it
             if self.flag_sphere1 and (q[1, 0] >= 0.9):
                 pyb.resetBaseVelocity(self.sphereId1, linearVelocity=[2.5, 0.0, 2.0])
@@ -721,19 +721,19 @@ class PyBulletSimulator:
 
         self.record_video = VIDEO_CONFIG["record"]
 
-    def Init(self, q, envID, use_flat_plane, enable_pyb_GUI, dt):
+    def Init(self, q, env_id, use_flat_plane, enable_pyb_GUI, dt):
         """
         Initialize the PyBullet simultor with a given environment and a given state of the robot
 
         Args:
             calibrateEncoders (bool): dummy variable, not used for simulation but used for real robot
             q (12 x 0 array): initial angular positions of the joints of the robot
-            envID (int): which environment should be loaded in the simulation
+            env_id (int): which environment should be loaded in the simulation
             use_flat_plane (bool): to use either a flat ground or a rough ground
             enable_pyb_GUI (bool): to display PyBullet GUI or not
             dt (float): time step of the simulation
         """
-        self.pyb_sim = pybullet_simulator(q, envID, use_flat_plane, enable_pyb_GUI, dt)
+        self.pyb_sim = pybullet_simulator(q, env_id, use_flat_plane, enable_pyb_GUI, dt)
         self.q_init = q
         self.joints.positions[:] = q
         self.dt = dt

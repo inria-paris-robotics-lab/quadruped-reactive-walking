@@ -8,7 +8,6 @@ from multiprocessing import Process
 from multiprocessing.sharedctypes import Value, Array
 from ctypes import c_double
 
-import qtm
 import numpy as np
 import pinocchio
 from pinocchio.explog import log
@@ -111,6 +110,7 @@ class QualisysClient:
         shared_bodyAngularVelocity,
         shared_timestamp,
     ):
+        import qtm
         print("Qualisys process!")
         """ This will run on a different process"""
         shared_timestamp.value = -1

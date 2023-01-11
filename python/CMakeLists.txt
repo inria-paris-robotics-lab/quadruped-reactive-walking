@@ -48,7 +48,7 @@ set(${PY_NAME}_TOOLS_PYTHON
   LoggerControl.py
   pybullet_sim.py
   Utils.py
-  qualisysClient.py
+  qualisys_client.py
   kinematics_utils.py
   Interpolator.py
   )

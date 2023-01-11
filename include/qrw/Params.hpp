@@ -80,7 +80,7 @@ class Params {
   bool SIMULATION;              // Enable/disable PyBullet simulation or running on real robot
   bool LOGGING;                 // Enable/disable logging during the experiment
   bool PLOTTING;                // Enable/disable automatic plotting at the end of the experiment
-  int envID;                    // Identifier of the environment to choose in which one the simulation will happen
+  int env_id;                    // Identifier of the environment to choose in which one the simulation will happen
   bool use_flat_plane;          // If True the ground is flat, otherwise it has bumps
   bool predefined_vel;          // If we are using a predefined reference velocity (True) or a joystick (False)
   int N_SIMULATION;             // Number of simulated wbc time steps
@@ -88,6 +88,7 @@ class Params {
   bool enable_corba_viewer;     // Enable/disable Corba Viewer
   bool enable_multiprocessing;  // Enable/disable running the MPC in another process in parallel of the main loop
   bool perfect_estimator;       // Enable/disable perfect estimator by using data directly from PyBullet
+  bool use_qualisys;            // Enable/disable mocap
 
   // General control parameters
   std::vector<double> q_init;   // Initial articular positions

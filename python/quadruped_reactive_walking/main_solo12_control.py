@@ -139,10 +139,13 @@ def get_device(is_simulation: bool) -> tuple:
         qc = None
     else:
         import libodri_control_interface_pywrap as oci
-        from .tools.qualisysClient import QualisysClient
-
         device = oci.robot_from_yaml_file(params.config_file)
+
+        if params.use_qualisys:
+            from .tools.qualisys_client import QualisysClient
         qc = QualisysClient(ip="140.93.16.160", body_id=0)
+        else:
+            qc = None
     return (device, qc)
 
 
@@ -177,7 +180,7 @@ def control_loop(args):
     if params.SIMULATION:
         device.Init(
             q_init,
-            params.envID,
+            params.env_id,
             params.use_flat_plane,
             params.enable_pyb_GUI,
             params.dt_wbc,

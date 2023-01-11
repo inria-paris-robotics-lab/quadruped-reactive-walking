@@ -9,7 +9,7 @@ Params::Params(const std::string &file_path)
       SIMULATION(false),
       LOGGING(false),
       PLOTTING(false),
-      envID(0),
+      env_id(0),
       use_flat_plane(false),
       predefined_vel(false),
       N_SIMULATION(0),
@@ -17,6 +17,7 @@ Params::Params(const std::string &file_path)
       enable_corba_viewer(false),
       enable_multiprocessing(false),
       perfect_estimator(false),
+      use_qualisys(false),
 
       q_init(12, 0.0),  // Fill with zeros, will be filled with values later
       dt_wbc(0.0),
@@ -119,8 +120,8 @@ void Params::initialize(const std::string& file_path) {
   assert_yaml_parsing(robot_node, "robot", "dt_wbc");
   dt_wbc = robot_node["dt_wbc"].as<double>();
 
-  assert_yaml_parsing(robot_node, "robot", "envID");
-  envID = robot_node["envID"].as<int>();
+  assert_yaml_parsing(robot_node, "robot", "env_id");
+  env_id = robot_node["env_id"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "q_init");
   q_init = robot_node["q_init"].as<std::vector<double> >();
