@@ -2,7 +2,6 @@ import time
 
 import numpy as np
 import pinocchio as pin
-import pybullet as pyb
 
 import quadruped_reactive_walking as qrw
 from . import WB_MPC_Wrapper
