@@ -143,7 +143,7 @@ def get_device(is_simulation: bool) -> tuple:
 
         if params.use_qualisys:
             from .tools.qualisys_client import QualisysClient
-        qc = QualisysClient(ip="140.93.16.160", body_id=0)
+            qc = QualisysClient(ip="140.93.16.160", body_id=0)
         else:
             qc = None
     return (device, qc)
@@ -173,7 +173,7 @@ def control_loop(args):
     device, qc = get_device(params.SIMULATION)
 
     if params.LOGGING or params.PLOTTING:
-        loggerControl = LoggerControl(
+        logger = LoggerControl(
             controller.pd, params, log_size=params.N_SIMULATION
         )
 
@@ -230,7 +230,7 @@ def control_loop(args):
             device.send_command_and_wait_end_of_cycle(params.dt_wbc)
 
             if params.LOGGING or params.PLOTTING:
-                loggerControl.sample(controller, device, qc)
+                logger.sample(controller, device, qc)
 
             t_end_whole = time.time()
 
@@ -264,7 +264,7 @@ def control_loop(args):
         date_str = datetime.now().strftime("%Y_%m_%d_%H_%M")
         log_path = Path("/tmp") / "logs" / date_str
         log_path.mkdir(parents=True, exist_ok=True)
-        loggerControl.save(str(log_path))
+        logger.save(str(log_path))
         with open(str(log_path / "readme.txt"), "w") as f:
             f.write(msg)
 
@@ -318,7 +318,7 @@ def control_loop(args):
         device.Stop()
 
     print("End of script")
-    return loggerControl
+    return logger
 
 
 if __name__ == "__main__":

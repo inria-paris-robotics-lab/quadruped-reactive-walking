@@ -82,6 +82,7 @@ class LoggerControl:
 
     def sample(self, controller: Controller, device, qualisys=None):
         # Logging from the device (data coming from the robot)
+        params: qrw.Params = controller.params
         self.q_mes[self.i] = device.joints.positions
         self.v_mes[self.i] = device.joints.velocities
         self.baseOrientation[self.i] = device.imu.attitude_euler
@@ -90,23 +91,27 @@ class LoggerControl:
         self.baseLinearAcceleration[self.i] = device.imu.linear_acceleration
         self.baseAccelerometer[self.i] = device.imu.accelerometer
         self.torquesFromCurrentMeasurment[self.i] = device.joints.measured_torques
-        self.current[self.i] = device.powerboard.current
-        self.voltage[self.i] = device.powerboard.voltage
-        self.energy[self.i] = device.powerboard.energy
+        if hasattr(device, "powerboard"):
+            self.current[self.i] = device.powerboard.current
+            self.voltage[self.i] = device.powerboard.voltage
+            self.energy[self.i] = device.powerboard.energy
 
         # Logging from qualisys (motion capture)
-        if qualisys is not None:
+        if params.use_qualisys:
+            assert qualisys is not None
             self.mocapPosition[self.i] = qualisys.getPosition()
             self.mocapVelocity[self.i] = qualisys.getVelocity()
             self.mocapAngularVelocity[self.i] = qualisys.getAngularVelocity()
             self.mocapOrientationMat9[self.i] = qualisys.getOrientationMat9()
             self.mocapOrientationQuat[self.i] = qualisys.getOrientationQuat()
-        else:  # Logging from PyBullet simulator through fake device
+        elif params.SIMULATION:  # Logging from PyBullet simulator through fake device
             self.mocapPosition[self.i] = device.baseState[0]
             self.mocapVelocity[self.i] = device.baseVel[0]
             self.mocapAngularVelocity[self.i] = device.baseVel[1]
             self.mocapOrientationMat9[self.i] = device.rot_oMb
             self.mocapOrientationQuat[self.i] = device.baseState[1]
+        else:
+            pass
 
         # Controller timings: MPC time, ...
         self.t_mpc[self.i] = controller.t_mpc
@@ -384,8 +389,8 @@ class LoggerControl:
         plt.xlabel("Time [s]")
         plt.ylabel("Time [s]")
 
-    def save(self, fileName="data"):
-        name = fileName + "/data.npz"
+    def save(self, filename="data"):
+        name = filename + "/data.npz"
 
         np.savez_compressed(
             name,
