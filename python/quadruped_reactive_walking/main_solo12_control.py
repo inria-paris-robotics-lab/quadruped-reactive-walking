@@ -23,7 +23,7 @@ plt.rcParams["lines.linewidth"] = 1.0
 
 def parse_args():
     parser = argparse.ArgumentParser(add_help=True)
-    parser.add_argument("--solver", default="croc", choices=["croc", "prox"])
+    parser.add_argument("--solver", choices=["croc", "prox"], required=True, help="Solver choice. Default: %(default)s.")
     parser.add_argument("--run_croc", action="store_true")
     return parser.parse_args()
 
@@ -163,7 +163,7 @@ def control_loop(args):
     q_init = np.array(params.q_init.tolist())
     if args.solver == "croc":
         solver_t = CrocOCP
-    else:
+    elif args.solver == "prox":
         solver_t = ProxOCP
 
     controller = Controller(params, q_init, 0.0, solver_t, solver_kwargs=solver_kwargs)
