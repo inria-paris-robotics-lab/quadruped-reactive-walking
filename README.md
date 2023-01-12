@@ -33,7 +33,7 @@ cp python/quadruped_reactive_walking/libquadruped_reactive_walking.so ../scripts
 
 ## Run the simulation
 
-* Run `python -m quadruped_reactive_walking.main_solo12_control -i test` while being in the `scripts` folder
+* Run `python -m quadruped_reactive_walking.main_solo12_control` while being in the `scripts` folder
 * Sometimes the parallel process that runs the MPC does not terminate properly so it will keep running in the background forever, you can manually end all python processes with `pkill -9 python3`
 
 ## Run with sl1m using rbprm
@@ -85,16 +85,22 @@ cp python/quadruped_reactive_walking/libquadruped_reactive_walking.so ../scripts
      ```bash
      export SOLO3D_ENV_DIR=/path/to/Solo3D
      export ROS_PACKAGE_PATH=/opt/openrobots/share/example-robot-data/robots:${SOLO3D_ENV_DIR}
-     python3.8 -m quadruped_reactive_walking.main_solo12_control
+     python -m quadruped_reactive_walking.main_solo12_control
      ```
 
 ## Tune the simulation
 
-* In `main_solo12_control.py`, you can change some of the parameters defined at the beginning of the `control_loop` function.
+* In `main_solo12_control.py`, you can change some of the parameters defined at the beginning of the `control_loop` function or by passing command-line arguments.
+* To see which CLI arguments are available, run
+  ```bash
+  python -m quadruped_reactive_walking.main_solo12_control --help
+  ```
 * Set `env_id` to 1 to load obstacles and stairs.
 * Set `use_flat_plane` to False to load a ground with lots of small bumps.
 * If you have a gamepad you can control the robot with two joysticks by turning `predefined_vel` to False in `main_solo12_control.py`. Velocity limits with the joystick are defined in `Joystick.py` by `self.VxScale` (maximul lateral velocity), `self.VyScale` (maximum forward velocity) and `self.vYawScale` (maximum yaw velocity).
 * If `predefined_vel = True` the robot follows the reference velocity pattern. Velocity patterns are defined in walk_parameters, you can modify them or add new ones. Each profile defines forward, lateral and yaw velocities that should be reached at the associated loop iterations (in `self.k_switch`). There is an automatic interpolation between milestones to have a smooth reference velocity command.
+
+### Centroidal MPC parameters:
 * You can define a new gait in `src/Planner.cpp` using `createTrot` or `createWalk` as models. Create a new function (like `createBounding` for a bounding gait) and call it inside the Planner constructor before `create_gait_f()`.
 * You can modify the swinging feet apex height in `include/quadruped-reactive-control/Planner.hpp` with `maxHeight_` or the lock time before touchdown with `lockTime_` (to lock the target location on the ground before touchdown).
 
