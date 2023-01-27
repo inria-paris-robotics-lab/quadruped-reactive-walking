@@ -1,4 +1,5 @@
 #include "qrw/Params.hpp"
+#include <iostream>
 
 using namespace yaml_control_interface;
 
@@ -35,40 +36,40 @@ Params::Params(const std::string &file_path)
       Kd_main(3, 0.0),
       Kff_main(0.0),
 
-      gp_alpha_vel(0.0),
+      starting_nodes(0),
+      ending_nodes(0),
+      gait_repetitions(0),  // Fill with zeros, will be filled with values later
+      gp_alpha_vel(0.0),  // Fill with zeros, will be filled with values later
+
       gp_alpha_pos(0.0),
-      t_switch_vec(1, 0.0),  // Fill with zeros, will be filled with values later
-      v_switch_vec(6, 0.0),  // Fill with zeros, will be filled with values later
 
+      t_switch_vec(1, 0.0),
+
+      v_switch_vec(6, 0.0),
       fc_v_esti(0.0),
-
       k_feedback(0.0),
 
-      max_height(0.0),
-      lock_time(0.0),
+      max_height(0.0),  // Fill with zeros, will be filled with values later
+      lock_time(0.0),   // Fill with zeros, will be filled with values later
       vert_time(0.0),
 
-      osqp_w_states(12, 0.0),  // Fill with zeros, will be filled with values later
-      osqp_w_forces(3, 0.0),   // Fill with zeros, will be filled with values later
-      osqp_Nz_lim(0.0),
+      osqp_w_states(12, 0.0),
+      osqp_w_forces(3, 0.0),
+      osqp_Nz_lim(0.0),     // Fill with zeros, will be filled with values later
+      Kp_flyingfeet(0.0),     // Fill with zeros, will be filled with values later
+      Kd_flyingfeet(0.0),  // Fill with zeros, will be filled with values later
+      Kp_base_position(3, 0.0),  // Fill with zeros, will be filled with values later
+      Kd_base_position(3, 0.0),              // Fill with zeros, will be filled with values later
 
-      Kp_flyingfeet(0.0),
-      Kd_flyingfeet(0.0),
-      Kp_base_position(3, 0.0),     // Fill with zeros, will be filled with values later
-      Kd_base_position(3, 0.0),     // Fill with zeros, will be filled with values later
-      Kp_base_orientation(3, 0.0),  // Fill with zeros, will be filled with values later
-      Kd_base_orientation(3, 0.0),  // Fill with zeros, will be filled with values later
-      w_tasks(8, 0.0),              // Fill with zeros, will be filled with values later
-
+      Kp_base_orientation(3, 0.0),
+      Kd_base_orientation(3, 0.0),
+      w_tasks(8, 0.0),
       Q1(0.0),
       Q2(0.0),
+
       Fz_max(0.0),
       Fz_min(0.0),
       enable_comp_forces(false),
-
-      starting_nodes(0),
-      ending_nodes(0),
-      gait_repetitions(0),
 
       T_gait(0.0),         // Period of the gait
       mass(0.0),           // Mass of the robot
@@ -90,6 +91,7 @@ Params::Params() : Params(WALK_PARAMETERS_YAML) {}
 
 
 void Params::initialize(const std::string& file_path) {
+  std::cout << "Loading params file " << file_path << std::endl;
   // Load YAML file
   assert_file_exists(file_path);
   YAML::Node param = YAML::LoadFile(file_path);
@@ -101,6 +103,7 @@ void Params::initialize(const std::string& file_path) {
   // Retrieve robot parameters
   assert_yaml_parsing(robot_node, "robot", "config_file");
   config_file = expand_env(robot_node["config_file"].as<std::string>());
+  std::cout << "Loading robot config file " << config_file << std::endl;
 
   assert_yaml_parsing(robot_node, "robot", "interface");
   interface = robot_node["interface"].as<std::string>();
@@ -130,7 +133,7 @@ void Params::initialize(const std::string& file_path) {
   dt_mpc = robot_node["dt_mpc"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "N_periods");
-  N_periods = robot_node["N_periods"].as<int>();
+  N_periods = robot_node["N_periods"].as<uint>();
 
   assert_yaml_parsing(robot_node, "robot", "N_SIMULATION");
   N_SIMULATION = robot_node["N_SIMULATION"].as<int>();
@@ -336,6 +339,10 @@ void Params::convert_gait_vec() {
         "feet status during that phase.");
   }
 
+  if (N_periods < 1) {
+    throw std::runtime_error("N_periods should be larger than 1.");
+  }
+
   // Get the number of lines in the gait matrix
   int N_gait = 0;
   for (uint i = 0; i < gait_vec.size() / 5; i++) {
@@ -346,7 +353,7 @@ void Params::convert_gait_vec() {
   T_gait = N_gait * dt_mpc;
 
   // Resize gait matrix
-  gait = MatrixN::Zero(N_gait * N_periods, 4);
+  gait.resize((Index)N_gait * N_periods, 4);
 
   // Fill gait matrix
   int k = 0;
@@ -358,19 +365,15 @@ void Params::convert_gait_vec() {
   }
 
   // Repeat gait for other periods
-  for (int i = 1; i < N_periods; i++) {
-    gait.block(i * N_gait, 0, N_gait, 4) = gait.block(0, 0, N_gait, 4);
+  for (uint i = 1; i < N_periods; i++) {
+    gait.block(i * (Index)N_gait, 0, N_gait, 4) = gait.block(0, 0, N_gait, 4);
   }
 }
 
 void Params::convert_t_switch() {
   // Resize t_switch matrix
-  t_switch = VectorN::Zero(t_switch_vec.size());
-
-  // Fill t_switch matrix
-  for (uint i = 0; i < t_switch_vec.size(); i++) {
-    t_switch(i) = t_switch_vec[i];
-  }
+  Index size = (Index)t_switch_vec.size();
+  t_switch = Eigen::Map<VectorN>(t_switch_vec.data(), size);
 }
 
 void Params::convert_v_switch() {
@@ -385,15 +388,9 @@ void Params::convert_v_switch() {
         "v_switch matrix in yaml is not in the correct format. the same number of colums as t_switch.");
   }
 
-  uint n_col = v_switch_vec.size() / 6;
+  Index n_col = v_switch_vec.size() / 6;
 
   // Resize v_switch matrix
-  v_switch = MatrixN::Zero(6, n_col);
-
-  // Fill v_switch matrix
-  for (uint i = 0; i < 6; i++) {
-    for (uint j = 0; j < n_col; j++) {
-      v_switch(i, j) = v_switch_vec[n_col * i + j];
-    }
-  }
+  using RowMatrix6N = Eigen::Matrix<Scalar, 6, Eigen::Dynamic, Eigen::RowMajor>;
+  v_switch = Eigen::Map<RowMatrix6N>(v_switch_vec.data(), 6, n_col);
 }

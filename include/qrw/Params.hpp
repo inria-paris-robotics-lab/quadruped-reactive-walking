@@ -67,9 +67,9 @@ class Params {
   ////////////////////////////////////////////////////////////////////////////////////////////////
   void convert_v_switch();
 
-  MatrixN get_gait() { return gait; }
-  VectorN get_t_switch() { return t_switch; }
-  MatrixN get_v_switch() { return v_switch; }
+  Eigen::Ref<MatrixNi> get_gait() { return gait; }
+  Eigen::Ref<VectorN> get_t_switch() { return t_switch; }
+  Eigen::Ref<MatrixN> get_v_switch() { return v_switch; }
   void set_v_switch(MatrixN v_switch_in) { v_switch = v_switch_in; }
 
   // See .yaml file for meaning of parameters
@@ -94,7 +94,7 @@ class Params {
   std::vector<double> q_init;   // Initial articular positions
   double dt_wbc;                // Time step of the whole body control
   double dt_mpc;                // Time step of the model predictive control
-  int N_periods;                // Number of gait periods in the MPC prediction horizon
+  uint N_periods;                // Number of gait periods in the MPC prediction horizon
   int type_MPC;                 // Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
   bool save_guess;              // true to save the initial result of the mpc
   int max_iter;                 // maximum iters
@@ -175,7 +175,7 @@ class Params {
   int bezier_degree;          //  Degree of the Bezier curve
 
   // Not defined in yaml
-  MatrixN gait;                                   // Initial gait matrix (Eigen)
+  MatrixNi gait;                                  // Initial gait matrix (Eigen)
   double T_gait;                                  // Period of the gait
   double mass;                                    // Mass of the robot
   std::vector<double> I_mat;                      // Inertia matrix

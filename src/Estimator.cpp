@@ -169,7 +169,7 @@ void Estimator::updateIMUData(Vector3 const& baseLinearAcceleration, Vector3 con
     IMURpy_.tail(1) = perfectPosition.tail(1);
   }
 
-  IMUQuat_ = pinocchio::SE3::Quaternion(pinocchio::rpy::rpyToMatrix(IMURpy_(0), IMURpy_(1), IMURpy_(2)));
+  IMUQuat_ = pinocchio::rpy::rpyToMatrix(IMURpy_(0), IMURpy_(1), IMURpy_(2));
 }
 
 void Estimator::updateJointData(Vector12 const& q, Vector12 const& v) {

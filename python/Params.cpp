@@ -4,8 +4,8 @@
 
 template <typename Params>
 struct ParamsVisitor : public bp::def_visitor<ParamsVisitor<Params>> {
-  template <class PyClassParams>
-  void visit(PyClassParams& cl) const {
+  template <class ...PyClassParams>
+  void visit(bp::class_<PyClassParams...>& cl) const {
     cl
         .def(bp::init<std::string>(bp::args("self", "config_path")))
         .def(bp::init<>(bp::args("self"), "Default constructor."))

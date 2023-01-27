@@ -4,7 +4,9 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-typedef double Scalar;
+using Scalar = double;
+
+using Eigen::Index;
 
 using Vector1 = Eigen::Matrix<Scalar, 1, 1>;
 using Vector2 = Eigen::Matrix<Scalar, 2, 1>;

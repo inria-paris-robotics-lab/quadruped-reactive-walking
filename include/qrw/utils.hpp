@@ -1,6 +1,9 @@
 #ifndef UTILS_H_INCLUDED
 #define UTILS_H_INCLUDED
 
+#include <string>
+#include <regex>
+
 /// @brief Expand environment variables
 /// @param text the text string containing environment variables
 inline std::string expand_env(std::string text)
