@@ -12,7 +12,7 @@ Estimator::Estimator()
       solo3D_(false),
       dt_(0.0),
       initialized_(false),
-      feetFrames_(Vector4::Zero()),
+      feetFrames_(Vector4i::Zero()),
       footRadius_(0.155),
       alphaPos_({0.995, 0.995, 0.9}),
       alphaVelMax_(1.),
@@ -61,14 +61,14 @@ void Estimator::initialize(Params& params) {
 
   // Filtering estimated linear velocity
   int k_mpc = (int)(std::round(params.dt_mpc / params.dt_wbc));
-  windowSize_ = (int)(k_mpc * params.gait.rows() / params.N_periods);
+  windowSize_ = (uint)(k_mpc * params.gait.rows() / params.N_periods);
   vx_queue_.resize(windowSize_, 0.0);  // List full of 0.0
   vy_queue_.resize(windowSize_, 0.0);  // List full of 0.0
   vz_queue_.resize(windowSize_, 0.0);  // List full of 0.0
 
   // Filtering velocities used for security checks
   double fc = 6.0;
-  double y = 1 - std::cos(2 * M_PI * 6. * dt_);
+  double y = 1 - std::cos(2 * M_PI * fc * dt_);
   alphaSecurity_ = -y + std::sqrt(y * y + 2 * y);
 
   // Initialize Quantities
@@ -204,17 +204,17 @@ void Estimator::updateForwardKinematics() {
 }
 
 Vector3 Estimator::computeBaseVelocityFromFoot(int footId) {
-  pinocchio::updateFramePlacement(velocityModel_, velocityData_, feetFrames_[footId]);
-  pinocchio::SE3 contactFrame = velocityData_.oMf[feetFrames_[footId]];
+  pinocchio::updateFramePlacement(velocityModel_, velocityData_, (uint)feetFrames_[footId]);
+  pinocchio::SE3 contactFrame = velocityData_.oMf[(uint)feetFrames_[footId]];
   Vector3 frameVelocity =
-      pinocchio::getFrameVelocity(velocityModel_, velocityData_, feetFrames_[footId], pinocchio::LOCAL).linear();
+      pinocchio::getFrameVelocity(velocityModel_, velocityData_, (uint)feetFrames_[footId], pinocchio::LOCAL).linear();
   frameVelocity(0) += footRadius_ * (vActuators_(1 + 3 * footId) + vActuators_(2 + 3 * footId));
   return contactFrame.translation().cross(IMUAngularVelocity_) - contactFrame.rotation() * frameVelocity;
 }
 
 Vector3 Estimator::computeBasePositionFromFoot(int footId) {
-  pinocchio::updateFramePlacement(positionModel_, positionData_, feetFrames_[footId]);
-  Vector3 basePosition = -positionData_.oMf[feetFrames_[footId]].translation();
+  pinocchio::updateFramePlacement(positionModel_, positionData_, (uint)feetFrames_[footId]);
+  Vector3 basePosition = -positionData_.oMf[(uint)feetFrames_[footId]].translation();
 
   return basePosition;
 }

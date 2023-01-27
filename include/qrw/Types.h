@@ -13,6 +13,7 @@ using Vector2 = Eigen::Matrix<Scalar, 2, 1>;
 using Vector3 = Eigen::Matrix<Scalar, 3, 1>;
 using Vector3i = Eigen::Matrix<int, 3, 1>;
 using Vector4 = Eigen::Matrix<Scalar, 4, 1>;
+using Eigen::Vector4i;
 using Vector5 = Eigen::Matrix<Scalar, 5, 1>;
 using Vector6 = Eigen::Matrix<Scalar, 6, 1>;
 using Vector7 = Eigen::Matrix<Scalar, 7, 1>;

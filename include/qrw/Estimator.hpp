@@ -214,7 +214,7 @@ class Estimator {
   bool solo3D_;            // Perfect estimator including yaw angle
   double dt_;              // Time step of the estimator
   bool initialized_;       // Is intiialized after the first update of the IMU
-  Vector4 feetFrames_;     // Frame indexes of the four feet
+  Vector4i feetFrames_;    // Frame indexes of the four feet
   double footRadius_;      // radius of a foot
   Vector3 alphaPos_;       // Alpha coeefficient for the position complementary filter
   double alphaVelMax_;     // Maximum alpha value for the velocity complementary filter
@@ -251,7 +251,7 @@ class Estimator {
   Vector18 vEstimate_;                  // Filtered output velocity
   Vector12 vSecurity_;                  // Filtered output velocity for security check
 
-  int windowSize_;                                     // Number of samples in the averaging window
+  uint windowSize_;                                    // Number of samples in the averaging window
   Vector6 vFiltered_;                                  // Base velocity (in base frame) filtered by averaging window
   std::deque<double> vx_queue_, vy_queue_, vz_queue_;  // Queues that hold samples
 
