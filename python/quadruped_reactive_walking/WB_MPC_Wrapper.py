@@ -35,6 +35,7 @@ class MPC_Wrapper:
         self.nx = pd.nx
         self.ndx = pd.ndx
         self.solver_cls = solver_cls
+        self._solver_kwargs = kwargs
 
         self.multiprocessing = params.enable_multiprocessing
 
@@ -144,7 +145,11 @@ class MPC_Wrapper:
 
             if k == 0:
                 loop_ocp = self.solver_cls(
-                    self.pd, self.params, self.footsteps_plan, self.base_refs
+                    self.pd,
+                    self.params,
+                    self.footsteps_plan,
+                    self.base_refs,
+                    **self._solver_kwargs
                 )
 
             loop_ocp.solve(k, x0, footstep, base_ref, xs, us)
