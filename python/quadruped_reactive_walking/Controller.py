@@ -59,7 +59,7 @@ class Controller:
         params,
         q_init,
         t,
-        solver_cls: Type[WB_MPC.OCPAbstract] = WB_MPC.CrocOCP,
+        solver_cls: Type[WB_MPC.OCPAbstract],
         solver_kwargs={},
     ):
         """

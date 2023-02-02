@@ -4,8 +4,6 @@ from time import time, sleep
 import numpy as np
 
 from .WB_MPC.ocp_abstract import OCPAbstract
-from .WB_MPC.ocp_crocoddyl import CrocOCP
-from .WB_MPC.ocp_proxddp import ProxOCP
 
 from typing import Type
 
@@ -28,13 +26,7 @@ class MPC_Wrapper:
     """
 
     def __init__(
-        self,
-        pd,
-        params,
-        footsteps,
-        base_refs,
-        solver_cls: Type[OCPAbstract] = CrocOCP,
-        **kwargs
+        self, pd, params, footsteps, base_refs, solver_cls: Type[OCPAbstract], **kwargs
     ):
         self.params = params
         self.pd = pd

@@ -19,11 +19,17 @@ from .ocp_crocoddyl import CrocOCP
 from quadruped_reactive_walking import Params
 
 
-class ProxOCP(CrocOCP):
+class AlgtrOCP(CrocOCP):
     """Solve the OCP using proxddp."""
 
     def __init__(
-        self, pd: ProblemData, params: Params, footsteps, base_refs, run_croc=False
+        self,
+        pd: ProblemData,
+        params: Params,
+        footsteps,
+        base_refs,
+        use_prox=False,
+        run_croc=False,
     ):
         super().__init__(pd, params, footsteps, base_refs)
 
@@ -56,7 +62,6 @@ class ProxOCP(CrocOCP):
         self.croc_iters = []
 
     def solve(self, k, x0, footstep, base_ref, xs_init=None, us_init=None):
-        max_iter = self.max_iter
         t_start = time.time()
         self.x0 = x0
         self.make_ocp(k, footstep, base_ref)
@@ -76,7 +81,7 @@ class ProxOCP(CrocOCP):
         t_warm_start = time.time()
         self.t_warm_start = t_warm_start - t_update
 
-        self.prox_ddp.max_iters = max_iter
+        self.prox_ddp.max_iters = self.max_iter
         self.prox_ddp.run(self.my_problem, xs, us)
 
         # compute proxddp's criteria
@@ -96,7 +101,7 @@ class ProxOCP(CrocOCP):
         if self.run_croc_compare:
             # run crocoddyl
             self.ddp.th_stop = prox_norm_2
-            self.ddp.solve(xs, us, max_iter, False)
+            self.ddp.solve(xs, us, self.max_iter, False)
 
             croc_norm_inf = max([infNorm(q) for q in Qus])
             croc_norm_2 = sum([q.dot(q) for q in Qus])

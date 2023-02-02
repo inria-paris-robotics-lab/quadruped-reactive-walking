@@ -10,20 +10,36 @@ from .Controller import Controller
 from .tools.LoggerControl import LoggerControl
 
 from typing import Type, Literal
-from .WB_MPC import CrocOCP, ProxOCP
+from .WB_MPC import CrocOCP, AlgtrOCP
 import tap
 import tqdm
 import argparse
 import matplotlib.pyplot as plt
 import seaborn as sns
+import enum
 
 sns.set_style("whitegrid")
 plt.rcParams["lines.linewidth"] = 1.0
 
 
+class SolverChoices(enum.Enum):
+    croc = "croc"
+    prox = "prox"
+    fddp = "fddp"
+
+    def __str__(self):
+        return self.value
+
+
 def parse_args():
     parser = argparse.ArgumentParser(add_help=True)
-    parser.add_argument("--solver", choices=["croc", "prox"], required=True, help="Solver choice. Default: %(default)s.")
+    parser.add_argument(
+        "--solver",
+        choices=list(SolverChoices),
+        type=SolverChoices,
+        required=True,
+        help="Solver choice. Default: %(default)s.",
+    )
     parser.add_argument("--run_croc", action="store_true")
     return parser.parse_args()
 
@@ -139,10 +155,12 @@ def get_device(is_simulation: bool) -> tuple:
         qc = None
     else:
         import libodri_control_interface_pywrap as oci
+
         device = oci.robot_from_yaml_file(params.config_file)
 
         if params.use_qualisys:
             from .tools.qualisys_client import QualisysClient
+
             qc = QualisysClient(ip="140.93.16.160", body_id=0)
         else:
             qc = None
@@ -160,16 +178,20 @@ def control_loop(args):
     if not params.SIMULATION:
         params.enable_pyb_GUI = False
 
-    solver_kwargs = {"run_croc": args.run_croc}
+    solver_kwargs = {}
 
     # Default position after calibration
     q_init = np.array(params.q_init.tolist())
-    if args.solver == "croc":
-        solver_t = CrocOCP
-    elif args.solver == "prox":
-        solver_t = ProxOCP
+    if args.solver == SolverChoices.croc:
+        solver_cls = CrocOCP
+    else:
+        solver_cls = AlgtrOCP
+        solver_kwargs["run_croc"] = args.run_croc
+        solver_kwargs["use_prox"] = args.solver == SolverChoices.prox
 
-    controller = Controller(params, q_init, 0.0, solver_t, solver_kwargs=solver_kwargs)
+    controller = Controller(
+        params, q_init, 0.0, solver_cls, solver_kwargs=solver_kwargs
+    )
     device, qc = get_device(params.SIMULATION)
 
     if params.LOGGING or params.PLOTTING:
@@ -269,12 +291,12 @@ def control_loop(args):
             f.write(msg)
 
         if params.PLOTTING:
-            # loggerControl.plot(save=True, fileName=str(log_path))
+            logger.plot(save=True, fileName=str(log_path))
             print("Plots saved in ", str(log_path) + "/")
 
             mpc = controller.mpc
 
-            def plot_prox_ocp(ocp: ProxOCP):
+            def plot_prox_ocp(ocp: AlgtrOCP):
                 nplt = 4
                 h = 7.2
                 fig, axs = plt.subplots(nplt, 1, figsize=(6.4, h), layout="constrained")
@@ -309,7 +331,7 @@ def control_loop(args):
                 plt.grid(visible=True, which="minor", axis="y")
                 plt.legend()
 
-            if hasattr(mpc, "ocp") and isinstance(mpc.ocp, ProxOCP):
+            if hasattr(mpc, "ocp") and isinstance(mpc.ocp, AlgtrOCP):
                 plot_prox_ocp(mpc.ocp)
 
             plt.show()

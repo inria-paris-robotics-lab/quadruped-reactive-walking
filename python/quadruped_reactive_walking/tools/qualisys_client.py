@@ -111,6 +111,7 @@ class QualisysClient:
         shared_timestamp,
     ):
         import qtm
+
         print("Qualisys process!")
         """ This will run on a different process"""
         shared_timestamp.value = -1
