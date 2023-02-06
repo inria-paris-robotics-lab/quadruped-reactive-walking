@@ -4,11 +4,12 @@
 
 template <typename Params>
 struct ParamsVisitor : public bp::def_visitor<ParamsVisitor<Params>> {
-  template <class ...PyClassParams>
+  template <class... PyClassParams>
   void visit(bp::class_<PyClassParams...>& cl) const {
-    cl
-        .def(bp::init<std::string>((bp::arg("self"), bp::arg("config_path") = WALK_PARAMETERS_YAML)))
-        .def("initialize", &Params::initialize, bp::args("self", "file_path"), "Initialize Params from Python.\n")
+    cl.def(bp::init<std::string>((
+               bp::arg("self"), bp::arg("config_path") = WALK_PARAMETERS_YAML)))
+        .def("initialize", &Params::initialize, bp::args("self", "file_path"),
+             "Initialize Params from Python.\n")
 
         // Read Params from Python
         .def_readwrite("config_file", &Params::config_file)
@@ -43,10 +44,12 @@ struct ParamsVisitor : public bp::def_visitor<ParamsVisitor<Params>> {
         .def_readonly("gait", &Params::get_gait)
         .def_readonly("t_switch", &Params::get_t_switch)
         .def_readonly("v_switch", &Params::get_v_switch)
-        .def("set_v_switch", &Params::set_v_switch, bp::args("self", "v_switch"), "Set v_switch matrix from Python.\n")
+        .def("set_v_switch", &Params::set_v_switch,
+             bp::args("self", "v_switch"), "Set v_switch matrix from Python.\n")
         .def_readwrite("enable_pyb_GUI", &Params::enable_pyb_GUI)
         .def_readwrite("enable_corba_viewer", &Params::enable_corba_viewer)
-        .def_readwrite("enable_multiprocessing", &Params::enable_multiprocessing)
+        .def_readwrite("enable_multiprocessing",
+                       &Params::enable_multiprocessing)
         .def_readwrite("perfect_estimator", &Params::perfect_estimator)
         .def_readwrite("use_qualisys", &Params::use_qualisys)
         .def_readwrite("ocp", &Params::ocp)
@@ -61,10 +64,12 @@ struct ParamsVisitor : public bp::def_visitor<ParamsVisitor<Params>> {
         .def_readwrite("lock_time", &Params::lock_time)
         .def_readwrite("vert_time", &Params::vert_time)
         .def_readwrite("footsteps_init", &Params::footsteps_init)
-        .def_readwrite("footsteps_under_shoulders", &Params::footsteps_under_shoulders)
+        .def_readwrite("footsteps_under_shoulders",
+                       &Params::footsteps_under_shoulders)
         .def_readwrite("enable_comp_forces", &Params::enable_comp_forces)
         .def_readwrite("solo3D", &Params::solo3D)
-        .def_readwrite("enable_multiprocessing_mip", &Params::enable_multiprocessing_mip)
+        .def_readwrite("enable_multiprocessing_mip",
+                       &Params::enable_multiprocessing_mip)
         .def_readwrite("environment_URDF", &Params::environment_URDF)
         .def_readwrite("environment_heightmap", &Params::environment_heightmap)
         .def_readwrite("heightmap_fit_length", &Params::heightmap_fit_length)
@@ -76,16 +81,18 @@ struct ParamsVisitor : public bp::def_visitor<ParamsVisitor<Params>> {
         .def_readwrite("use_heuristic", &Params::max_velocity);
   }
 
-  static void expose() { bp::class_<Params>("Params", bp::no_init).def(ParamsVisitor<Params>()); }
+  static void expose() {
+    bp::class_<Params>("Params", bp::no_init).def(ParamsVisitor<Params>());
+  }
 };
 
 void exposeParams() {
   ParamsVisitor<Params>::expose();
 
   bp::class_<OCPParams>("OCPParams", bp::no_init)
-    .def_readwrite("num_threads", &OCPParams::num_threads)
-    .def_readwrite("max_iter", &OCPParams::max_iter)
-    .def_readwrite("init_max_iters", &OCPParams::init_max_iters)
-    .def_readwrite("verbose", &OCPParams::verbose)
-    .def(bp::self_ns::str(bp::self));
+      .def_readwrite("num_threads", &OCPParams::num_threads)
+      .def_readwrite("max_iter", &OCPParams::max_iter)
+      .def_readwrite("init_max_iters", &OCPParams::init_max_iters)
+      .def_readwrite("verbose", &OCPParams::verbose)
+      .def(bp::self_ns::str(bp::self));
 }

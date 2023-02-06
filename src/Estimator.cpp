@@ -49,12 +49,13 @@ Estimator::Estimator()
       oTh_(Vector3::Zero()),
       h_v_(Vector6::Zero()),
       h_vFiltered_(Vector6::Zero()) {
-  b_M_IMU_ = pinocchio::SE3(pinocchio::SE3::Quaternion(1.0, 0.0, 0.0, 0.0), Vector3(0.1163, 0.0, 0.02));
+  b_M_IMU_ = pinocchio::SE3(pinocchio::SE3::Quaternion(1.0, 0.0, 0.0, 0.0),
+                            Vector3(0.1163, 0.0, 0.02));
   q_FK_(6) = 1.0;
   qEstimate_(6) = 1.0;
 }
 
-void Estimator::initialize(Params& params) {
+void Estimator::initialize(Params &params) {
   dt_ = params.dt_wbc;
   perfectEstimator_ = params.perfect_estimator;
   solo3D_ = params.solo3D;
@@ -79,22 +80,33 @@ void Estimator::initialize(Params& params) {
   qRef_.tail(12) = Vector12(params.q_init.data());
 
   // Initialize Pinocchio
-  const std::string filename = std::string(EXAMPLE_ROBOT_DATA_MODEL_DIR "/solo_description/robots/solo12.urdf");
-  pinocchio::urdf::buildModel(filename, pinocchio::JointModelFreeFlyer(), velocityModel_, false);
-  pinocchio::urdf::buildModel(filename, pinocchio::JointModelFreeFlyer(), positionModel_, false);
+  const std::string filename = std::string(
+      EXAMPLE_ROBOT_DATA_MODEL_DIR "/solo_description/robots/solo12.urdf");
+  pinocchio::urdf::buildModel(filename, pinocchio::JointModelFreeFlyer(),
+                              velocityModel_, false);
+  pinocchio::urdf::buildModel(filename, pinocchio::JointModelFreeFlyer(),
+                              positionModel_, false);
   velocityData_ = pinocchio::Data(velocityModel_);
   positionData_ = pinocchio::Data(positionModel_);
-  pinocchio::computeAllTerms(velocityModel_, velocityData_, qEstimate_, vEstimate_);
-  pinocchio::computeAllTerms(positionModel_, positionData_, qEstimate_, vEstimate_);
-  feetFrames_ << (int)positionModel_.getFrameId("FL_FOOT"), (int)positionModel_.getFrameId("FR_FOOT"),
-      (int)positionModel_.getFrameId("HL_FOOT"), (int)positionModel_.getFrameId("HR_FOOT");
+  pinocchio::computeAllTerms(velocityModel_, velocityData_, qEstimate_,
+                             vEstimate_);
+  pinocchio::computeAllTerms(positionModel_, positionData_, qEstimate_,
+                             vEstimate_);
+  feetFrames_ << (int)positionModel_.getFrameId("FL_FOOT"),
+      (int)positionModel_.getFrameId("FR_FOOT"),
+      (int)positionModel_.getFrameId("HL_FOOT"),
+      (int)positionModel_.getFrameId("HR_FOOT");
 }
 
-void Estimator::run(MatrixN const& gait, MatrixN const& feetTargets, VectorN const& baseLinearAcceleration,
-                    VectorN const& baseAngularVelocity, VectorN const& baseOrientation, VectorN const& q,
-                    VectorN const& v, VectorN const& perfectPosition, Vector3 const& b_perfectVelocity) {
+void Estimator::run(MatrixN const &gait, MatrixN const &feetTargets,
+                    VectorN const &baseLinearAcceleration,
+                    VectorN const &baseAngularVelocity,
+                    VectorN const &baseOrientation, VectorN const &q,
+                    VectorN const &v, VectorN const &perfectPosition,
+                    Vector3 const &b_perfectVelocity) {
   updateFeetStatus(gait, feetTargets);
-  updateIMUData(baseLinearAcceleration, baseAngularVelocity, baseOrientation, perfectPosition);
+  updateIMUData(baseLinearAcceleration, baseAngularVelocity, baseOrientation,
+                perfectPosition);
   updateJointData(q, v);
 
   updateForwardKinematics();
@@ -108,7 +120,7 @@ void Estimator::run(MatrixN const& gait, MatrixN const& feetTargets, VectorN con
   vSecurity_ = (1 - alphaSecurity_) * vActuators_ + alphaSecurity_ * vSecurity_;
 }
 
-void Estimator::updateReferenceState(VectorN const& vRef) {
+void Estimator::updateReferenceState(VectorN const &vRef) {
   // Update reference acceleration and velocities
   Matrix3 Rz = pinocchio::rpy::rpyToMatrix(0., 0., -baseVelRef_[5] * dt_);
   baseAccRef_.head(3) = (vRef.head(3) - Rz * baseVelRef_.head(3)) / dt_;
@@ -132,14 +144,16 @@ void Estimator::updateReferenceState(VectorN const& vRef) {
   oRh_ = pinocchio::rpy::rpyToMatrix(0., 0., qRef_[5]);
   oTh_.head(2) = qRef_.head(2);
 
-  // Express estimated velocity and filtered estimated velocity in horizontal frame
+  // Express estimated velocity and filtered estimated velocity in horizontal
+  // frame
   h_v_.head(3) = hRb_ * vEstimate_.head(3);
   h_v_.tail(3) = hRb_ * vEstimate_.segment(3, 3);
   h_vFiltered_.head(3) = hRb_ * vFiltered_.head(3);
   h_vFiltered_.tail(3) = hRb_ * vFiltered_.tail(3);
 }
 
-void Estimator::updateFeetStatus(MatrixN const& gait, MatrixN const& feetTargets) {
+void Estimator::updateFeetStatus(MatrixN const &gait,
+                                 MatrixN const &feetTargets) {
   feetStatus_ = gait.row(0);
   feetTargets_ = feetTargets;
 
@@ -153,8 +167,10 @@ void Estimator::updateFeetStatus(MatrixN const& gait, MatrixN const& feetTargets
   }
 }
 
-void Estimator::updateIMUData(Vector3 const& baseLinearAcceleration, Vector3 const& baseAngularVelocity,
-                              Vector3 const& baseOrientation, VectorN const& perfectPosition) {
+void Estimator::updateIMUData(Vector3 const &baseLinearAcceleration,
+                              Vector3 const &baseAngularVelocity,
+                              Vector3 const &baseOrientation,
+                              VectorN const &perfectPosition) {
   IMULinearAcceleration_ = baseLinearAcceleration;
   IMUAngularVelocity_ = baseAngularVelocity;
   IMURpy_ = baseOrientation;
@@ -172,7 +188,7 @@ void Estimator::updateIMUData(Vector3 const& baseLinearAcceleration, Vector3 con
   IMUQuat_ = pinocchio::rpy::rpyToMatrix(IMURpy_(0), IMURpy_(1), IMURpy_(2));
 }
 
-void Estimator::updateJointData(Vector12 const& q, Vector12 const& v) {
+void Estimator::updateJointData(Vector12 const &q, Vector12 const &v) {
   qActuators_ = q;
   vActuators_ = v;
 }
@@ -204,17 +220,24 @@ void Estimator::updateForwardKinematics() {
 }
 
 Vector3 Estimator::computeBaseVelocityFromFoot(int footId) {
-  pinocchio::updateFramePlacement(velocityModel_, velocityData_, (uint)feetFrames_[footId]);
+  pinocchio::updateFramePlacement(velocityModel_, velocityData_,
+                                  (uint)feetFrames_[footId]);
   pinocchio::SE3 contactFrame = velocityData_.oMf[(uint)feetFrames_[footId]];
   Vector3 frameVelocity =
-      pinocchio::getFrameVelocity(velocityModel_, velocityData_, (uint)feetFrames_[footId], pinocchio::LOCAL).linear();
-  frameVelocity(0) += footRadius_ * (vActuators_(1 + 3 * footId) + vActuators_(2 + 3 * footId));
-  return contactFrame.translation().cross(IMUAngularVelocity_) - contactFrame.rotation() * frameVelocity;
+      pinocchio::getFrameVelocity(velocityModel_, velocityData_,
+                                  (uint)feetFrames_[footId], pinocchio::LOCAL)
+          .linear();
+  frameVelocity(0) +=
+      footRadius_ * (vActuators_(1 + 3 * footId) + vActuators_(2 + 3 * footId));
+  return contactFrame.translation().cross(IMUAngularVelocity_) -
+         contactFrame.rotation() * frameVelocity;
 }
 
 Vector3 Estimator::computeBasePositionFromFoot(int footId) {
-  pinocchio::updateFramePlacement(positionModel_, positionData_, (uint)feetFrames_[footId]);
-  Vector3 basePosition = -positionData_.oMf[(uint)feetFrames_[footId]].translation();
+  pinocchio::updateFramePlacement(positionModel_, positionData_,
+                                  (uint)feetFrames_[footId]);
+  Vector3 basePosition =
+      -positionData_.oMf[(uint)feetFrames_[footId]].translation();
 
   return basePosition;
 }
@@ -238,17 +261,20 @@ double Estimator::computeAlphaVelocity() {
   if (a <= 0 || b <= 1)
     return alphaVelMax_;
   else
-    return alphaVelMin_ + (alphaVelMax_ - alphaVelMin_) * std::abs(c - (a - 1)) / c;
+    return alphaVelMin_ +
+           (alphaVelMax_ - alphaVelMin_) * std::abs(c - (a - 1)) / c;
 }
 
-void Estimator::estimateVelocity(Vector3 const& b_perfectVelocity) {
+void Estimator::estimateVelocity(Vector3 const &b_perfectVelocity) {
   Vector3 alpha = Vector3::Ones() * computeAlphaVelocity();
   Matrix3 oRb = IMUQuat_.toRotationMatrix();
   Vector3 bTi = (b_M_IMU_.translation()).cross(IMUAngularVelocity_);
 
   // At IMU location in world frame
-  Vector3 oi_baseVelocityFK = solo3D_ ? oRb * (b_perfectVelocity + bTi) : oRb * (baseVelocityFK_ + bTi);
-  Vector3 oi_baseVelocity = velocityFilter_.compute(oi_baseVelocityFK, oRb * IMULinearAcceleration_, alpha);
+  Vector3 oi_baseVelocityFK =
+      solo3D_ ? oRb * (b_perfectVelocity + bTi) : oRb * (baseVelocityFK_ + bTi);
+  Vector3 oi_baseVelocity = velocityFilter_.compute(
+      oi_baseVelocityFK, oRb * IMULinearAcceleration_, alpha);
 
   // At base location in base frame
   b_baseVelocity_ = oRb.transpose() * oi_baseVelocity - bTi;
@@ -258,11 +284,13 @@ void Estimator::estimateVelocity(Vector3 const& b_perfectVelocity) {
   vEstimate_.tail(12) = vActuators_;
 }
 
-void Estimator::estimatePosition(Vector3 const& perfectPosition) {
+void Estimator::estimatePosition(Vector3 const &perfectPosition) {
   Matrix3 oRb = IMUQuat_.toRotationMatrix();
 
-  Vector3 basePosition = solo3D_ ? perfectPosition : (basePositionFK_ + feetPositionBarycenter_);
-  qEstimate_.head(3) = positionFilter_.compute(basePosition, oRb * b_baseVelocity_, alphaPos_);
+  Vector3 basePosition =
+      solo3D_ ? perfectPosition : (basePositionFK_ + feetPositionBarycenter_);
+  qEstimate_.head(3) =
+      positionFilter_.compute(basePosition, oRb * b_baseVelocity_, alphaPos_);
 
   if (perfectEstimator_ || solo3D_) qEstimate_(2) = perfectPosition(2);
   qEstimate_.segment(3, 4) = IMUQuat_.coeffs();
@@ -277,7 +305,10 @@ void Estimator::filterVelocity() {
   vx_queue_.push_front(vEstimate_(0));
   vy_queue_.push_front(vEstimate_(1));
   vz_queue_.push_front(vEstimate_(2));
-  vFiltered_(0) = std::accumulate(vx_queue_.begin(), vx_queue_.end(), 0.) / windowSize_;
-  vFiltered_(1) = std::accumulate(vy_queue_.begin(), vy_queue_.end(), 0.) / windowSize_;
-  vFiltered_(2) = std::accumulate(vz_queue_.begin(), vz_queue_.end(), 0.) / windowSize_;
+  vFiltered_(0) =
+      std::accumulate(vx_queue_.begin(), vx_queue_.end(), 0.) / windowSize_;
+  vFiltered_(1) =
+      std::accumulate(vy_queue_.begin(), vy_queue_.end(), 0.) / windowSize_;
+  vFiltered_(2) =
+      std::accumulate(vz_queue_.begin(), vz_queue_.end(), 0.) / windowSize_;
 }

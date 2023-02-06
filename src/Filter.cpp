@@ -10,7 +10,7 @@ Filter::Filter()
   // Empty
 }
 
-void Filter::initialize(Params& params) {
+void Filter::initialize(Params &params) {
   const double fc = 15.0;
   b_ = (2 * M_PI * params.dt_wbc * fc) / (2 * M_PI * params.dt_wbc * fc + 1.0);
 
@@ -20,7 +20,7 @@ void Filter::initialize(Params& params) {
   y_queue_.resize(a_.rows() - 1, Vector6::Zero());
 }
 
-VectorN Filter::filter(Vector6 const& x, bool check_modulo) {
+VectorN Filter::filter(Vector6 const &x, bool check_modulo) {
   // Retrieve measurement
   x_ = x;
 

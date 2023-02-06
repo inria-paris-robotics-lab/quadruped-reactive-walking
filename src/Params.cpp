@@ -1,14 +1,11 @@
 #include "qrw/Params.hpp"
 #include <iostream>
 
-
 std::ostream &operator<<(std::ostream &oss, const OCPParams &p) {
   oss << "OCPParams {"
-      << "\n\tnum_threads:\t" << p.num_threads
-      << "\n\tmax_iter:\t" << p.max_iter
-      << "\n\tinit_max_iters:\t" << p.init_max_iters
-      << "\n\tverbose:\t" << p.verbose
-      << "\n}";
+      << "\n\tnum_threads:\t" << p.num_threads << "\n\tmax_iter:\t"
+      << p.max_iter << "\n\tinit_max_iters:\t" << p.init_max_iters
+      << "\n\tverbose:\t" << p.verbose << "\n}";
   return oss;
 }
 
@@ -47,7 +44,7 @@ Params::Params(const std::string &file_path)
       starting_nodes(0),
       ending_nodes(0),
       gait_repetitions(0),  // Fill with zeros, will be filled with values later
-      gp_alpha_vel(0.0),  // Fill with zeros, will be filled with values later
+      gp_alpha_vel(0.0),    // Fill with zeros, will be filled with values later
 
       gp_alpha_pos(0.0),
 
@@ -63,11 +60,13 @@ Params::Params(const std::string &file_path)
 
       osqp_w_states(12, 0.0),
       osqp_w_forces(3, 0.0),
-      osqp_Nz_lim(0.0),     // Fill with zeros, will be filled with values later
-      Kp_flyingfeet(0.0),     // Fill with zeros, will be filled with values later
+      osqp_Nz_lim(0.0),    // Fill with zeros, will be filled with values later
+      Kp_flyingfeet(0.0),  // Fill with zeros, will be filled with values later
       Kd_flyingfeet(0.0),  // Fill with zeros, will be filled with values later
-      Kp_base_position(3, 0.0),  // Fill with zeros, will be filled with values later
-      Kd_base_position(3, 0.0),              // Fill with zeros, will be filled with values later
+      Kp_base_position(
+          3, 0.0),  // Fill with zeros, will be filled with values later
+      Kd_base_position(
+          3, 0.0),  // Fill with zeros, will be filled with values later
 
       Kp_base_orientation(3, 0.0),
       Kd_base_orientation(3, 0.0),
@@ -84,16 +83,16 @@ Params::Params(const std::string &file_path)
       I_mat(9, 0.0),       // Fill with zeros, will be filled with values later
       CoM_offset(3, 0.0),  // Fill with zeros, will be filled with values later
       h_ref(0.0),
-      shoulders(12, 0.0),                 // Fill with zeros, will be filled with values later
-      footsteps_init(12, 0.0),            // Fill with zeros, will be filled with values later
-      footsteps_under_shoulders(12, 0.0)  // Fill with zeros, will be filled with values later
+      shoulders(12, 0.0),  // Fill with zeros, will be filled with values later
+      footsteps_init(12,
+                     0.0),  // Fill with zeros, will be filled with values later
+      footsteps_under_shoulders(
+          12, 0.0)  // Fill with zeros, will be filled with values later
 {
-  if (!file_path.empty())
-  initialize(expand_env(file_path));
+  if (!file_path.empty()) initialize(expand_env(file_path));
 }
 
-
-void Params::initialize(const std::string& file_path) {
+void Params::initialize(const std::string &file_path) {
   std::cout << "Loading params file " << file_path << std::endl;
   // Load YAML file
   assert_file_exists(file_path);
@@ -101,14 +100,13 @@ void Params::initialize(const std::string& file_path) {
 
   // Check if YAML node is detected and retrieve it
   assert_yaml_parsing(param, file_path, "robot");
-  const YAML::Node& robot_node = param["robot"];
+  const YAML::Node &robot_node = param["robot"];
   YAML::convert<Params>::decode(robot_node, *this);
   std::cout << "Loading robot config file " << config_file << std::endl;
 }
 
 namespace YAML {
 bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
-
   // Retrieve robot parameters
   assert_yaml_parsing(robot_node, "robot", "config_file");
   rhs.config_file = expand_env(robot_node["config_file"].as<std::string>());
@@ -136,7 +134,7 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.env_id = robot_node["env_id"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "q_init");
-  rhs.q_init = robot_node["q_init"].as<std::vector<double> >();
+  rhs.q_init = robot_node["q_init"].as<std::vector<double>>();
 
   assert_yaml_parsing(robot_node, "robot", "dt_mpc");
   rhs.dt_mpc = robot_node["dt_mpc"].as<double>();
@@ -190,10 +188,10 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.closed_loop = robot_node["closed_loop"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "Kp_main");
-  rhs.Kp_main = robot_node["Kp_main"].as<std::vector<double> >();
+  rhs.Kp_main = robot_node["Kp_main"].as<std::vector<double>>();
 
   assert_yaml_parsing(robot_node, "robot", "Kd_main");
-  rhs.Kd_main = robot_node["Kd_main"].as<std::vector<double> >();
+  rhs.Kd_main = robot_node["Kd_main"].as<std::vector<double>>();
 
   assert_yaml_parsing(robot_node, "robot", "Kff_main");
   rhs.Kff_main = robot_node["Kff_main"].as<double>();
@@ -208,7 +206,7 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.gait_repetitions = robot_node["gait_repetitions"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "gait");
-  rhs.gait_vec = robot_node["gait"].as<std::vector<int> >();
+  rhs.gait_vec = robot_node["gait"].as<std::vector<int>>();
   rhs.convert_gait_vec();
 
   assert_yaml_parsing(robot_node, "robot", "gp_alpha_vel");
@@ -218,11 +216,11 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.gp_alpha_pos = robot_node["gp_alpha_pos"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "t_switch");
-  rhs.t_switch_vec = robot_node["t_switch"].as<std::vector<double> >();
+  rhs.t_switch_vec = robot_node["t_switch"].as<std::vector<double>>();
   rhs.convert_t_switch();
 
   assert_yaml_parsing(robot_node, "robot", "v_switch");
-  rhs.v_switch_vec = robot_node["v_switch"].as<std::vector<double> >();
+  rhs.v_switch_vec = robot_node["v_switch"].as<std::vector<double>>();
   rhs.convert_v_switch();
 
   assert_yaml_parsing(robot_node, "robot", "fc_v_esti");
@@ -241,10 +239,10 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.vert_time = robot_node["vert_time"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "osqp_w_states");
-  rhs.osqp_w_states = robot_node["osqp_w_states"].as<std::vector<double> >();
+  rhs.osqp_w_states = robot_node["osqp_w_states"].as<std::vector<double>>();
 
   assert_yaml_parsing(robot_node, "robot", "osqp_w_forces");
-  rhs.osqp_w_forces = robot_node["osqp_w_forces"].as<std::vector<double> >();
+  rhs.osqp_w_forces = robot_node["osqp_w_forces"].as<std::vector<double>>();
 
   assert_yaml_parsing(robot_node, "robot", "osqp_Nz_lim");
   rhs.osqp_Nz_lim = robot_node["osqp_Nz_lim"].as<double>();
@@ -256,19 +254,23 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.Kd_flyingfeet = robot_node["Kd_flyingfeet"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "Kp_base_position");
-  rhs.Kp_base_position = robot_node["Kp_base_position"].as<std::vector<double> >();
+  rhs.Kp_base_position =
+      robot_node["Kp_base_position"].as<std::vector<double>>();
 
   assert_yaml_parsing(robot_node, "robot", "Kd_base_position");
-  rhs.Kd_base_position = robot_node["Kd_base_position"].as<std::vector<double> >();
+  rhs.Kd_base_position =
+      robot_node["Kd_base_position"].as<std::vector<double>>();
 
   assert_yaml_parsing(robot_node, "robot", "Kp_base_orientation");
-  rhs.Kp_base_orientation = robot_node["Kp_base_orientation"].as<std::vector<double> >();
+  rhs.Kp_base_orientation =
+      robot_node["Kp_base_orientation"].as<std::vector<double>>();
 
   assert_yaml_parsing(robot_node, "robot", "Kd_base_orientation");
-  rhs.Kd_base_orientation = robot_node["Kd_base_orientation"].as<std::vector<double> >();
+  rhs.Kd_base_orientation =
+      robot_node["Kd_base_orientation"].as<std::vector<double>>();
 
   assert_yaml_parsing(robot_node, "robot", "w_tasks");
-  rhs.w_tasks = robot_node["w_tasks"].as<std::vector<double> >();
+  rhs.w_tasks = robot_node["w_tasks"].as<std::vector<double>>();
 
   assert_yaml_parsing(robot_node, "robot", "Q1");
   rhs.Q1 = robot_node["Q1"].as<double>();
@@ -289,13 +291,15 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.solo3D = robot_node["solo3D"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "enable_multiprocessing_mip");
-  rhs.enable_multiprocessing_mip = robot_node["enable_multiprocessing_mip"].as<bool>();
+  rhs.enable_multiprocessing_mip =
+      robot_node["enable_multiprocessing_mip"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "environment_URDF");
   rhs.environment_URDF = robot_node["environment_URDF"].as<std::string>();
 
   assert_yaml_parsing(robot_node, "robot", "environment_heightmap");
-  rhs.environment_heightmap = robot_node["environment_heightmap"].as<std::string>();
+  rhs.environment_heightmap =
+      robot_node["environment_heightmap"].as<std::string>();
 
   assert_yaml_parsing(robot_node, "robot", "heightmap_fit_length");
   rhs.heightmap_fit_length = robot_node["heightmap_fit_length"].as<double>();
@@ -307,7 +311,7 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.number_steps = robot_node["number_steps"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "max_velocity");
-  rhs.max_velocity = robot_node["max_velocity"].as<std::vector<double> >();
+  rhs.max_velocity = robot_node["max_velocity"].as<std::vector<double>>();
 
   assert_yaml_parsing(robot_node, "robot", "use_bezier");
   rhs.use_bezier = robot_node["use_bezier"].as<bool>();
@@ -339,7 +343,7 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   if (!rhs.SIMULATION) rhs.perfect_estimator = false;
   return true;
 }
-} // namespace YAML
+}  // namespace YAML
 
 void Params::convert_gait_vec() {
   if (gait_vec.size() % 5 != 0) {
@@ -370,7 +374,8 @@ void Params::convert_gait_vec() {
   int k = 0;
   for (uint i = 0; i < gait_vec.size() / 5; i++) {
     for (int j = 0; j < gait_vec[5 * i]; j++) {
-      gait.row(k) << gait_vec[5 * i + 1], gait_vec[5 * i + 2], gait_vec[5 * i + 3], gait_vec[5 * i + 4];
+      gait.row(k) << gait_vec[5 * i + 1], gait_vec[5 * i + 2],
+          gait_vec[5 * i + 3], gait_vec[5 * i + 4];
       k++;
     }
   }
@@ -390,13 +395,16 @@ void Params::convert_t_switch() {
 void Params::convert_v_switch() {
   if (v_switch_vec.size() % 6 != 0) {
     throw std::runtime_error(
-        "v_switch matrix in yaml is not in the correct format. It should have six "
-        "lines, containing the values switch values for each coordinate of the velocity.");
+        "v_switch matrix in yaml is not in the correct "
+        "format. It should have six "
+        "lines, containing the values switch values for "
+        "each coordinate of the velocity.");
   }
 
   if (v_switch_vec.size() / 6 != t_switch_vec.size()) {
     throw std::runtime_error(
-        "v_switch matrix in yaml is not in the correct format. the same number of colums as t_switch.");
+        "v_switch matrix in yaml is not in the correct "
+        "format. the same number of colums as t_switch.");
   }
 
   Index n_col = v_switch_vec.size() / 6;
