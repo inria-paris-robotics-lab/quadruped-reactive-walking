@@ -195,9 +195,7 @@ def control_loop(args):
     device, qc = get_device(params.SIMULATION)
 
     if params.LOGGING or params.PLOTTING:
-        logger = LoggerControl(
-            controller.pd, params, log_size=params.N_SIMULATION
-        )
+        logger = LoggerControl(controller.pd, params, log_size=params.N_SIMULATION)
 
     if params.SIMULATION:
         device.Init(
@@ -221,7 +219,7 @@ def control_loop(args):
     k_log_whole = 0
     T_whole = time.time()
     dT_whole = 0.0
-    disable = params.verbose
+    disable = params.ocp.verbose
     bar_format = (
         "{desc}: {percentage:.4f}%|{bar}| {n:.3f}/{total:.3f} [{elapsed}<{remaining}]"
     )

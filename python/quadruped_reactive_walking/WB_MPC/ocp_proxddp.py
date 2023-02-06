@@ -8,6 +8,7 @@ import time
 import numpy as np
 import pinocchio as pin
 import crocoddyl
+import termcolor as tcl
 
 import proxddp
 from proxddp import manifolds, dynamics
@@ -37,16 +38,24 @@ class AlgtrOCP(CrocOCP):
             self.problem
         )
 
+        self.num_threads = params.ocp.num_threads
+        self.my_problem.num_threads = self.num_threads
         self.run_croc_compare = run_croc
 
         self.verbose = proxddp.VerboseLevel.QUIET
-        if params.verbose:
+        if params.ocp.verbose:
             self.verbose = proxddp.VerboseLevel.VERBOSE
             self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
         self.tol = 1e-3
-        self.mu_init = 1e-5
-        # self.prox_ddp = proxddp.SolverProxDDP(self.tol, self.mu_init)
-        self.prox_ddp = proxddp.SolverFDDP(self.tol)
+        if use_prox:
+            mu_init = 1e-9
+            tcl.cprint("[using SolverProxDDP]", color="green")
+            self.prox_ddp = proxddp.SolverProxDDP(self.tol, mu_init, 0.0)
+            self.prox_ddp.ldlt_algo_choice = proxddp.LDLT_DENSE
+            self.prox_ddp.setLinesearchMuLowerBound(1e-4)
+        else:
+            tcl.cprint("[using SolverFDDP]", color="blue")
+            self.prox_ddp = proxddp.SolverFDDP(self.tol)
         self.prox_ddp.verbose = self.verbose
         self.prox_ddp.max_iters = self.max_iter
         self.prox_ddp.setup(self.my_problem)
@@ -81,7 +90,10 @@ class AlgtrOCP(CrocOCP):
         t_warm_start = time.time()
         self.t_warm_start = t_warm_start - t_update
 
-        self.prox_ddp.max_iters = self.max_iter
+        if k == 0:
+            self.prox_ddp.max_iters = self.init_max_iters
+        else:
+            self.prox_ddp.max_iters = self.max_iter
         self.prox_ddp.run(self.my_problem, xs, us)
 
         # compute proxddp's criteria

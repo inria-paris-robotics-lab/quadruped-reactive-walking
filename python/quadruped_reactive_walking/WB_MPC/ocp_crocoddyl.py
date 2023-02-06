@@ -40,7 +40,7 @@ class CrocOCP(OCPAbstract):
 
         self.problem = crocoddyl.ShootingProblem(self.x0, self.start_rm, self.start_tm)
         self.ddp = crocoddyl.SolverFDDP(self.problem)
-        if params.verbose:
+        if params.ocp.verbose:
             self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
 
     def initialize_models(self, gait, footsteps=[], base_refs=[]):

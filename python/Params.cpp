@@ -7,8 +7,7 @@ struct ParamsVisitor : public bp::def_visitor<ParamsVisitor<Params>> {
   template <class ...PyClassParams>
   void visit(bp::class_<PyClassParams...>& cl) const {
     cl
-        .def(bp::init<std::string>(bp::args("self", "config_path")))
-        .def(bp::init<>(bp::args("self"), "Default constructor."))
+        .def(bp::init<std::string>((bp::arg("self"), bp::arg("config_path") = WALK_PARAMETERS_YAML)))
         .def("initialize", &Params::initialize, bp::args("self", "file_path"), "Initialize Params from Python.\n")
 
         // Read Params from Python
@@ -28,8 +27,6 @@ struct ParamsVisitor : public bp::def_visitor<ParamsVisitor<Params>> {
         .def_readwrite("use_flat_plane", &Params::use_flat_plane)
         .def_readwrite("predefined_vel", &Params::predefined_vel)
         .def_readwrite("save_guess", &Params::save_guess)
-        .def_readwrite("max_iter", &Params::max_iter)
-        .def_readwrite("verbose", &Params::verbose)
         .def_readwrite("movement", &Params::movement)
         .def_readwrite("interpolate_mpc", &Params::interpolate_mpc)
         .def_readwrite("interpolation_type", &Params::interpolation_type)
@@ -52,6 +49,7 @@ struct ParamsVisitor : public bp::def_visitor<ParamsVisitor<Params>> {
         .def_readwrite("enable_multiprocessing", &Params::enable_multiprocessing)
         .def_readwrite("perfect_estimator", &Params::perfect_estimator)
         .def_readwrite("use_qualisys", &Params::use_qualisys)
+        .def_readwrite("ocp", &Params::ocp)
         .def_readwrite("w_tasks", &Params::w_tasks)
         .def_readwrite("T_gait", &Params::T_gait)
         .def_readwrite("mass", &Params::mass)
@@ -81,4 +79,13 @@ struct ParamsVisitor : public bp::def_visitor<ParamsVisitor<Params>> {
   static void expose() { bp::class_<Params>("Params", bp::no_init).def(ParamsVisitor<Params>()); }
 };
 
-void exposeParams() { ParamsVisitor<Params>::expose(); }
+void exposeParams() {
+  ParamsVisitor<Params>::expose();
+
+  bp::class_<OCPParams>("OCPParams", bp::no_init)
+    .def_readwrite("num_threads", &OCPParams::num_threads)
+    .def_readwrite("max_iter", &OCPParams::max_iter)
+    .def_readwrite("init_max_iters", &OCPParams::init_max_iters)
+    .def_readwrite("verbose", &OCPParams::verbose)
+    .def(bp::self_ns::str(bp::self));
+}

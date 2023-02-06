@@ -1,7 +1,16 @@
 #include "qrw/Params.hpp"
 #include <iostream>
 
-using namespace yaml_control_interface;
+
+std::ostream &operator<<(std::ostream &oss, const OCPParams &p) {
+  oss << "OCPParams {"
+      << "\n\tnum_threads:\t" << p.num_threads
+      << "\n\tmax_iter:\t" << p.max_iter
+      << "\n\tinit_max_iters:\t" << p.init_max_iters
+      << "\n\tverbose:\t" << p.verbose
+      << "\n}";
+  return oss;
+}
 
 Params::Params(const std::string &file_path)
     : config_file(""),
@@ -26,7 +35,6 @@ Params::Params(const std::string &file_path)
       N_periods(0),
       type_MPC(0),
       save_guess(false),
-      max_iter(0),
       movement(""),
       interpolate_mpc(true),
       interpolation_type(0),
@@ -80,14 +88,9 @@ Params::Params(const std::string &file_path)
       footsteps_init(12, 0.0),            // Fill with zeros, will be filled with values later
       footsteps_under_shoulders(12, 0.0)  // Fill with zeros, will be filled with values later
 {
-  auto fp = expand_env(file_path);
-  initialize(fp);
+  if (!file_path.empty())
+  initialize(expand_env(file_path));
 }
-
-#ifndef WALK_PARAMETERS_YAML
-  #error Variable WALK_PARAMETERS_YAML not defined.
-#endif
-Params::Params() : Params(WALK_PARAMETERS_YAML) {}
 
 
 void Params::initialize(const std::string& file_path) {
@@ -99,236 +102,244 @@ void Params::initialize(const std::string& file_path) {
   // Check if YAML node is detected and retrieve it
   assert_yaml_parsing(param, file_path, "robot");
   const YAML::Node& robot_node = param["robot"];
+  YAML::convert<Params>::decode(robot_node, *this);
+  std::cout << "Loading robot config file " << config_file << std::endl;
+}
+
+namespace YAML {
+bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
 
   // Retrieve robot parameters
   assert_yaml_parsing(robot_node, "robot", "config_file");
-  config_file = expand_env(robot_node["config_file"].as<std::string>());
-  std::cout << "Loading robot config file " << config_file << std::endl;
+  rhs.config_file = expand_env(robot_node["config_file"].as<std::string>());
+  std::cout << "Loading robot config file " << rhs.config_file << std::endl;
 
   assert_yaml_parsing(robot_node, "robot", "interface");
-  interface = robot_node["interface"].as<std::string>();
+  rhs.interface = robot_node["interface"].as<std::string>();
 
   assert_yaml_parsing(robot_node, "robot", "DEMONSTRATION");
-  DEMONSTRATION = robot_node["DEMONSTRATION"].as<bool>();
+  rhs.DEMONSTRATION = robot_node["DEMONSTRATION"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "SIMULATION");
-  SIMULATION = robot_node["SIMULATION"].as<bool>();
+  rhs.SIMULATION = robot_node["SIMULATION"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "LOGGING");
-  LOGGING = robot_node["LOGGING"].as<bool>();
+  rhs.LOGGING = robot_node["LOGGING"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "PLOTTING");
-  PLOTTING = robot_node["PLOTTING"].as<bool>();
+  rhs.PLOTTING = robot_node["PLOTTING"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "dt_wbc");
-  dt_wbc = robot_node["dt_wbc"].as<double>();
+  rhs.dt_wbc = robot_node["dt_wbc"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "env_id");
-  env_id = robot_node["env_id"].as<int>();
+  rhs.env_id = robot_node["env_id"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "q_init");
-  q_init = robot_node["q_init"].as<std::vector<double> >();
+  rhs.q_init = robot_node["q_init"].as<std::vector<double> >();
 
   assert_yaml_parsing(robot_node, "robot", "dt_mpc");
-  dt_mpc = robot_node["dt_mpc"].as<double>();
+  rhs.dt_mpc = robot_node["dt_mpc"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "N_periods");
-  N_periods = robot_node["N_periods"].as<uint>();
+  rhs.N_periods = robot_node["N_periods"].as<uint>();
 
   assert_yaml_parsing(robot_node, "robot", "N_SIMULATION");
-  N_SIMULATION = robot_node["N_SIMULATION"].as<int>();
+  rhs.N_SIMULATION = robot_node["N_SIMULATION"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "type_MPC");
-  type_MPC = robot_node["type_MPC"].as<int>();
+  rhs.type_MPC = robot_node["type_MPC"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "use_flat_plane");
-  use_flat_plane = robot_node["use_flat_plane"].as<bool>();
+  rhs.use_flat_plane = robot_node["use_flat_plane"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "predefined_vel");
-  predefined_vel = robot_node["predefined_vel"].as<bool>();
+  rhs.predefined_vel = robot_node["predefined_vel"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "enable_pyb_GUI");
-  enable_pyb_GUI = robot_node["enable_pyb_GUI"].as<bool>();
+  rhs.enable_pyb_GUI = robot_node["enable_pyb_GUI"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "enable_corba_viewer");
-  enable_corba_viewer = robot_node["enable_corba_viewer"].as<bool>();
+  rhs.enable_corba_viewer = robot_node["enable_corba_viewer"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "enable_multiprocessing");
-  enable_multiprocessing = robot_node["enable_multiprocessing"].as<bool>();
+  rhs.enable_multiprocessing = robot_node["enable_multiprocessing"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "perfect_estimator");
-  perfect_estimator = robot_node["perfect_estimator"].as<bool>();
+  rhs.perfect_estimator = robot_node["perfect_estimator"].as<bool>();
+
+  assert_yaml_parsing(robot_node, "robot", "use_qualisys");
+  rhs.use_qualisys = robot_node["perfect_estimator"].as<bool>();
+
+  assert_yaml_parsing(robot_node, "robot", "ocp");
+  rhs.ocp = robot_node["ocp"].as<OCPParams>();
 
   assert_yaml_parsing(robot_node, "robot", "save_guess");
-  save_guess = robot_node["save_guess"].as<bool>();
-
-  assert_yaml_parsing(robot_node, "robot", "max_iter");
-  max_iter = robot_node["max_iter"].as<int>();
-
-  assert_yaml_parsing(robot_node, "robot", "verbose");
-  verbose = robot_node["verbose"].as<bool>();
+  rhs.save_guess = robot_node["save_guess"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "movement");
-  movement = robot_node["movement"].as<std::string>();
+  rhs.movement = robot_node["movement"].as<std::string>();
 
   assert_yaml_parsing(robot_node, "robot", "interpolate_mpc");
-  interpolate_mpc = robot_node["interpolate_mpc"].as<bool>();
+  rhs.interpolate_mpc = robot_node["interpolate_mpc"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "interpolation_type");
-  interpolation_type = robot_node["interpolation_type"].as<int>();
+  rhs.interpolation_type = robot_node["interpolation_type"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "closed_loop");
-  closed_loop = robot_node["closed_loop"].as<bool>();
+  rhs.closed_loop = robot_node["closed_loop"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "Kp_main");
-  Kp_main = robot_node["Kp_main"].as<std::vector<double> >();
+  rhs.Kp_main = robot_node["Kp_main"].as<std::vector<double> >();
 
   assert_yaml_parsing(robot_node, "robot", "Kd_main");
-  Kd_main = robot_node["Kd_main"].as<std::vector<double> >();
+  rhs.Kd_main = robot_node["Kd_main"].as<std::vector<double> >();
 
   assert_yaml_parsing(robot_node, "robot", "Kff_main");
-  Kff_main = robot_node["Kff_main"].as<double>();
+  rhs.Kff_main = robot_node["Kff_main"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "starting_nodes");
-  starting_nodes = robot_node["starting_nodes"].as<int>();
+  rhs.starting_nodes = robot_node["starting_nodes"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "ending_nodes");
-  ending_nodes = robot_node["ending_nodes"].as<int>();
+  rhs.ending_nodes = robot_node["ending_nodes"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "gait_repetitions");
-  gait_repetitions = robot_node["gait_repetitions"].as<int>();
+  rhs.gait_repetitions = robot_node["gait_repetitions"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "gait");
-  gait_vec = robot_node["gait"].as<std::vector<int> >();
-  convert_gait_vec();
+  rhs.gait_vec = robot_node["gait"].as<std::vector<int> >();
+  rhs.convert_gait_vec();
 
   assert_yaml_parsing(robot_node, "robot", "gp_alpha_vel");
-  gp_alpha_vel = robot_node["gp_alpha_vel"].as<double>();
+  rhs.gp_alpha_vel = robot_node["gp_alpha_vel"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "gp_alpha_pos");
-  gp_alpha_pos = robot_node["gp_alpha_pos"].as<double>();
+  rhs.gp_alpha_pos = robot_node["gp_alpha_pos"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "t_switch");
-  t_switch_vec = robot_node["t_switch"].as<std::vector<double> >();
-  convert_t_switch();
+  rhs.t_switch_vec = robot_node["t_switch"].as<std::vector<double> >();
+  rhs.convert_t_switch();
 
   assert_yaml_parsing(robot_node, "robot", "v_switch");
-  v_switch_vec = robot_node["v_switch"].as<std::vector<double> >();
-  convert_v_switch();
+  rhs.v_switch_vec = robot_node["v_switch"].as<std::vector<double> >();
+  rhs.convert_v_switch();
 
   assert_yaml_parsing(robot_node, "robot", "fc_v_esti");
-  fc_v_esti = robot_node["fc_v_esti"].as<double>();
+  rhs.fc_v_esti = robot_node["fc_v_esti"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "k_feedback");
-  k_feedback = robot_node["k_feedback"].as<double>();
+  rhs.k_feedback = robot_node["k_feedback"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "max_height");
-  max_height = robot_node["max_height"].as<double>();
+  rhs.max_height = robot_node["max_height"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "lock_time");
-  lock_time = robot_node["lock_time"].as<double>();
+  rhs.lock_time = robot_node["lock_time"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "vert_time");
-  vert_time = robot_node["vert_time"].as<double>();
+  rhs.vert_time = robot_node["vert_time"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "osqp_w_states");
-  osqp_w_states = robot_node["osqp_w_states"].as<std::vector<double> >();
+  rhs.osqp_w_states = robot_node["osqp_w_states"].as<std::vector<double> >();
 
   assert_yaml_parsing(robot_node, "robot", "osqp_w_forces");
-  osqp_w_forces = robot_node["osqp_w_forces"].as<std::vector<double> >();
+  rhs.osqp_w_forces = robot_node["osqp_w_forces"].as<std::vector<double> >();
 
   assert_yaml_parsing(robot_node, "robot", "osqp_Nz_lim");
-  osqp_Nz_lim = robot_node["osqp_Nz_lim"].as<double>();
+  rhs.osqp_Nz_lim = robot_node["osqp_Nz_lim"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "Kp_flyingfeet");
-  Kp_flyingfeet = robot_node["Kp_flyingfeet"].as<double>();
+  rhs.Kp_flyingfeet = robot_node["Kp_flyingfeet"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "Kd_flyingfeet");
-  Kd_flyingfeet = robot_node["Kd_flyingfeet"].as<double>();
+  rhs.Kd_flyingfeet = robot_node["Kd_flyingfeet"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "Kp_base_position");
-  Kp_base_position = robot_node["Kp_base_position"].as<std::vector<double> >();
+  rhs.Kp_base_position = robot_node["Kp_base_position"].as<std::vector<double> >();
 
   assert_yaml_parsing(robot_node, "robot", "Kd_base_position");
-  Kd_base_position = robot_node["Kd_base_position"].as<std::vector<double> >();
+  rhs.Kd_base_position = robot_node["Kd_base_position"].as<std::vector<double> >();
 
   assert_yaml_parsing(robot_node, "robot", "Kp_base_orientation");
-  Kp_base_orientation = robot_node["Kp_base_orientation"].as<std::vector<double> >();
+  rhs.Kp_base_orientation = robot_node["Kp_base_orientation"].as<std::vector<double> >();
 
   assert_yaml_parsing(robot_node, "robot", "Kd_base_orientation");
-  Kd_base_orientation = robot_node["Kd_base_orientation"].as<std::vector<double> >();
+  rhs.Kd_base_orientation = robot_node["Kd_base_orientation"].as<std::vector<double> >();
 
   assert_yaml_parsing(robot_node, "robot", "w_tasks");
-  w_tasks = robot_node["w_tasks"].as<std::vector<double> >();
+  rhs.w_tasks = robot_node["w_tasks"].as<std::vector<double> >();
 
   assert_yaml_parsing(robot_node, "robot", "Q1");
-  Q1 = robot_node["Q1"].as<double>();
+  rhs.Q1 = robot_node["Q1"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "Q2");
-  Q2 = robot_node["Q2"].as<double>();
+  rhs.Q2 = robot_node["Q2"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "Fz_max");
-  Fz_max = robot_node["Fz_max"].as<double>();
+  rhs.Fz_max = robot_node["Fz_max"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "Fz_min");
-  Fz_min = robot_node["Fz_min"].as<double>();
+  rhs.Fz_min = robot_node["Fz_min"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "enable_comp_forces");
-  enable_comp_forces = robot_node["enable_comp_forces"].as<bool>();
+  rhs.enable_comp_forces = robot_node["enable_comp_forces"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "solo3D");
-  solo3D = robot_node["solo3D"].as<bool>();
+  rhs.solo3D = robot_node["solo3D"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "enable_multiprocessing_mip");
-  enable_multiprocessing_mip = robot_node["enable_multiprocessing_mip"].as<bool>();
+  rhs.enable_multiprocessing_mip = robot_node["enable_multiprocessing_mip"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "environment_URDF");
-  environment_URDF = robot_node["environment_URDF"].as<std::string>();
+  rhs.environment_URDF = robot_node["environment_URDF"].as<std::string>();
 
   assert_yaml_parsing(robot_node, "robot", "environment_heightmap");
-  environment_heightmap = robot_node["environment_heightmap"].as<std::string>();
+  rhs.environment_heightmap = robot_node["environment_heightmap"].as<std::string>();
 
   assert_yaml_parsing(robot_node, "robot", "heightmap_fit_length");
-  heightmap_fit_length = robot_node["heightmap_fit_length"].as<double>();
+  rhs.heightmap_fit_length = robot_node["heightmap_fit_length"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "heightmap_fit_size");
-  heightmap_fit_size = robot_node["heightmap_fit_size"].as<int>();
+  rhs.heightmap_fit_size = robot_node["heightmap_fit_size"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "number_steps");
-  number_steps = robot_node["number_steps"].as<int>();
+  rhs.number_steps = robot_node["number_steps"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "max_velocity");
-  max_velocity = robot_node["max_velocity"].as<std::vector<double> >();
+  rhs.max_velocity = robot_node["max_velocity"].as<std::vector<double> >();
 
   assert_yaml_parsing(robot_node, "robot", "use_bezier");
-  use_bezier = robot_node["use_bezier"].as<bool>();
+  rhs.use_bezier = robot_node["use_bezier"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "use_sl1m");
-  use_sl1m = robot_node["use_sl1m"].as<bool>();
+  rhs.use_sl1m = robot_node["use_sl1m"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "use_heuristic");
-  use_sl1m = robot_node["use_heuristic"].as<bool>();
+  rhs.use_heuristic = robot_node["use_heuristic"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "bezier_x_margin_max");
-  bezier_x_margin_max = robot_node["bezier_x_margin_max"].as<float>();
+  rhs.bezier_x_margin_max = robot_node["bezier_x_margin_max"].as<float>();
 
   assert_yaml_parsing(robot_node, "robot", "bezier_t_margin");
-  bezier_t_margin = robot_node["bezier_t_margin"].as<float>();
+  rhs.bezier_t_margin = robot_node["bezier_t_margin"].as<float>();
 
   assert_yaml_parsing(robot_node, "robot", "bezier_z_margin");
-  bezier_z_margin = robot_node["bezier_z_margin"].as<float>();
+  rhs.bezier_z_margin = robot_node["bezier_z_margin"].as<float>();
 
   assert_yaml_parsing(robot_node, "robot", "bezier_N_sample");
-  bezier_N_sample = robot_node["bezier_N_sample"].as<int>();
+  rhs.bezier_N_sample = robot_node["bezier_N_sample"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "bezier_N_sample_ineq");
-  bezier_N_sample_ineq = robot_node["bezier_N_sample_ineq"].as<int>();
+  rhs.bezier_N_sample_ineq = robot_node["bezier_N_sample_ineq"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "bezier_degree");
-  bezier_degree = robot_node["bezier_degree"].as<int>();
+  rhs.bezier_degree = robot_node["bezier_degree"].as<int>();
 
-  if (!SIMULATION) perfect_estimator = false;
+  if (!rhs.SIMULATION) rhs.perfect_estimator = false;
+  return true;
 }
+} // namespace YAML
 
 void Params::convert_gait_vec() {
   if (gait_vec.size() % 5 != 0) {

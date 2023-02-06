@@ -11,7 +11,8 @@ class OCPAbstract(abc.ABC):
     def __init__(self, pd: ProblemData, params: qrw.Params):
         self.pd = pd
         self.params = params
-        self.max_iter = 1000 if params.save_guess else params.max_iter
+        self.max_iter = 1000 if params.save_guess else params.ocp.max_iter
+        self.init_max_iters = params.ocp.init_max_iters
 
     @abc.abstractmethod
     def initialize_models(self, gait, footsteps=[], base_refs=[]):

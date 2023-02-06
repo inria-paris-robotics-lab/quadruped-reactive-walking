@@ -22,13 +22,45 @@
 #include "qrw/Types.h"
 #include "qrw/utils.hpp"
 
-class Params {
- public:
-  /// \brief Constructor using a path to a configuration file.
-  Params(const std::string &file_path);
+#ifndef WALK_PARAMETERS_YAML
+  #error Variable WALK_PARAMETERS_YAML not defined.
+#endif
 
-  /// \brief Empty constructor
-  Params();
+// fwd-declaration
+struct Params;
+
+struct OCPParams {
+  uint num_threads;
+  uint max_iter;
+  uint init_max_iters;
+  bool verbose;
+};
+
+std::ostream &operator<<(std::ostream &oss, const OCPParams &p);
+
+namespace YAML {
+template<>
+struct convert<Params> {
+  static bool decode(const Node &robot_node, Params &rhs);
+};
+
+template<>
+struct convert<OCPParams> {
+  static bool decode(const Node& node, OCPParams &rhs) {
+    rhs.num_threads = node["num_threads"].as<uint>();
+    rhs.max_iter = node["max_iter"].as<uint>();
+    rhs.init_max_iters = node["init_max_iters"].as<uint>();
+    rhs.verbose = node["verbose"].as<bool>();
+    return true;
+  }
+};
+
+} // namespace YAML
+
+
+struct Params {
+  /// \brief Constructor using a path to a configuration file.
+  Params(const std::string &file_path = WALK_PARAMETERS_YAML);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ///
@@ -89,6 +121,7 @@ class Params {
   bool enable_multiprocessing;  // Enable/disable running the MPC in another process in parallel of the main loop
   bool perfect_estimator;       // Enable/disable perfect estimator by using data directly from PyBullet
   bool use_qualisys;            // Enable/disable mocap
+  OCPParams ocp;                // OCP parameters
 
   // General control parameters
   std::vector<double> q_init;   // Initial articular positions
@@ -97,7 +130,6 @@ class Params {
   uint N_periods;                // Number of gait periods in the MPC prediction horizon
   int type_MPC;                 // Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3 for Crocoddyl MPCs
   bool save_guess;              // true to save the initial result of the mpc
-  int max_iter;                 // maximum iters
   bool verbose;                 // verbosity
   std::string movement;         // Name of the mmovemnet to perform
   bool interpolate_mpc;         // true to interpolate the impedance quantities, otherwise integrate
@@ -195,7 +227,6 @@ class Params {
 /// \param[in] child_node_name Name of the child node
 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////
-namespace yaml_control_interface {
 #define assert_yaml_parsing(yaml_node, parent_node_name, child_node_name)                              \
   if (!yaml_node[child_node_name]) {                                                                   \
     std::ostringstream oss;                                                                            \
@@ -222,6 +253,6 @@ namespace yaml_control_interface {
     throw std::runtime_error(oss.str());                                                                    \
   }                                                                                                         \
   assert(true)
-}  // namespace yaml_control_interface
+
 
 #endif  // PARAMS_H_INCLUDED
