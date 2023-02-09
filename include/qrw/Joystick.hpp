@@ -13,7 +13,7 @@
 #include <chrono>
 #include <linux/joystick.h>
 
-#include "qrw/Params.hpp"
+#include "qrw/Animator.hpp"
 
 struct gamepad_struct {
   double v_x = 0.0;    // Up/down status of left pad
@@ -30,22 +30,16 @@ struct gamepad_struct {
   int R1 = 0;          // Status of R1 button
 };
 
-class Joystick {
+class Joystick : public AnimatorBase {
  public:
-  ////////////////////////////////////////////////////////////////////////////////////////////////
+  /// \brief Constructor
   ///
-  /// \brief Empty constructor
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  Joystick();
+  /// \param[in] params Object that stores parameters
+  Joystick(Params& params);
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
   /// \brief Initialize with given data
   ///
   /// \param[in] params Object that stores parameters
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
   void initialize(Params& params);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -53,7 +47,7 @@ class Joystick {
   /// \brief Destructor.
   ///
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  ~Joystick();
+  ~Joystick() override;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ///
@@ -75,7 +69,7 @@ class Joystick {
   /// gait
   ///
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  void update_v_ref(int k, bool gait_is_static);
+  void update_v_ref(int k, bool gait_is_static) override;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ///
@@ -99,17 +93,6 @@ class Joystick {
   ////////////////////////////////////////////////////////////////////////////////////////////////
   void update_v_ref_gamepad(int k, bool gait_is_static);
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
-  /// \brief Update the status of the joystick using polynomial interpolation
-  ///
-  /// \param[in] k Numero of the current loop
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  void update_v_ref_predefined(int k);
-
-  Vector6 getPRef() { return p_ref_; }
-  Vector6 getVRef() { return v_ref_; }
   int getJoystickCode() { return joystick_code_; }
   bool getStop() { return stop_; }
   bool getStart() { return start_; }
@@ -121,17 +104,8 @@ class Joystick {
   bool getR1() { return gamepad.R1 == 1; }
 
  private:
-  Params* params_;
-
-  Vector6 A3_;  // Third order coefficient of the polynomial that generates the
-                // velocity profile
-  Vector6 A2_;  // Second order coefficient of the polynomial that generates the
-                // velocity profile
-  Vector6 p_ref_;  // Reference position of the gamepad after low pass filter
-  Vector6 p_gp_;   // Raw position reference of the gamepad
-  Vector6 v_ref_;  // Reference velocity resulting of the polynomial
-                   // interpolation or after low pass filter
-  Vector6 v_gp_;   // Raw velocity reference of the gamepad
+  Vector6 p_gp_;  // Raw position reference of the gamepad
+  Vector6 v_gp_;  // Raw velocity reference of the gamepad
   Vector6
       v_ref_heavy_filter_;  // Reference velocity after heavy low pass filter
 
@@ -140,13 +114,6 @@ class Joystick {
   bool start_ = false;     // Flag to start the controller
   bool predefined =
       false;  // Flag to perform polynomial interpolation or read the gamepad
-
-  double dt_mpc = 0.0;  // Time step of the MPC
-  double dt_wbc = 0.0;  // Time step of the WBC
-  int k_mpc = 0;        // Number of WBC time step for one MPC time step
-
-  VectorNi k_switch;  // Key frames for the polynomial velocity interpolation
-  Matrix6N v_switch;  // Target velocity for the key frames
 
   // How much the gamepad velocity and position is filtered to avoid sharp
   // changes

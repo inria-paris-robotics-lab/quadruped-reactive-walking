@@ -61,6 +61,7 @@ set(${PROJECT_NAME}_HEADERS
   include/bindings/python.hpp
   include/qrw/Types.h
   include/qrw/Params.hpp
+  include/qrw/Animator.hpp
   include/qrw/Joystick.hpp
   include/qrw/Estimator.hpp
   include/qrw/Filter.hpp
@@ -70,6 +71,7 @@ set(${PROJECT_NAME}_HEADERS
 
 set(${PROJECT_NAME}_SOURCES
   src/Params.cpp
+  src/Animator.cpp
   src/Joystick.cpp
   src/Estimator.cpp
   src/Filter.cpp

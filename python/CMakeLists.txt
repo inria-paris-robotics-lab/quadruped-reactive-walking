@@ -4,7 +4,7 @@ endif (GENERATE_PYTHON_STUBS)
 
 set(${PY_NAME}_SOURCES
   module.cpp
-  Joystick.cpp
+  Animator.cpp
   Params.cpp
   Estimator.cpp
   Filter.cpp

@@ -4,14 +4,13 @@
 #include <stdio.h>
 #include <unistd.h>
 
-Joystick::Joystick()
-    : A3_(Vector6::Zero()),
-      A2_(Vector6::Zero()),
-      p_ref_(Vector6::Zero()),
+Joystick::Joystick(Params &params)
+    : AnimatorBase(params),
       p_gp_(Vector6::Zero()),
-      v_ref_(Vector6::Zero()),
       v_gp_(Vector6::Zero()),
-      v_ref_heavy_filter_(Vector6::Zero()) {}
+      v_ref_heavy_filter_(Vector6::Zero()) {
+  initialize(params);
+}
 
 Joystick::~Joystick() {
   if (js != -1) {
@@ -20,7 +19,6 @@ Joystick::~Joystick() {
 }
 
 void Joystick::initialize(Params &params) {
-  params_ = &params;
   dt_wbc = params.dt_wbc;
   dt_mpc = params.dt_mpc;
   k_mpc = static_cast<int>(std::round(params.dt_mpc / params.dt_wbc));
@@ -40,23 +38,10 @@ void Joystick::initialize(Params &params) {
   }
 }
 
-void Joystick::handle_v_switch(int k) {
-  int i = 1;
-  while (i < k_switch.size() && k_switch(i) <= k) {
-    i++;
-  }
-  if (i != k_switch.size()) {
-    double ev = k - k_switch(i - 1);
-    double t1 = k_switch(i) - k_switch(i - 1);
-    A3_ = 2 * (v_switch.col(i - 1) - v_switch.col(i)) / pow(t1, 3);
-    A2_ = (-3.0 / 2.0) * t1 * A3_;
-    v_ref_ = v_switch.col(i - 1) + A2_ * pow(ev, 2) + A3_ * pow(ev, 3);
-  }
-}
-
 void Joystick::update_v_ref(int k, bool gait_is_static) {
   if (predefined) {
-    update_v_ref_predefined(k);
+    // update_v_ref_predefined(k);
+    AnimatorBase::update_v_ref(k, gait_is_static);
   } else {
     update_v_ref_gamepad(k, gait_is_static);
   }
@@ -216,13 +201,4 @@ void Joystick::update_v_ref_gamepad(int k, bool gait_is_static) {
   // Low pass filter to slow down the changes of position when moving the
   // joysticks
   p_ref_ = gp_alpha_pos * p_gp_ + (1 - gp_alpha_pos) * p_ref_;
-}
-
-void Joystick::update_v_ref_predefined(int k) {
-  if (k == 0) {
-    v_switch = params_->v_switch;
-    k_switch = (params_->t_switch / dt_wbc).cast<int>();
-  }
-  handle_v_switch(
-      k);  // Polynomial interpolation to generate the velocity profile
 }
