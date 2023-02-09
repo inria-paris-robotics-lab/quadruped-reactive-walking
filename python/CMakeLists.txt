@@ -3,7 +3,7 @@ if (GENERATE_PYTHON_STUBS)
 endif (GENERATE_PYTHON_STUBS)
 
 set(${PY_NAME}_SOURCES
-  main.cpp
+  module.cpp
   Joystick.cpp
   Params.cpp
   Estimator.cpp
