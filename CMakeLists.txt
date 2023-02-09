@@ -11,6 +11,8 @@ include(cmake/base.cmake)
 include(cmake/boost.cmake)
 include(CMakeDependentOption)
 
+set(CUSTOM_HEADER_DIR "qrw")
+
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to 'Release' as none was specified.")
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
@@ -20,8 +22,9 @@ endif()
 
 # Project options
 option(BUILD_PYTHON_INTERFACE "Build the python binding" ON)
+option(BUILD_JOYSTICK "Build with Gamepad support." ON)
 cmake_dependent_option(INSTALL_PYTHON_INTERFACE_ONLY "Install *ONLY* the python bindings" OFF BUILD_PYTHON_INTERFACE OFF)
-cmake_dependent_option(GENERATE_PYTHON_STUBS "Generate the Python stubs associated to the Python library" ON BUILD_PYTHON_INTERFACE OFF)
+cmake_dependent_option(GENERATE_PYTHON_STUBS "Generate the Python stubs associated to the Python library" ON BUILD_PYTHON_INTERFACE ON)
 option(SUFFIX_SO_VERSION "Suffix library name with its version" ON)
 
 # Project configuration
@@ -41,6 +44,10 @@ CHECK_MINIMAL_CXX_STANDARD(11 REQUIRED)
 set(BOOST_COMPONENTS unit_test_framework)
 ADD_PROJECT_DEPENDENCY(Eigen3 REQUIRED)
 ADD_PROJECT_DEPENDENCY(example-robot-data REQUIRED)
+
+if (BUILD_JOYSTICK)
+  add_compile_definitions(QRW_JOYSTICK_SUPPORT)
+endif (BUILD_JOYSTICK)
 
 if(BUILD_PYTHON_INTERFACE)
   ADD_PROJECT_DEPENDENCY(eigenpy REQUIRED)
@@ -90,10 +97,8 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC pinocchio::pinocchio)
 # Link master board library
 # TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC master_board_sdk::master_board_sdk)
 
-#find_package(yaml-cpp REQUIRED)
-#target_link_libraries(${PROJECT_NAME} PRIVATE yaml-cpp::yaml-cpp)
 add_project_dependency(yaml-cpp CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC ${YAML_CPP_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp)
 
 if(SUFFIX_SO_VERSION)
   set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION ${PROJECT_VERSION})

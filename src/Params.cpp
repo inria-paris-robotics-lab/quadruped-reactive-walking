@@ -110,7 +110,6 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   // Retrieve robot parameters
   assert_yaml_parsing(robot_node, "robot", "config_file");
   rhs.config_file = expand_env(robot_node["config_file"].as<std::string>());
-  std::cout << "Loading robot config file " << rhs.config_file << std::endl;
 
   assert_yaml_parsing(robot_node, "robot", "interface");
   rhs.interface = robot_node["interface"].as<std::string>();
