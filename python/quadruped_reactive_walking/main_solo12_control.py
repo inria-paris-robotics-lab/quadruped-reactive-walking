@@ -17,6 +17,7 @@ import argparse
 import matplotlib.pyplot as plt
 import seaborn as sns
 import enum
+import termcolor as tcl
 
 sns.set_style("whitegrid")
 plt.rcParams["lines.linewidth"] = 1.0
@@ -238,6 +239,7 @@ def control_loop(args):
                 break
 
             if t <= 10 * params.dt_wbc and check_position_error(device, controller):
+                tcl.cprint("Position error encountered; breaking.", color="yellow")
                 break
 
             device.joints.set_position_gains(controller.result.P)
