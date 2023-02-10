@@ -1,4 +1,7 @@
+#include "qrw/Animator.hpp"
+#ifdef QRW_JOYSTICK_SUPPORT
 #include "qrw/Joystick.hpp"
+#endif
 
 #include "bindings/python.hpp"
 
@@ -23,6 +26,7 @@ void exposeJoystick() {
   bp::class_<AnimatorBase>("AnimatorBase", bp::no_init)
       .def(AnimatorVisitor<AnimatorBase>());
 
+#ifdef QRW_JOYSTICK_SUPPORT
   bp::class_<Joystick>("Joystick", bp::no_init)
       .def(AnimatorVisitor<Joystick>())
       .def("get_joystick_code", &Joystick::getJoystickCode, bp::args("self"),
@@ -43,4 +47,5 @@ void exposeJoystick() {
            "Get Joystick L1 status")
       .def("get_r1", &Joystick::getR1, bp::args("self"),
            "Get Joystick R1 status");
+#endif
 }

@@ -46,8 +46,10 @@ ADD_PROJECT_DEPENDENCY(Eigen3 REQUIRED)
 ADD_PROJECT_DEPENDENCY(example-robot-data REQUIRED)
 
 if (BUILD_JOYSTICK)
-  add_compile_definitions(QRW_JOYSTICK_SUPPORT)
-endif (BUILD_JOYSTICK)
+  add_definitions(-DQRW_JOYSTICK_SUPPORT)
+else()
+  remove_definitions(-DQRW_JOYSTICK_SUPPORT)
+endif()
 
 if(BUILD_PYTHON_INTERFACE)
   ADD_PROJECT_DEPENDENCY(eigenpy REQUIRED)
@@ -77,6 +79,13 @@ set(${PROJECT_NAME}_SOURCES
   src/Filter.cpp
   src/ComplementaryFilter.cpp
   )
+
+if (BUILD_JOYSTICK)
+  list(APPEND ${PROJECT_NAME}_HEADERS
+       include/qrw/Joystick.hpp)
+  list(APPEND ${PROJECT_NAME}_SOURCES
+       src/Joystick.cpp)
+endif (BUILD_JOYSTICK)
 
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SOURCES} ${${PROJECT_NAME}_HEADERS})
 target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
