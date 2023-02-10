@@ -6,7 +6,7 @@ BOOST_PYTHON_MODULE(quadruped_reactive_walking_pywrap) {
 
   bp::import("warnings");
 
-  exposeJoystick();
+  exposeAnimators();
   exposeParams();
   exposeEstimator();
   exposeFilter();

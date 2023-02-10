@@ -22,12 +22,17 @@ struct AnimatorVisitor : public bp::def_visitor<AnimatorVisitor<Class>> {
   }
 };
 
-void exposeJoystick() {
-  bp::class_<AnimatorBase>("AnimatorBase", bp::no_init)
+void exposeAnimators() {
+  bp::class_<AnimatorBase>(
+      "AnimatorBase",
+      "Base animator class. Handles animation using polynomial interpolation.",
+      bp::no_init)
       .def(AnimatorVisitor<AnimatorBase>());
 
 #ifdef QRW_JOYSTICK_SUPPORT
-  bp::class_<Joystick>("Joystick", bp::no_init)
+  bp::class_<Joystick>("Joystick",
+                       "Animator using an external joystick peripheral.",
+                       bp::no_init)
       .def(AnimatorVisitor<Joystick>())
       .def("get_joystick_code", &Joystick::getJoystickCode, bp::args("self"),
            "Get Joystick Code")
