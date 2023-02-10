@@ -11,7 +11,7 @@ from example_robot_data.path import EXAMPLE_ROBOT_DATA_MODEL_DIR
 VIDEO_CONFIG = {"width": 1280, "height": 720, "fov": 75, "record": False}
 
 
-class pybullet_simulator:
+class PybulletWrapper:
     """
     Wrapper for the PyBullet simulator to initialize the simulation, interact with it
     and use various utility functions
@@ -733,7 +733,7 @@ class PyBulletSimulator:
             enable_pyb_GUI (bool): to display PyBullet GUI or not
             dt (float): time step of the simulation
         """
-        self.pyb_sim = pybullet_simulator(q, env_id, use_flat_plane, enable_pyb_GUI, dt)
+        self.pyb_sim = PybulletWrapper(q, env_id, use_flat_plane, enable_pyb_GUI, dt)
         self.q_init = q
         self.joints.positions[:] = q
         self.dt = dt
