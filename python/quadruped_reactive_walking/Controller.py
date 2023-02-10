@@ -56,7 +56,7 @@ class DummyDevice:
 class Controller:
     def __init__(
         self,
-        params,
+        params: qrw.Params,
         q_init,
         t,
         solver_cls: Type[WB_MPC.OCPAbstract],
@@ -80,8 +80,10 @@ class Controller:
         self.error = False
         self.initialized = False
 
-        self.joystick = qrw.Joystick()
-        self.joystick.initialize(params)
+        if params.predefined_vel:
+            self.joystick = qrw.AnimatorBase(params)
+        else:
+            self.joystick = qrw.Joystick(params)
 
         self.estimator = qrw.Estimator()
         self.estimator.initialize(params)
