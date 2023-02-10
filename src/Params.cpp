@@ -166,7 +166,7 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.perfect_estimator = robot_node["perfect_estimator"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "use_qualisys");
-  rhs.use_qualisys = robot_node["perfect_estimator"].as<bool>();
+  rhs.use_qualisys = robot_node["use_qualisys"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "ocp");
   rhs.ocp = robot_node["ocp"].as<OCPParams>();
