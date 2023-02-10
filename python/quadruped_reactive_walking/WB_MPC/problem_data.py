@@ -1,12 +1,12 @@
 import numpy as np
-from example_robot_data import load
+import example_robot_data as erd
 import pinocchio as pin
 
 
-class problemDataAbstract:
+class ProblemDataAbstract:
     def __init__(self, params, frozen_names=[]):
 
-        self.robot = load("solo12")
+        self.robot = erd.load("solo12")
         self.q0 = self.robot.q0
         self.q0[:7] = np.array([0.0, 0.0, params.h_ref, 0, 0, 0, 1])
         self.q0[7:] = params.q_init
@@ -59,7 +59,7 @@ class problemDataAbstract:
         self.collision_model = geometric_models_reduced[1]
 
 
-class ProblemData(problemDataAbstract):
+class ProblemData(ProblemDataAbstract):
     def __init__(self, params):
         super().__init__(params)
 
@@ -121,7 +121,7 @@ class ProblemData(problemDataAbstract):
         )
 
 
-class ProblemDataFull(problemDataAbstract):
+class ProblemDataFull(ProblemDataAbstract):
     def __init__(self, params):
         frozen_names = ["root_joint"]
 

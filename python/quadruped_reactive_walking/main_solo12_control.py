@@ -7,7 +7,7 @@ from datetime import datetime
 
 import quadruped_reactive_walking as qrw
 from .Controller import Controller
-from .tools.LoggerControl import LoggerControl
+from .tools.logger_control import LoggerControl
 
 from typing import Type, Literal
 from .WB_MPC import CrocOCP, AlgtrOCP

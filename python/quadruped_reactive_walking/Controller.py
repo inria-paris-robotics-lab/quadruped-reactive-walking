@@ -8,7 +8,7 @@ from . import WB_MPC_Wrapper
 from . import WB_MPC
 from .WB_MPC.Target import Target
 from .tools.Utils import init_robot, quaternionToRPY
-from .WB_MPC.problem_data import ProblemData, ProblemDataFull
+from .WB_MPC.problem_data import ProblemData
 from .tools.kinematics_utils import get_translation_array
 from .tools.Interpolator import Interpolator
 from typing import Type
