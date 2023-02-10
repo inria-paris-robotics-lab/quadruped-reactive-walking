@@ -120,10 +120,6 @@ add_library(mqtt-interface SHARED include/qrw/mqtt-interface.hpp src/mqtt-interf
 target_link_libraries(mqtt-interface PRIVATE paho-mqtt3c paho-mqtt3a)
 target_include_directories(mqtt-interface PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>)
 
-# Main Executable
-add_executable(${PROJECT_NAMESPACE}-${PROJECT_NAME} src/control_solo12.cpp)
-target_link_libraries(${PROJECT_NAMESPACE}-${PROJECT_NAME} ${PROJECT_NAME} mqtt-interface)
-
 # Python Bindings
 if(BUILD_PYTHON_INTERFACE)
   add_subdirectory(python)
@@ -132,5 +128,4 @@ endif()
 # Installation
 if(NOT INSTALL_PYTHON_INTERFACE_ONLY)
   install(TARGETS ${PROJECT_NAME} EXPORT ${TARGETS_EXPORT_NAME} DESTINATION lib)
-  install(TARGETS ${PROJECT_NAMESPACE}-${PROJECT_NAME} RUNTIME DESTINATION bin)
 endif()
