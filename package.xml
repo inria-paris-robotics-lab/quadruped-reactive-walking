@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package format="3">
+    <version>0.0.1</version>
+    <depend>eigenpy</depend>
+    <depend>pinocchio</depend>
+    <depend>yaml-cpp</depend>
+</package>
