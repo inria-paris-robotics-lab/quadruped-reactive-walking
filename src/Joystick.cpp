@@ -40,7 +40,6 @@ void Joystick::initialize(Params &params) {
 
 void Joystick::update_v_ref(int k, bool gait_is_static) {
   if (predefined) {
-    // update_v_ref_predefined(k);
     AnimatorBase::update_v_ref(k, gait_is_static);
   } else {
     update_v_ref_gamepad(k, gait_is_static);

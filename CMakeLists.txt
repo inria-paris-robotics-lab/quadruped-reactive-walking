@@ -45,11 +45,9 @@ set(BOOST_COMPONENTS unit_test_framework)
 ADD_PROJECT_DEPENDENCY(Eigen3 REQUIRED)
 ADD_PROJECT_DEPENDENCY(example-robot-data REQUIRED)
 
-if (BUILD_JOYSTICK)
-  add_definitions(-DQRW_JOYSTICK_SUPPORT)
-else()
-  remove_definitions(-DQRW_JOYSTICK_SUPPORT)
-endif()
+if(BUILD_JOYSTICK)
+  add_compile_definitions(-DQRW_JOYSTICK_SUPPORT)
+endif(BUILD_JOYSTICK)
 
 if(BUILD_PYTHON_INTERFACE)
   ADD_PROJECT_DEPENDENCY(eigenpy REQUIRED)
@@ -64,7 +62,6 @@ set(${PROJECT_NAME}_HEADERS
   include/qrw/Types.h
   include/qrw/Params.hpp
   include/qrw/Animator.hpp
-  include/qrw/Joystick.hpp
   include/qrw/Estimator.hpp
   include/qrw/Filter.hpp
   include/qrw/ComplementaryFilter.hpp
@@ -74,7 +71,6 @@ set(${PROJECT_NAME}_HEADERS
 set(${PROJECT_NAME}_SOURCES
   src/Params.cpp
   src/Animator.cpp
-  src/Joystick.cpp
   src/Estimator.cpp
   src/Filter.cpp
   src/ComplementaryFilter.cpp
