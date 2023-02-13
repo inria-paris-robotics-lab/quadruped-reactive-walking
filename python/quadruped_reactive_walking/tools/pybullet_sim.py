@@ -739,10 +739,13 @@ class PyBulletSimulator:
         self.dt = dt
         self.time_loop = time.time()
 
-        import imageio
+        if self.record_video:
+            import imageio
 
-        vid_kwargs = dict(fps=self.video_fps)
-        self.video_buffer = imageio.get_writer("sim_video.mp4", **vid_kwargs)
+            vid_kwargs = dict(fps=self.video_fps)
+            self.video_buffer = imageio.get_writer("sim_video.mp4", **vid_kwargs)
+        else:
+            self.video_buffer = None
 
     def cross3(self, left, right):
         """
@@ -873,5 +876,6 @@ class PyBulletSimulator:
         """
         Stop the simulation environment
         """
-        self.video_buffer.close()
+        if self.video_buffer is not None:
+            self.video_buffer.close()
         pyb.disconnect()
