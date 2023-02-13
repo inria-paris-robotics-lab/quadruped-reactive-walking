@@ -18,9 +18,9 @@ robot:
     use_qualisys: false
     ocp:
       num_threads: 4  # number of threads allowed for the ocp solver
-      max_iter: 2  # maximum number of solver iterations
+      max_iter: 1  # maximum number of solver iterations
       init_max_iters: 5  # initial max_iter
-      verbose: true  # solver verbosity
+      verbose: false  # solver verbosity
 
     # General control parameters
     # q_init: [ 0.00208551,  0.97841023, -1.77335038,  0.0020868,   0.97951833, -1.77534163, 0.00208551,  0.97841023, -1.77335038,  0.0020868,   0.97951833, -1.77534163]
