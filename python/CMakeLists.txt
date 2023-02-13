@@ -45,7 +45,7 @@ set(${PY_NAME}_WB_MPC_PYTHON
 set(${PY_NAME}_TOOLS_PYTHON
   gamepadClient.py
   __init__.py
-  LoggerControl.py
+  logger_control.py
   pybullet_sim.py
   Utils.py
   qualisys_client.py
