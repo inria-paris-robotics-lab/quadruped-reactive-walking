@@ -8,16 +8,19 @@ from datetime import datetime
 import quadruped_reactive_walking as qrw
 from .Controller import Controller
 from .tools.logger_control import LoggerControl
+from .tools import meshcat_viewer
 
 from typing import Type, Literal
 from .WB_MPC import CrocOCP, AlgtrOCP
-import tap
 import tqdm
 import argparse
 import matplotlib.pyplot as plt
 import seaborn as sns
 import enum
-import termcolor as tcl
+import colorama
+from colorama import Fore
+
+colorama.init()
 
 sns.set_style("whitegrid")
 plt.rcParams["lines.linewidth"] = 1.0
@@ -195,8 +198,12 @@ def control_loop(args):
     )
     device, qc = get_device(params.SIMULATION)
 
+    # viewer = meshcat_viewer.MeshcatViewer(controller.pd.robot)
+
     if params.LOGGING or params.PLOTTING:
         logger = LoggerControl(controller.pd, params, log_size=params.N_SIMULATION)
+    else:
+        logger = None
 
     if params.SIMULATION:
         device.Init(
@@ -239,7 +246,9 @@ def control_loop(args):
                 break
 
             if t <= 10 * params.dt_wbc and check_position_error(device, controller):
-                tcl.cprint("Position error encountered; breaking.", color="yellow")
+                print(
+                    Fore.YELLOW + "Position error encountered; breaking." + Fore.RESET
+                )
                 break
 
             device.joints.set_position_gains(controller.result.P)
@@ -297,39 +306,43 @@ def control_loop(args):
             mpc = controller.mpc
 
             def plot_prox_ocp(ocp: AlgtrOCP):
-                nplt = 4
+                nplt = 3
+                if args.run_croc:
+                    nplt += 1
                 h = 7.2
                 fig, axs = plt.subplots(nplt, 1, figsize=(6.4, h), layout="constrained")
                 fig: plt.Figure
-                plt.sca(axs[0])
-                plt.plot(ocp.x_solver_errs, label="state $x$", c="b")
-                plt.plot(ocp.u_solver_errs, label="control $u$", c="r", ls="dotted")
-                plt.plot(ocp.fb_errs, label="feedbacks $K$", c="g", ls="dotted")
-                plt.legend()
-                plt.yscale("log")
-                plt.title("$\\ell_\\infty$ error between solver solutions")
                 fig.supxlabel("MPC cycle $k$")
 
-                plt.sca(axs[1])
+                plt.sca(axs[0])
                 plt.plot(ocp.prox_stops, label="algtr", ls="-")
                 plt.plot(ocp.croc_stops, label="croco", ls="dotted")
                 plt.yscale("log")
                 plt.title("$\\ell_\\infty$-norm of stopping criterion")
                 plt.legend()
 
-                plt.sca(axs[2])
+                plt.sca(axs[1])
                 plt.plot(ocp.prox_stops_2, label="algtr", ls="-")
                 plt.plot(ocp.croc_stops_2, label="croco", ls="dotted")
                 plt.title("Squared norm stopping criterion")
                 plt.yscale("log")
                 plt.legend()
 
-                plt.sca(axs[3])
+                plt.sca(axs[2])
                 plt.plot(ocp.prox_iters, label="algtr", ls="-")
                 plt.plot(ocp.croc_iters, label="croco", ls="dotted")
                 plt.title("Number of OCP iterations")
                 plt.grid(visible=True, which="minor", axis="y")
                 plt.legend()
+
+                if args.run_croc:
+                    plt.sca(axs[3])
+                    plt.plot(ocp.x_solver_errs, label="state $x$", c="b")
+                    plt.plot(ocp.u_solver_errs, label="control $u$", c="r", ls="dotted")
+                    plt.plot(ocp.fb_errs, label="feedbacks $K$", c="g", ls="dotted")
+                    plt.legend()
+                    plt.yscale("log")
+                    plt.title("$\\ell_\\infty$ error between solver solutions")
 
             if hasattr(mpc, "ocp") and isinstance(mpc.ocp, AlgtrOCP):
                 plot_prox_ocp(mpc.ocp)

@@ -10,7 +10,7 @@ class LoggerControl:
         if file is not None:
             self.data = np.load(file, allow_pickle=True)
 
-        self.log_size = np.int(log_size)
+        self.log_size = int(log_size)
         self.i = 0
         self.loop_buffer = loop_buffer
         self.params = params

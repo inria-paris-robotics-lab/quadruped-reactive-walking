@@ -8,6 +8,7 @@ dependencies:
   - matplotlib
   - gitpython
   - inputs
+  - tqdm
   - imageio-ffmpeg
   - pip:
     - pybullet

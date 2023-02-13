@@ -8,10 +8,10 @@ import time
 import numpy as np
 import pinocchio as pin
 import crocoddyl
-import termcolor as tcl
 
 import proxddp
 from proxddp import manifolds, dynamics
+from colorama import Fore
 
 from .problem_data import ProblemData
 from .Target import Target
@@ -49,13 +49,14 @@ class AlgtrOCP(CrocOCP):
         self.tol = 1e-3
         if use_prox:
             mu_init = 1e-9
-            tcl.cprint("[using SolverProxDDP]", color="green")
+            print(Fore.GREEN + "[using SolverProxDDP]")
             self.prox_ddp = proxddp.SolverProxDDP(self.tol, mu_init, 0.0)
             self.prox_ddp.ldlt_algo_choice = proxddp.LDLT_DENSE
             self.prox_ddp.setLinesearchMuLowerBound(1e-4)
         else:
-            tcl.cprint("[using SolverFDDP]", color="blue")
+            print(Fore.BLUE + "[using SolverFDDP]")
             self.prox_ddp = proxddp.SolverFDDP(self.tol)
+        print(Fore.RESET)
         self.prox_ddp.verbose = self.verbose
         self.prox_ddp.max_iters = self.max_iter
         self.prox_ddp.setup(self.my_problem)

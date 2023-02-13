@@ -234,7 +234,7 @@ class PybulletWrapper:
             meshScale=mesh_scale,
         )
 
-        self.ftps_Ids = np.zeros((4, 5), dtype=np.int)
+        self.ftps_Ids = np.zeros((4, 5), dtype=int)
         for i in range(4):
             for j in range(5):
                 self.ftps_Ids[i, j] = pyb.createMultiBody(

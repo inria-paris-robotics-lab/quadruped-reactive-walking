@@ -50,6 +50,7 @@ set(${PY_NAME}_TOOLS_PYTHON
   Utils.py
   qualisys_client.py
   kinematics_utils.py
+  meshcat_viewer.py
   Interpolator.py
   )
 
