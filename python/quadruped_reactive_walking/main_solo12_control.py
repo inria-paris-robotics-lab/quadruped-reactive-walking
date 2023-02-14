@@ -50,9 +50,12 @@ def parse_args():
 
 params = qrw.Params()  # Object that holds all controller parameters
 
-repo = git.Repo(search_parent_directories=True)
-sha = repo.head.object.hexsha
-msg = repo.head.object.message + "\nCommit: " + sha
+try:
+    repo = git.Repo(search_parent_directories=True)
+    sha = repo.head.object.hexsha
+    msg = repo.head.object.message + "\nCommit: " + sha
+except ValueError:
+    msg = "\nCommit not found"
 
 
 def get_input():
