@@ -4,6 +4,8 @@ import numpy as np
 from .kinematics_utils import get_translation, get_translation_array
 from ..Controller import Controller
 
+FIG_DPI = 100
+
 
 class LoggerControl:
     def __init__(self, pd, params, log_size=60e3, loop_buffer=False, file=None):
@@ -195,7 +197,7 @@ class LoggerControl:
         import matplotlib.pyplot as plt
 
         legend = ["Hip", "Shoulder", "Knee"]
-        plt.figure(figsize=(12, 6), dpi=90)
+        plt.figure(figsize=(12, 6), dpi=FIG_DPI)
         i = 0
         for i in range(4):
             plt.subplot(2, 2, i + 1)
@@ -211,7 +213,7 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/joint_positions")
 
-        plt.figure(figsize=(12, 6), dpi=90)
+        plt.figure(figsize=(12, 6), dpi=FIG_DPI)
         i = 0
         for i in range(4):
             plt.subplot(2, 2, i + 1)
@@ -231,7 +233,7 @@ class LoggerControl:
         import matplotlib.pyplot as plt
 
         legend = ["Hip", "Shoulder", "Knee"]
-        plt.figure(figsize=(12, 6), dpi=90)
+        plt.figure(figsize=(12, 6), dpi=FIG_DPI)
         i = 0
         for i in range(4):
             plt.subplot(2, 2, i + 1)
@@ -328,7 +330,7 @@ class LoggerControl:
 
         # Equivalent Stiffness Damping plots
         legend = ["Hip", "Shoulder", "Knee"]
-        plt.figure(figsize=(12, 18), dpi=90)
+        plt.figure(figsize=(12, 18), dpi=FIG_DPI)
         for p in range(3):
             plt.subplot(3, 1, p + 1)
             plt.title("Joint:  " + legend[p])
@@ -342,7 +344,7 @@ class LoggerControl:
             plt.savefig(fileName + "/diagonal_Riccati_gains")
 
         # Riccati gains
-        plt.figure(figsize=(12, 18), dpi=90)
+        plt.figure(figsize=(12, 18), dpi=FIG_DPI)
         plt.title("Riccati gains at step: " + str(n))
         plt.imshow(self.ocp_K[n])
         plt.colorbar()
@@ -356,17 +358,33 @@ class LoggerControl:
             [k * self.params.dt_mpc for k in range(self.tstamps.shape[0])]
         )
 
-        plt.figure()
-        plt.plot(t_range, self.t_measures, "r+")
-        plt.plot(t_range, self.t_mpc, "g+")
-        plt.plot(t_range, self.t_send, "b+")
-        plt.plot(t_range, self.t_loop, "+", color="violet")
-        plt.plot(t_range, self.t_ocp_ddp, "+", color="royalblue")
-        plt.axhline(y=self.params.dt_wbc, color="grey", linestyle=":", lw=1.0)
-        lgd = ["Measures", "MPC", "Send", "Whole-loop", "MPC solve"]
-        plt.legend(lgd)
-        plt.xlabel("Time [s]")
-        plt.ylabel("Time [s]")
+        alpha = 0.7
+        plt.figure(figsize=(12, 12))
+        plt.plot(t_range, self.t_measures, "r+", alpha=alpha, label="Estimation")
+        plt.plot(t_range, self.t_mpc, "g+", alpha=alpha, label="MPC (total)")
+        # plt.plot(t_range, self.t_send, c="pink", marker="+", alpha=alpha, label="Sending command")
+        plt.plot(
+            t_range, self.t_loop, "+", c="violet", alpha=alpha, label="Entire loop"
+        )
+        plt.plot(
+            t_range,
+            self.t_ocp_ddp,
+            "1",
+            c="orange",
+            alpha=alpha,
+            label="MPC (OCP solve)",
+        )
+        plt.axhline(
+            y=self.params.dt_wbc,
+            color="darkorange",
+            linestyle="-",
+            lw=1.0,
+            label="wbc $\\Delta t$",
+        )
+        plt.legend()
+        plt.xlabel("Clock  [s]")
+        plt.ylabel("Timing [s]")
+        plt.tight_layout()
 
         if save:
             plt.savefig(fileName + "/timings")
