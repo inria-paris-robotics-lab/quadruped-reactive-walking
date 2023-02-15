@@ -39,20 +39,21 @@ class AlgtrOCP(CrocOCP):
         )
 
         self.num_threads = params.ocp.num_threads
-        self.my_problem.num_threads = self.num_threads
+        if hasattr(self.problem, "num_threads"):
+            self.problem.num_threads = self.num_threads
+        self.my_problem.setNumThreads(self.num_threads)
         self.run_croc_compare = run_croc
 
-        self.verbose = proxddp.VerboseLevel.QUIET
+        self.verbose = proxddp.QUIET
         if params.ocp.verbose:
-            self.verbose = proxddp.VerboseLevel.VERBOSE
+            self.verbose = proxddp.VERBOSE
             self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
         self.tol = 1e-3
         if use_prox:
             mu_init = 1e-9
             print(Fore.GREEN + "[using SolverProxDDP]")
             self.prox_ddp = proxddp.SolverProxDDP(self.tol, mu_init, 0.0)
-            self.prox_ddp.ldlt_algo_choice = proxddp.LDLT_DENSE
-            self.prox_ddp.setLinesearchMuLowerBound(1e-4)
+            self.prox_ddp.reg_init = 1e-8
         else:
             print(Fore.BLUE + "[using SolverFDDP]")
             self.prox_ddp = proxddp.SolverFDDP(self.tol)
@@ -89,8 +90,8 @@ class AlgtrOCP(CrocOCP):
         t_warm_start = time.time()
         self.t_warm_start = t_warm_start - t_update
 
-        mit = self.max_iter if k > 0 else self.init_max_iters
-        self.prox_ddp.max_iters = mit
+        maxiter = self.max_iter if k > 0 else self.init_max_iters
+        self.prox_ddp.max_iters = maxiter
         self.prox_ddp.run(self.my_problem, xs, us)
 
         # compute proxddp's criteria
@@ -110,7 +111,7 @@ class AlgtrOCP(CrocOCP):
         if self.run_croc_compare:
             # run crocoddyl
             self.ddp.th_stop = prox_norm_2
-            self.ddp.solve(xs, us, self.max_iter, False)
+            self.ddp.solve(xs, us, maxiter, False)
 
             croc_norm_inf = max([infNorm(q) for q in Qus])
             croc_norm_2 = sum([q.dot(q) for q in Qus])

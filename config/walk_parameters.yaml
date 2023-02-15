@@ -10,14 +10,14 @@ robot:
     enable_pyb_GUI: false  # Enable/disable PyBullet GUI
     env_id: 0  # Identifier of the environment to choose in which one the simulation will happen
     use_flat_plane: true  # If True the ground is flat, otherwise it has bumps
-    predefined_vel: false  # If we are using a predefined reference velocity (True) or a joystick (False)
+    predefined_vel: true  # If we are using a predefined reference velocity (True) or a joystick (False)
     N_SIMULATION: 80000  # Number of simulated wbc time steps
     enable_corba_viewer: false  # Enable/disable Corba Viewer
     enable_multiprocessing: true     # Enable/disable running the MPC in another process in parallel of the main loop
     perfect_estimator: false  # Enable/disable perfect estimator by using data directly from PyBullet
     use_qualisys: false
     ocp:
-      num_threads: 4  # number of threads allowed for the ocp solver
+      num_threads: 2  # number of threads allowed for the ocp solver
       max_iter: 1  # maximum number of solver iterations
       init_max_iters: 5  # initial max_iter
       verbose: false  # solver verbosity
