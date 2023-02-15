@@ -73,9 +73,9 @@ class MPCWrapper:
             k (int): Number of inv dynamics iterations since the start of the simulation
         """
         if self.multiprocessing:
-            self.run_MPC_asynchronous(k, x0, footstep, base_ref, xs, us)
+            self.run_mpc_async(k, x0, footstep, base_ref, xs, us)
         else:
-            self.run_MPC_synchronous(k, x0, footstep, base_ref, xs, us)
+            self.run_mpc_sync(k, x0, footstep, base_ref, xs, us)
 
     def get_latest_result(self):
         """
@@ -102,7 +102,7 @@ class MPCWrapper:
 
         return self.last_available_result
 
-    def run_MPC_synchronous(self, k, x0, footstep, base_ref, xs, us):
+    def run_mpc_sync(self, k, x0, footstep, base_ref, xs, us):
         """
         Run the MPC (synchronous version)
         """
@@ -117,7 +117,7 @@ class MPCWrapper:
         ) = self.ocp.get_results()
         self.new_result.value = True
 
-    def run_MPC_asynchronous(self, k, x0, footstep, base_ref, xs, us):
+    def run_mpc_async(self, k, x0, footstep, base_ref, xs, us):
         """
         Run the MPC (asynchronous version)
         """
