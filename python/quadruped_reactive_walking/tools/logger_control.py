@@ -185,7 +185,7 @@ class LoggerControl:
 
         self.i += 1
 
-    def plot(self, save=False, filename="tmp/"):
+    def plot(self, save=False, filename=TEMP_DIRNAME):
         import matplotlib.pyplot as plt
 
         self.plot_states(save, filename)
@@ -194,16 +194,22 @@ class LoggerControl:
         # self.plot_riccati_gains(0, save, filename)
         self.plot_controller_times(save, filename)
         # if not self.params.enable_multiprocessing:
-        #     self.plot_OCP_times()
+        #     self.plot_ocp_times()
 
     def plot_states(self, save=False, filename=TEMP_DIRNAME):
         import matplotlib.pyplot as plt
+        from itertools import product
 
         legend = ["Hip", "Shoulder", "Knee"]
-        plt.figure(figsize=(12, 6), dpi=FIG_DPI)
-        i = 0
-        for i in range(4):
-            plt.subplot(2, 2, i + 1)
+        figsize = (18, 6)
+        fig: plt.Figure = plt.figure(
+            figsize=figsize, dpi=FIG_DPI, constrained_layout=True
+        )
+        gridspec = fig.add_gridspec(1, 2)
+        gs0 = gridspec[0].subgridspec(2, 2)
+        gs1 = gridspec[1].subgridspec(2, 2)
+        for i, j in product(range(2), range(2)):
+            plt.subplot(gs0[i, j])
             plt.title("Joint position of " + str(i))
             [
                 plt.plot(np.array(self.q_mes)[:, (3 * i + jj)] * 180 / np.pi)
@@ -212,25 +218,25 @@ class LoggerControl:
             plt.ylabel("Joint position [deg]")
             plt.xlabel("t[s]")
             plt.legend(legend)
-        plt.draw()
-        if save:
-            plt.savefig(filename + "/joint_positions")
+        # plt.draw()
+        # if save:
+        #     plt.savefig(filename + "/joint_positions")
 
-        plt.figure(figsize=(12, 6), dpi=FIG_DPI)
-        i = 0
-        for i in range(4):
-            plt.subplot(2, 2, i + 1)
+        for i, j in product(range(2), range(2)):
+            plt.subplot(gs1[i, j])
             plt.title("Joint velocity of " + str(i))
             [
                 plt.plot(np.array(self.v_mes)[:, (3 * i + jj)] * 180 / np.pi)
                 for jj in range(3)
             ]
             plt.ylabel("Joint velocity [deg/s]")
-            plt.xlabel("t[s]")
+            plt.xlabel("$t$ [s]")
             plt.legend(legend)
         plt.draw()
+        # if save:
+        #     plt.savefig(filename + "/joint_velocities")
         if save:
-            plt.savefig(filename + "/joint_velocities")
+            plt.savefig(filename + "/joint_states")
 
     def plot_torques(self, save=False, filename=TEMP_DIRNAME):
         import matplotlib.pyplot as plt
@@ -246,7 +252,7 @@ class LoggerControl:
                 for jj in range(3)
             ]
             plt.ylabel("Torque [Nm]")
-            plt.xlabel("t[s]")
+            plt.xlabel("$t$ [s]")
             plt.legend(legend)
         plt.draw()
         if save:
