@@ -26,9 +26,10 @@ class PybulletWrapper:
 
     def __init__(self, q_init, env_id, use_flat_plane, enable_pyb_GUI, dt=0.001):
         self.applied_force = np.zeros(3)
+        self.enable_gui = enable_pyb_GUI
 
         # Start the client for PyBullet
-        if enable_pyb_GUI:
+        if self.enable_gui:
             pyb.connect(pyb.GUI)
             pyb.configureDebugVisualizer(pyb.COV_ENABLE_GUI, 0)
             pyb.configureDebugVisualizer(pyb.COV_ENABLE_SHADOWS, 0)
@@ -347,13 +348,14 @@ class PybulletWrapper:
         # Set time step for the simulation
         pyb.setTimeStep(dt)
 
-        # Change camera position
-        pyb.resetDebugVisualizerCamera(
-            cameraDistance=0.6,
-            cameraYaw=45,
-            cameraPitch=-39.9,
-            cameraTargetPosition=[0.0, 0.0, robotStartPos[2] - 0.2],
-        )
+        if self.enable_gui:
+            # Change camera position
+            pyb.resetDebugVisualizerCamera(
+                cameraDistance=0.6,
+                cameraYaw=45,
+                cameraPitch=-39.9,
+                cameraTargetPosition=[0.0, 0.0, robotStartPos[2] - 0.2],
+            )
 
     def get_image(self):
         width = VIDEO_CONFIG["width"]
@@ -430,7 +432,8 @@ class PybulletWrapper:
                     self.robotId, [0, 0, 0.25], [0, 0, 0, 1]
                 )
 
-        self.set_debug_camera(q)
+        if self.enable_gui:
+            self.set_debug_camera(q)
 
     def set_debug_camera(self, q):
         # Get the orientation of the robot to change the orientation of the camera with the rotation of the robot
@@ -846,7 +849,8 @@ class PyBulletSimulator:
         )
 
         pyb.stepSimulation()
-        self.pyb_sim.update_debug_camera()
+        if self.pyb_sim.enable_gui:
+            self.pyb_sim.update_debug_camera()
         if self.record_video and self.cpt % self.video_record_every == 0:
             img = self.pyb_sim.get_image()
             self.video_buffer.append_data(img)
