@@ -19,11 +19,15 @@ class OCPAbstract(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def solve(self, k, x0, footstep, base_ref, xs_init, us_init):
+    def solve(self, k, xs_init, us_init):
         pass
 
     @abc.abstractmethod
     def get_results(self) -> tuple:
+        pass
+
+    @abc.abstractmethod
+    def make_ocp(self, k, x0, footstep, base_task):
         pass
 
     def make_task(self, footstep):

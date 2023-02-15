@@ -64,17 +64,15 @@ class CrocOCP(OCPAbstract):
 
         return models, terminal_model
 
-    def solve(self, k, x0, footstep, base_ref, xs_init=None, us_init=None):
+    def solve(self, k, xs_init=None, us_init=None):
         t_start = time()
-        self.x0 = x0
-        self.make_ocp(k, footstep, base_ref)
 
         t_update = time()
         self.t_update = t_update - t_start
 
         if xs_init is None or us_init is None:
-            xs = [x0] * (self.ddp.problem.T + 1)
-            us = self.ddp.problem.quasiStatic([x0] * self.ddp.problem.T)
+            xs = [self.x0] * (self.ddp.problem.T + 1)
+            us = self.ddp.problem.quasiStatic([self.x0] * self.ddp.problem.T)
         else:
             xs = xs_init
             us = us_init
@@ -82,7 +80,7 @@ class CrocOCP(OCPAbstract):
         t_warm_start = time()
         self.t_warm_start = t_warm_start - t_update
 
-        self.ddp.solve(xs, us, self.max_iter, False)
+        self.ddp.solve(xs, us, self.max_iter if k > 0 else self.init_max_iters, False)
 
         t_ddp = time()
         self.t_ddp = t_ddp - t_warm_start
@@ -90,12 +88,16 @@ class CrocOCP(OCPAbstract):
         self.t_solve = time() - t_start
         self.num_iters = self.ddp.iter
 
-    def make_ocp(self, k, footstep, base_task):
+    def make_ocp(self, k, x0, footstep, base_task):
         """
         Create a shooting problem for a simple walking gait.
 
-        :param x0: initial state
+        :param k: current MPC iteration
+        :param x0: initial condition
+        :param footstep:
+        :param base_task:
         """
+        self.x0 = x0
         pin.forwardKinematics(self.pd.model, self.pd.rdata, self.x0[: self.pd.nq])
         pin.updateFramePlacements(self.pd.model, self.pd.rdata)
 

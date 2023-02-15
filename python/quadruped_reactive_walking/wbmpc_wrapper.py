@@ -106,7 +106,8 @@ class MPCWrapper:
         """
         Run the MPC (synchronous version)
         """
-        self.ocp.solve(k, x0, footstep, base_ref, xs, us)
+        self.ocp.make_ocp(k, x0, footstep, base_ref)
+        self.ocp.solve(k, xs, us)
         (
             self.last_available_result.gait,
             self.last_available_result.xs,
@@ -152,7 +153,8 @@ class MPCWrapper:
                     **self._solver_kwargs
                 )
 
-            loop_ocp.solve(k, x0, footstep, base_ref, xs, us)
+            loop_ocp.make_ocp(k, x0, footstep, base_ref)
+            loop_ocp.solve(k, xs, us)
             gait, xs, us, K, solving_time = loop_ocp.get_results()
             self.compress_dataOut(gait, xs, us, K, loop_ocp.num_iters, solving_time)
             self.new_result.value = True

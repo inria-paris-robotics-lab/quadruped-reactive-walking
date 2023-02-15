@@ -71,10 +71,8 @@ class AlgtrOCP(CrocOCP):
         self.prox_iters = []
         self.croc_iters = []
 
-    def solve(self, k, x0, footstep, base_ref, xs_init=None, us_init=None):
+    def solve(self, k, xs_init=None, us_init=None):
         t_start = time.time()
-        self.x0 = x0
-        self.make_ocp(k, footstep, base_ref)
         self.my_problem.x0_init = self.x0
 
         t_update = time.time()
@@ -82,8 +80,8 @@ class AlgtrOCP(CrocOCP):
 
         if xs_init is None or us_init is None:
             nsteps = self.my_problem.num_steps
-            xs = [x0] * (nsteps + 1)
-            us = self.problem.quasiStatic([x0] * nsteps)
+            xs = [self.x0] * (nsteps + 1)
+            us = self.problem.quasiStatic([self.x0] * nsteps)
         else:
             xs = xs_init
             us = us_init
@@ -91,10 +89,8 @@ class AlgtrOCP(CrocOCP):
         t_warm_start = time.time()
         self.t_warm_start = t_warm_start - t_update
 
-        if k == 0:
-            self.prox_ddp.max_iters = self.init_max_iters
-        else:
-            self.prox_ddp.max_iters = self.max_iter
+        mit = self.max_iter if k > 0 else self.init_max_iters
+        self.prox_ddp.max_iters = mit
         self.prox_ddp.run(self.my_problem, xs, us)
 
         # compute proxddp's criteria
