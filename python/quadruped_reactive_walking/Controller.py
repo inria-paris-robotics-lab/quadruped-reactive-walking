@@ -108,7 +108,7 @@ class Controller:
                 self.base_refs.append(self.target_base.copy())
                 self.footsteps.append(self.target_footstep.copy())
 
-        self.mpc = wbmpc_wrapper.MPC_Wrapper(
+        self.mpc = wbmpc_wrapper.MPCWrapper(
             self.pd,
             params,
             self.footsteps,

@@ -19,7 +19,7 @@ class Result:
         self.new_result = False
 
 
-class MPC_Wrapper:
+class MPCWrapper:
     """
     Wrapper to run both types of MPC (OQSP or Crocoddyl) with the possibility to run OSQP in
     a parallel process
