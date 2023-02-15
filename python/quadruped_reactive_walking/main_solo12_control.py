@@ -7,7 +7,7 @@ from datetime import datetime
 
 import quadruped_reactive_walking as qrw
 from .Controller import Controller
-from .tools.logger_control import LoggerControl
+from .tools.logger_control import LoggerControl, TEMP_DIRNAME, DATE_STRFORMAT
 from .tools import meshcat_viewer
 
 from typing import Type, Literal
@@ -295,15 +295,15 @@ def main(args):
         print("Masterboard timeout detected.")
 
     if params.LOGGING:
-        date_str = datetime.now().strftime("%Y_%m_%d_%H_%M")
-        log_path = Path("/tmp") / "logs" / date_str
+        date_str = datetime.now().strftime(DATE_STRFORMAT)
+        log_path = TEMP_DIRNAME / "logs" / date_str
         log_path.mkdir(parents=True, exist_ok=True)
         logger.save(str(log_path))
         with open(str(log_path / "readme.txt"), "w") as f:
             f.write(msg)
 
         if params.PLOTTING:
-            logger.plot(save=True, fileName=str(log_path))
+            logger.plot(save=True, filename=str(log_path))
             print("Plots saved in ", str(log_path) + "/")
 
             mpc = controller.mpc
@@ -356,10 +356,17 @@ def main(args):
         device.Stop()
 
     print("End of script")
-    return logger
 
 
 if __name__ == "__main__":
+    import cProfile
+    import pstats
 
     args = parse_args()
+    profiler = cProfile.Profile()
+    profiler.enable()
     main(args)
+    profiler.disable()
+    stats = pstats.Stats(profiler).strip_dirs().sort_stats("cumtime")
+    stats.dump_stats("stats.prof")
+    stats.print_stats()

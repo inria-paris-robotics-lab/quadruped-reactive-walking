@@ -1,16 +1,19 @@
 from datetime import datetime
 from time import time
 import numpy as np
+import pathlib
 from .kinematics_utils import get_translation, get_translation_array
 from ..Controller import Controller
 
 FIG_DPI = 100
+TEMP_DIRNAME = pathlib.Path.home() / ".tmp"
+DATE_STRFORMAT = "%Y_%m_%d_%H_%m_%S"
 
 
 class LoggerControl:
-    def __init__(self, pd, params, log_size=60e3, loop_buffer=False, file=None):
-        if file is not None:
-            self.data = np.load(file, allow_pickle=True)
+    def __init__(self, pd, params, log_size=60e3, loop_buffer=False, filename=None):
+        if filename is not None:
+            self.data = np.load(filename, allow_pickle=True)
 
         self.log_size = int(log_size)
         self.i = 0
@@ -46,15 +49,15 @@ class LoggerControl:
         # TODO: ADD WHAT YOU WANT TO LOG
 
         # Controller timings: MPC time, ...
-        self.t_measures = np.zeros(size)
-        self.t_mpc = np.zeros(size)  # solver time #measurement time
-        self.t_send = np.zeros(size)  #
-        self.t_loop = np.zeros(size)  # controller time loop
-        self.t_whole = np.zeros(size)  # controller time loop
+        self.t_measures = np.full(size, np.nan)
+        self.t_mpc = np.full(size, np.nan)  # solver time #measurement time
+        self.t_send = np.full(size, np.nan)  #
+        self.t_loop = np.full(size, np.nan)  # controller time loop
+        self.t_whole = np.full(size, np.nan)  # controller time loop
 
         self.t_ocp_update = np.zeros(size)
-        self.t_ocp_warm_start = np.zeros(size)
-        self.t_ocp_ddp = np.zeros(size)
+        self.t_ocp_warm_start = np.full(size, np.nan)
+        self.t_ocp_ddp = np.full(size, np.nan)
         self.t_ocp_solve = np.zeros(size)
 
         # MPC
@@ -182,18 +185,18 @@ class LoggerControl:
 
         self.i += 1
 
-    def plot(self, save=False, fileName="tmp/"):
+    def plot(self, save=False, filename="tmp/"):
         import matplotlib.pyplot as plt
 
-        self.plot_states(save, fileName)
-        self.plot_torques(save, fileName)
-        self.plot_target(save, fileName)
-        # self.plot_riccati_gains(0, save, fileName)
-        self.plot_controller_times(save, fileName)
+        self.plot_states(save, filename)
+        self.plot_torques(save, filename)
+        self.plot_target(save, filename)
+        # self.plot_riccati_gains(0, save, filename)
+        self.plot_controller_times(save, filename)
         # if not self.params.enable_multiprocessing:
         #     self.plot_OCP_times()
 
-    def plot_states(self, save=False, fileName="/tmp"):
+    def plot_states(self, save=False, filename=TEMP_DIRNAME):
         import matplotlib.pyplot as plt
 
         legend = ["Hip", "Shoulder", "Knee"]
@@ -211,7 +214,7 @@ class LoggerControl:
             plt.legend(legend)
         plt.draw()
         if save:
-            plt.savefig(fileName + "/joint_positions")
+            plt.savefig(filename + "/joint_positions")
 
         plt.figure(figsize=(12, 6), dpi=FIG_DPI)
         i = 0
@@ -227,9 +230,9 @@ class LoggerControl:
             plt.legend(legend)
         plt.draw()
         if save:
-            plt.savefig(fileName + "/joint_velocities")
+            plt.savefig(filename + "/joint_velocities")
 
-    def plot_torques(self, save=False, fileName="/tmp"):
+    def plot_torques(self, save=False, filename=TEMP_DIRNAME):
         import matplotlib.pyplot as plt
 
         legend = ["Hip", "Shoulder", "Knee"]
@@ -247,9 +250,9 @@ class LoggerControl:
             plt.legend(legend)
         plt.draw()
         if save:
-            plt.savefig(fileName + "/joint_torques")
+            plt.savefig(filename + "/joint_torques")
 
-    def plot_target(self, save=False, fileName="/tmp"):
+    def plot_target(self, save=False, filename=TEMP_DIRNAME):
         import matplotlib.pyplot as plt
 
         t_range = np.array(
@@ -283,7 +286,7 @@ class LoggerControl:
             axs[p, 1].legend(["Estimated"])
 
         if save:
-            plt.savefig(fileName + "/base_position_target")
+            plt.savefig(filename + "/base_position_target")
 
         _, axs = plt.subplots(3, 2, sharex=True)
         legend = ["x", "y", "z"]
@@ -300,7 +303,7 @@ class LoggerControl:
             axs[p, 1].plot(self.v_filtered[:, 3 + p])
             axs[p, 1].legend(["Target", "Estimated", "Filtered"])
         if save:
-            plt.savefig(fileName + "/base_velocity_target")
+            plt.savefig(filename + "/base_velocity_target")
 
         _, axs = plt.subplots(3, sharex=True)
         legend = ["x", "y", "z"]
@@ -310,7 +313,7 @@ class LoggerControl:
             axs[p].legend(self.pd.feet_names)
             # "Predicted"])
         if save:
-            plt.savefig(fileName + "/target")
+            plt.savefig(filename + "/target")
 
         _, axs = plt.subplots(3, sharex=True)
         legend = ["x", "y", "z"]
@@ -323,9 +326,9 @@ class LoggerControl:
             axs[p].legend(self.pd.feet_names)
 
         if save:
-            plt.savefig(fileName + "/target")
+            plt.savefig(filename + "/target")
 
-    def plot_riccati_gains(self, n, save=False, fileName="/tmp"):
+    def plot_riccati_gains(self, n, save=False, filename=TEMP_DIRNAME):
         import matplotlib.pyplot as plt
 
         # Equivalent Stiffness Damping plots
@@ -341,7 +344,7 @@ class LoggerControl:
             plt.xlabel("t")
 
         if save:
-            plt.savefig(fileName + "/diagonal_Riccati_gains")
+            plt.savefig(filename + "/diagonal_Riccati_gains")
 
         # Riccati gains
         plt.figure(figsize=(12, 18), dpi=FIG_DPI)
@@ -349,9 +352,9 @@ class LoggerControl:
         plt.imshow(self.ocp_K[n])
         plt.colorbar()
         if save:
-            plt.savefig(fileName + "/Riccati_gains")
+            plt.savefig(filename + "/Riccati_gains")
 
-    def plot_controller_times(self, save=False, fileName="/tmp"):
+    def plot_controller_times(self, save=False, filename=TEMP_DIRNAME):
         import matplotlib.pyplot as plt
 
         t_range = np.array(
@@ -359,7 +362,7 @@ class LoggerControl:
         )
 
         alpha = 0.7
-        plt.figure(figsize=(12, 12))
+        plt.figure(figsize=(9, 6), dpi=FIG_DPI)
         plt.plot(t_range, self.t_measures, "r+", alpha=alpha, label="Estimation")
         plt.plot(t_range, self.t_mpc, "g+", alpha=alpha, label="MPC (total)")
         # plt.plot(t_range, self.t_send, c="pink", marker="+", alpha=alpha, label="Sending command")
@@ -370,7 +373,7 @@ class LoggerControl:
             t_range,
             self.t_ocp_ddp,
             "1",
-            c="orange",
+            c="blue",
             alpha=alpha,
             label="MPC (OCP solve)",
         )
@@ -387,9 +390,9 @@ class LoggerControl:
         plt.tight_layout()
 
         if save:
-            plt.savefig(fileName + "/timings")
+            plt.savefig(filename + "/timings")
 
-    def plot_OCP_times(self):
+    def plot_ocp_times(self):
         import matplotlib.pyplot as plt
 
         t_range = np.array(
@@ -496,7 +499,6 @@ class LoggerControl:
         self.tstamps = self.data["tstamps"]
         self.t_mpc = self.data["t_mpc"]
         self.t_send = self.data["t_send"]
-        self.t_loop = self.data["t_loop"]
         self.t_ocp_ddp = self.data["t_ocp_ddp"]
         self.t_measures = self.data["t_measures"]
         self.v_estimate = self.data["v_estimate"]
@@ -530,7 +532,9 @@ if __name__ == "__main__":
     init_robot(params.q_init, params)
     pd = ProblemData(params)
 
-    logger = LoggerControl(pd, params, file="/tmp/logs/2022_09_12_16_43/data.npz")
+    today = datetime.now()
+    today = today.strftime(DATE_STRFORMAT)
+    logger = LoggerControl(pd, params, filename=str(TEMP_DIRNAME / today / "data.npz"))
 
     logger.load()
     logger.plot()

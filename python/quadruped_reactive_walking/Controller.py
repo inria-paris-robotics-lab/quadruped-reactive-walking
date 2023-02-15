@@ -123,9 +123,9 @@ class Controller:
         if self.params.interpolate_mpc:
             self.interpolator = Interpolator(params, self.pd.x0)
         try:
-            file = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
-            self.xs_init = list(file["xs"])
-            self.us_init = list(file["us"])
+            filename = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
+            self.xs_init = list(filename["xs"])
+            self.us_init = list(filename["us"])
             print("Initial guess loaded.\n")
         except Exception:
             self.xs_init = None
@@ -325,12 +325,12 @@ class Controller:
         self.result.v_des[:] = np.zeros(12)
         self.result.tau_ff[:] = np.zeros(12)
 
-    def save_guess(self):
+    def save_guess(self, filename="/tmp/init_guess.npy"):
         """
         Save the result of the MPC in a file called /tmp/init_guess.npy
         """
         np.save(
-            open("/tmp/init_guess.npy", "wb"),
+            open(filename, "wb"),
             {"xs": self.mpc_result.xs, "us": self.mpc_result.us},
         )
         print("Initial guess saved")
