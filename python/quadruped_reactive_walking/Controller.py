@@ -4,7 +4,7 @@ import numpy as np
 import pinocchio as pin
 
 import quadruped_reactive_walking as qrw
-from . import WB_MPC_Wrapper
+from . import wbmpc_wrapper
 from . import WB_MPC
 from .WB_MPC.Target import Target
 from .tools.Utils import init_robot, quaternionToRPY
@@ -108,7 +108,7 @@ class Controller:
                 self.base_refs.append(self.target_base.copy())
                 self.footsteps.append(self.target_footstep.copy())
 
-        self.mpc = WB_MPC_Wrapper.MPC_Wrapper(
+        self.mpc = wbmpc_wrapper.MPC_Wrapper(
             self.pd,
             params,
             self.footsteps,

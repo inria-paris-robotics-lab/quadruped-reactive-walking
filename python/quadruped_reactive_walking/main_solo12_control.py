@@ -123,7 +123,7 @@ def check_position_error(device, controller):
     return False
 
 
-def damp_control(device, nb_motors):
+def damp_controls(device, nb_motors):
     """
     Damp the control during 2.5 seconds
 
@@ -174,7 +174,7 @@ def get_device(is_simulation: bool) -> tuple:
     return (device, qc)
 
 
-def control_loop(args):
+def main(args):
     """
     Main function that calibrates the robot, get it into a default waiting position then launch
     the main control loop once the user has pressed the Enter key
@@ -279,7 +279,7 @@ def control_loop(args):
             prog_bar.update(params.dt_wbc)
 
     # ****************************************************************
-    damp_control(device, 12)
+    damp_controls(device, 12)
 
     if params.enable_multiprocessing:
         print("Stopping parallel process MPC")
@@ -360,9 +360,6 @@ def control_loop(args):
 
 
 if __name__ == "__main__":
-    # that's illegal?
-    # import os
-    # os.nice(-20)
 
     args = parse_args()
-    log = control_loop(args)
+    main(args)

@@ -27,7 +27,7 @@ set(${PY_NAME}_PYTHON
   __init__.py
   Controller.py
   main_solo12_control.py
-  WB_MPC_Wrapper.py
+  wbmpc_wrapper.py
   )
 
 set(${PY_NAME}_WB_MPC_PYTHON
