@@ -135,6 +135,7 @@ struct Params {
   std::vector<double> q_init;  // Initial articular positions
   double dt_wbc;               // Time step of the whole body control
   double dt_mpc;               // Time step of the model predictive control
+  int mpc_wbc_ratio;
   uint N_periods;   // Number of gait periods in the MPC prediction horizon
   int type_MPC;     // Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3
                     // for Crocoddyl MPCs

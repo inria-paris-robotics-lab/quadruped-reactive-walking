@@ -103,6 +103,8 @@ void Params::initialize(const std::string &file_path) {
   const YAML::Node &robot_node = param["robot"];
   YAML::convert<Params>::decode(robot_node, *this);
   std::cout << "Loading robot config file " << config_file << std::endl;
+
+  mpc_wbc_ratio = (int)(dt_mpc / dt_wbc);
 }
 
 namespace YAML {
