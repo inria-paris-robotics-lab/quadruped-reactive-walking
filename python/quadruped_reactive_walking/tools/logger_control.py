@@ -3,7 +3,7 @@ from time import time
 import numpy as np
 import pathlib
 from .kinematics_utils import get_translation, get_translation_array
-from ..Controller import Controller
+from ..controller import Controller
 
 FIG_DPI = 100
 TEMP_DIRNAME = pathlib.Path.home() / ".tmp"
@@ -189,8 +189,8 @@ class LoggerControl:
         import matplotlib.pyplot as plt
 
         self.plot_states(save, filename)
-        self.plot_torques(save, filename)
-        self.plot_target(save, filename)
+        # self.plot_torques(save, filename)
+        # self.plot_target(save, filename)
         # self.plot_riccati_gains(0, save, filename)
         self.plot_controller_times(save, filename)
         # if not self.params.enable_multiprocessing:
@@ -526,7 +526,7 @@ if __name__ == "__main__":
     import os
     import argparse
     import quadruped_reactive_walking as qrw
-    from ..WB_MPC.problem_data import ProblemData
+    from ..wb_mpc.problem_data import TaskSpec
     from .Utils import init_robot
 
     sys.path.insert(0, os.getcwd())
@@ -536,7 +536,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     params = qrw.Params()
     init_robot(params.q_init, params)
-    pd = ProblemData(params)
+    pd = TaskSpec(params)
 
     today = datetime.now()
     today = today.strftime(DATE_STRFORMAT)

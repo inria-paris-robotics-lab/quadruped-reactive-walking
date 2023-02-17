@@ -3,7 +3,7 @@ from time import time, sleep
 
 import numpy as np
 
-from .WB_MPC.ocp_abstract import OCPAbstract
+from .wb_mpc.ocp_abstract import OCPAbstract
 
 from typing import Type
 

@@ -5,10 +5,10 @@ import pinocchio as pin
 
 import quadruped_reactive_walking as qrw
 from . import wbmpc_wrapper
-from . import WB_MPC
-from .WB_MPC.Target import Target
+from . import wb_mpc
+from .wb_mpc.target import Target
 from .tools.Utils import init_robot, quaternionToRPY
-from .WB_MPC.problem_data import ProblemData
+from .wb_mpc.problem_data import TaskSpec
 from .tools.kinematics_utils import get_translation_array
 from .tools.Interpolator import Interpolator
 from typing import Type
@@ -59,7 +59,7 @@ class Controller:
         params: qrw.Params,
         q_init,
         t,
-        solver_cls: Type[WB_MPC.OCPAbstract],
+        solver_cls: Type[wb_mpc.OCPAbstract],
         solver_kwargs={},
     ):
         """
@@ -74,7 +74,7 @@ class Controller:
 
         self.params = params
         init_robot(q_init, params)
-        self.pd = ProblemData(params)
+        self.pd = TaskSpec(params)
 
         self.k = 0
         self.error = False

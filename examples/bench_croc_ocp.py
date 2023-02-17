@@ -1,7 +1,7 @@
 import quadruped_reactive_walking as qrw
-from .ocp_crocoddyl import OCP
-from .problem_data import ProblemData, ProblemDataFull
-from .Target import Target
+from quadruped_reactive_walking.wb_mpc.ocp_crocoddyl import OCP
+from quadruped_reactive_walking.wb_mpc.problem_data import TaskSpec, TaskSpecFull
+from quadruped_reactive_walking.wb_mpc.target import Target
 
 import crocoddyl
 import pinocchio
@@ -16,7 +16,7 @@ MAXITER = 1
 
 def createProblem():
     params = qrw.Params()
-    pd = ProblemDataFull(params)
+    pd = TaskSpecFull(params)
     target = Target(params)
 
     x0 = pd.x0_reduced

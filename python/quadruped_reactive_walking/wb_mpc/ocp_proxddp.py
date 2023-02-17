@@ -13,8 +13,8 @@ import proxddp
 from proxddp import manifolds, dynamics
 from colorama import Fore
 
-from .problem_data import ProblemData
-from .Target import Target
+from .problem_data import TaskSpec
+from .target import Target
 from .ocp_abstract import OCPAbstract
 from .ocp_crocoddyl import CrocOCP
 from quadruped_reactive_walking import Params
@@ -25,7 +25,7 @@ class AlgtrOCP(CrocOCP):
 
     def __init__(
         self,
-        pd: ProblemData,
+        pd: TaskSpec,
         params: Params,
         footsteps,
         base_refs,

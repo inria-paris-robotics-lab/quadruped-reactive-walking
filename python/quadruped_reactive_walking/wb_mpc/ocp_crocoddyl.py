@@ -1,5 +1,5 @@
-from .problem_data import ProblemData
-from .Target import Target
+from .problem_data import TaskSpec
+from .target import Target
 import crocoddyl
 import sobec
 import pinocchio as pin
@@ -9,7 +9,7 @@ from .ocp_abstract import OCPAbstract
 
 
 class CrocOCP(OCPAbstract):
-    def __init__(self, pd: ProblemData, params, footsteps, base_refs, **kwargs):
+    def __init__(self, pd: TaskSpec, params, footsteps, base_refs, **kwargs):
         super().__init__(pd, params)
 
         self.state = crocoddyl.StateMultibody(self.pd.model)

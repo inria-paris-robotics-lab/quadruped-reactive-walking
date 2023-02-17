@@ -3,7 +3,7 @@ import example_robot_data as erd
 import pinocchio as pin
 
 
-class ProblemDataAbstract:
+class TaskSpecBase:
     def __init__(self, params, frozen_names=[]):
 
         self.robot = erd.load("solo12")
@@ -59,7 +59,7 @@ class ProblemDataAbstract:
         self.collision_model = geometric_models_reduced[1]
 
 
-class ProblemData(ProblemDataAbstract):
+class TaskSpec(TaskSpecBase):
     def __init__(self, params):
         super().__init__(params)
 
@@ -121,7 +121,7 @@ class ProblemData(ProblemDataAbstract):
         )
 
 
-class ProblemDataFull(ProblemDataAbstract):
+class TaskSpecFull(TaskSpecBase):
     def __init__(self, params):
         frozen_names = ["root_joint"]
 

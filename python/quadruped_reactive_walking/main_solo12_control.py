@@ -6,12 +6,12 @@ import git
 from datetime import datetime
 
 import quadruped_reactive_walking as qrw
-from .Controller import Controller
+from .controller import Controller
 from .tools.logger_control import LoggerControl, TEMP_DIRNAME, DATE_STRFORMAT
 from .tools import meshcat_viewer
 
 from typing import Type, Literal
-from .WB_MPC import CrocOCP, AlgtrOCP
+from .wb_mpc import CrocOCP, AlgtrOCP
 import tqdm
 import argparse
 import matplotlib.pyplot as plt

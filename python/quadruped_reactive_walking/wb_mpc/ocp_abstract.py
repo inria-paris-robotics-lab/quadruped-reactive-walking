@@ -1,14 +1,14 @@
 import abc
 import numpy as np
 
-from .problem_data import ProblemData
+from .problem_data import TaskSpec
 import quadruped_reactive_walking as qrw
 
 
 class OCPAbstract(abc.ABC):
     num_iters: int
 
-    def __init__(self, pd: ProblemData, params: qrw.Params):
+    def __init__(self, pd: TaskSpec, params: qrw.Params):
         self.pd = pd
         self.params = params
         self.max_iter = 1000 if params.save_guess else params.ocp.max_iter

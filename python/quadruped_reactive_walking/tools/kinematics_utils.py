@@ -1,9 +1,9 @@
 import pinocchio as pin
 import numpy as np
-from ..WB_MPC.problem_data import ProblemData
+from ..wb_mpc.problem_data import TaskSpec
 
 
-def get_translation(pd: ProblemData, x, idx, ref_frame=pin.WORLD):
+def get_translation(pd: TaskSpec, x, idx, ref_frame=pin.WORLD):
     q = x[: pd.nq]
     v = x[pd.nq :]
     pin.forwardKinematics(pd.model, pd.rdata, q, v)
@@ -13,7 +13,7 @@ def get_translation(pd: ProblemData, x, idx, ref_frame=pin.WORLD):
     return frame_p, frame_v
 
 
-def get_translation_array(pd: ProblemData, x, idx, ref_frame=pin.WORLD, x0=None):
+def get_translation_array(pd: TaskSpec, x, idx, ref_frame=pin.WORLD, x0=None):
     frame_p = []
     frame_v = []
     if isinstance(x0, np.ndarray):
