@@ -1,23 +1,29 @@
 import threading
 import time
-from pathlib import Path
 import numpy as np
 import git
+import quadruped_reactive_walking as qrw
+
+from pathlib import Path
 from datetime import datetime
 
-import quadruped_reactive_walking as qrw
-from .controller import Controller
-from .tools.logger_control import LoggerControl, TEMP_DIRNAME, DATE_STRFORMAT
-from .tools import meshcat_viewer
+from quadruped_reactive_walking.controller import Controller
+from quadruped_reactive_walking.tools.logger_control import (
+    LoggerControl,
+    TEMP_DIRNAME,
+    DATE_STRFORMAT,
+)
+from quadruped_reactive_walking.tools import meshcat_viewer
+from quadruped_reactive_walking.wb_mpc import CrocOCP, AlgtrOCP
 
-from typing import Type, Literal
-from .wb_mpc import CrocOCP, AlgtrOCP
 import tqdm
 import argparse
 import matplotlib.pyplot as plt
 import seaborn as sns
 import enum
 import colorama
+
+from typing import Type, Literal
 from colorama import Fore
 
 colorama.init()
@@ -85,11 +91,11 @@ def put_on_the_floor(device, q_init):
     device.joints.set_desired_velocities(np.zeros(12))
     device.joints.set_torques(np.zeros(12))
 
-    i = threading.Thread(target=get_input)
-    i.start()
+    thread = threading.Thread(target=get_input)
+    thread.start()
     print("Put the robot on the floor and press Enter")
 
-    while i.is_alive():
+    while thread.is_alive():
         device.parse_sensor_data()
         device.send_command_and_wait_end_of_cycle(params.dt_wbc)
 
