@@ -1,9 +1,10 @@
 from example_robot_data import load
+from quadruped_reactive_walking import Params
 import numpy as np
 import pinocchio as pin
 
 
-def init_robot(q_init, params):
+def init_robot(q_init, params: Params):
     """
     Load the solo model and initialize some parameters
 
@@ -50,7 +51,6 @@ def init_robot(q_init, params):
     params.CoM_offset = (solo.data.com[0][:3] - q[0:3, 0]).tolist()
     params.CoM_offset[1] = 0.0
 
-    params.mpc_wbc_ratio = int(params.dt_mpc / params.dt_wbc)
     params.T = params.gait.shape[0]
 
     for i in range(4):
