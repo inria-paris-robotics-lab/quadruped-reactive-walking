@@ -53,6 +53,24 @@ class DummyDevice:
             self.velocities = np.zeros(12)
 
 
+def make_footsteps_and_refs(params, target):
+    footsteps = []
+    base_refs = []
+    for k in range(params.T * params.mpc_wbc_ratio):
+        if params.movement == "base_circle" or params.movement == "walk":
+            target_base = np.zeros(6)
+            target_footstep = np.zeros((3, 4))
+        else:
+            target_footstep = target.compute(k).copy()
+            target_base = np.array([0.0, 0.0, params.h_ref])
+
+        if k % params.mpc_wbc_ratio == 0:
+            base_refs.append(target_base.copy())
+            footsteps.append(target_footstep.copy())
+
+    return footsteps, base_refs
+
+
 class Controller:
     def __init__(
         self,
@@ -94,19 +112,9 @@ class Controller:
         self.result.v_des = self.pd.v0[6:].copy()
 
         self.target = Target(params)
-        self.footsteps = []
-        self.base_refs = []
-        for k in range(self.params.T * self.params.mpc_wbc_ratio):
-            if params.movement == "base_circle" or params.movement == "walk":
-                self.target_base = np.zeros(6)
-                self.target_footstep = np.zeros((3, 4))
-            else:
-                self.target_footstep = self.target.compute(k).copy()
-                self.target_base = np.array([0.0, 0.0, self.params.h_ref])
-
-            if k % self.params.mpc_wbc_ratio == 0:
-                self.base_refs.append(self.target_base.copy())
-                self.footsteps.append(self.target_footstep.copy())
+        self.footsteps, self.base_refs = make_footsteps_and_refs(
+            self.params, self.target
+        )
 
         self.mpc = wbmpc_wrapper.MPCWrapper(
             self.pd,
@@ -116,7 +124,7 @@ class Controller:
             solver_cls=solver_cls,
             **solver_kwargs
         )
-        self.gait = np.array([[1, 1, 1, 1]] * params.starting_nodes)
+        self.gait = np.array([[1, 1, 1, 1]] * (params.T + 1))
         self.mpc_solved = False
         self.k_result = 0
         self.k_solve = 0
@@ -194,7 +202,7 @@ class Controller:
 
         if not self.error:
             self.mpc_result: Result = self.mpc.get_latest_result()
-            self.gait = self.mpc_result.gait
+            self.gait[:, :] = self.mpc_result.gait
             xs = self.mpc_result.xs
             if self.mpc_result.new_result:
                 self.mpc_solved = True
