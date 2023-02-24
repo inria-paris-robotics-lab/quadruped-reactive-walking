@@ -4,7 +4,6 @@ import numpy as np
 import git
 import quadruped_reactive_walking as qrw
 
-from pathlib import Path
 from datetime import datetime
 
 from quadruped_reactive_walking.controller import Controller
@@ -19,7 +18,6 @@ from quadruped_reactive_walking.wb_mpc import CrocOCP, AlgtrOCP
 import tqdm
 import argparse
 import matplotlib.pyplot as plt
-import seaborn as sns
 import enum
 import colorama
 
@@ -28,7 +26,7 @@ from colorama import Fore
 
 colorama.init()
 
-sns.set_style("whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 plt.rcParams["lines.linewidth"] = 1.0
 
 
