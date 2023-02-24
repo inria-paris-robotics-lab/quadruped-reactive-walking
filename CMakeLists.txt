@@ -26,6 +26,7 @@ option(BUILD_JOYSTICK "Build with Gamepad support." ON)
 cmake_dependent_option(INSTALL_PYTHON_INTERFACE_ONLY "Install *ONLY* the python bindings" OFF BUILD_PYTHON_INTERFACE OFF)
 cmake_dependent_option(GENERATE_PYTHON_STUBS "Generate the Python stubs associated to the Python library" ON BUILD_PYTHON_INTERFACE ON)
 option(SUFFIX_SO_VERSION "Suffix library name with its version" ON)
+set(INSTALL_DOCUMENTATION OFF)
 
 # Project configuration
 if(NOT INSTALL_PYTHON_INTERFACE_ONLY)
