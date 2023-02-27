@@ -103,6 +103,9 @@ class Params {
   double Kff_main;              // Feedforward torques multiplier for the PD+
 
   // Parameters of Gait
+  int starting_nodes;
+  int ending_nodes;
+  int gait_repetitions;        // number of times the gait is used in the whole walk cycle
   std::vector<int> gait_vec;  // Initial gait matrix (vector)
 
   // Parameters of Joystick

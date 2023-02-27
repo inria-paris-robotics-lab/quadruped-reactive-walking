@@ -16,6 +16,10 @@ class problemDataAbstract:
         self.collision_model = self.robot.collision_model
         self.visual_model = self.robot.visual_model
 
+        self.robot_weight = (
+            -sum([Y.mass for Y in self.model.inertias]) * self.model.gravity.linear[2]
+        )
+
         self.frozen_names = frozen_names
         if frozen_names != []:
             self.frozen_idxs = [self.model.getJointId(id) for id in frozen_names]
@@ -62,32 +66,47 @@ class ProblemData(problemDataAbstract):
         self.useFixedBase = 0
         self.base_id = self.model.getFrameId("base_link")
 
+        self.state_limit = np.concatenate(
+            [np.full(18, np.inf), np.zeros(6), np.ones(12) * 800]
+        )
+
         # Cost function weights
         self.mu = 0.7
 
-        if params.movement == "step":
-            self.foot_tracking_w = 2.0 * 1e3
-        else:
-            self.foot_tracking_w = 1e4
-        self.base_tracking_w = 0.
-        self.friction_cone_w = 0.0  # 1e4
-        self.control_bound_w = 0.
-        self.control_reg_w = 1e0
+        # if params.movement == "step":
+        #     self.foot_tracking_w = 2.0 * 1e3
+        # else:
+        #     self.foot_tracking_w = 1e4
+        # self.base_tracking_w = 0.
+        # self.friction_cone_w = 0.0  # 1e4
+        # self.control_bound_w = 0.
+
+        self.fly_high_slope = 50
+        self.fly_high_w = 5*1e4
+        self.ground_collision_w = 1e3
+        self.vertical_velocity_reg_w = 1e3
+
+        self.base_velocity_tracking_w = 8 * 1e5
+        self.foot_tracking_w = 0
+
+        self.impact_altitude_w = 1e6
+        self.impact_velocity_w = 1e4
+        self.friction_cone_w = 1e3 * 0.0
+
+        self.control_bound_w = 1e4
+        self.control_reg_w = 1e4
         self.state_reg_w = np.array(
-            [0] * 3
-            + [1e1] * 3
-            + [1e1] * 3
-            + [1e1] * 3
-            + [1e1] * 6
-            + [0] * 6
-            + [1e-1] * 3
-            + [1e-1] * 3
-            + [1e-1] * 6
+            [0] * 3 + [0] * 3 + [1e2* 3] * 12 + [0] * 6 + [1e1*2] * 12
         )
-        self.terminal_velocity_w = np.array([0] * self.nv + [0.] * self.nv)
+        self.state_bound_w = np.array([0] * 18 + [0] * 6 + [0] * 12)
+        self.terminal_velocity_w = np.array([0] * self.nv + [1e3] * self.nv)
+        self.force_reg_w = 1e2
 
         self.xref = self.x0
-        self.uref = self.u0
+        self.uref = np.array([-0.02615051, -0.25848605,  0.51696646,  0.0285894 , -0.25720605,
+               0.51441775, -0.02614404,  0.25848271, -0.51697107,  0.02859587,
+               0.25720939, -0.51441314])
+
 
 
 class ProblemDataFull(problemDataAbstract):

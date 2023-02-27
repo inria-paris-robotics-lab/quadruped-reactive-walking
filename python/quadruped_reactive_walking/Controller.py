@@ -65,13 +65,15 @@ class Controller:
         self.q_security = np.array([1.2, 2.1, 3.14] * 4)
 
         self.params = params
-        self.gait = params.gait
         init_robot(q_init, params)
         self.pd = ProblemData(params)
 
         self.k = 0
         self.error = False
         self.initialized = False
+
+        self.joystick = qrw.Joystick()
+        self.joystick.initialize(params)
 
         self.estimator = qrw.Estimator()
         self.estimator.initialize(params)
@@ -85,20 +87,21 @@ class Controller:
         self.footsteps = []
         self.base_refs = []
         for k in range(self.params.T * self.params.mpc_wbc_ratio):
-            if params.movement == "base_circle":
-                self.target_base = self.target.compute(k).copy()
+            if params.movement == "base_circle" or params.movement == "walk":
+                self.target_base = np.zeros(6)
                 self.target_footstep = np.zeros((3, 4))
             else:
                 self.target_footstep = self.target.compute(k).copy()
-                self.target_base = np.array([0., 0., self.params.h_ref])
+                self.target_base = np.array([0.0, 0.0, self.params.h_ref])
 
             if k % self.params.mpc_wbc_ratio == 0:
                 self.base_refs.append(self.target_base.copy())
                 self.footsteps.append(self.target_footstep.copy())
 
         self.mpc = WB_MPC_Wrapper.MPC_Wrapper(
-            self.pd, params, self.footsteps, self.base_refs, self.gait
+            self.pd, params, self.footsteps, self.base_refs
         )
+        self.gait = np.array([[1, 1, 1, 1]] * params.starting_nodes)
         self.mpc_solved = False
         self.k_result = 0
         self.k_solve = 0
@@ -132,15 +135,15 @@ class Controller:
         """
         t_start = time.time()
 
+        self.joystick.update_v_ref(self.k, False)
+
         oRh, hRb, oTh = self.run_estimator(device)
 
         t_measures = time.time()
         self.t_measures = t_measures - t_start
 
-        if self.params.movement == "base_circle":
-            self.target_base = self.target.compute(
-                self.k + self.params.T * self.params.mpc_wbc_ratio
-            )
+        if self.params.movement == "base_circle" or self.params.movement == "walk":
+            self.target_base = self.v_ref
             self.target_footstep = np.zeros((3, 4))
         else:
             self.target_base = np.zeros(3)
@@ -160,7 +163,6 @@ class Controller:
                         self.x,
                         self.target_footstep.copy(),
                         self.target_base.copy(),
-                        self.gait,
                         self.xs_init,
                         self.us_init,
                     )
@@ -174,23 +176,22 @@ class Controller:
                         self.mpc_result.xs[1],
                         self.target_footstep.copy(),
                         self.target_base.copy(),
-                        self.gait,
                         self.xs_init,
                         self.us_init,
                     )
                 except ValueError:
                     self.error = True
                     print("MPC Problem")
-            if self.params.movement == "step":
-                self.gait = np.vstack((self.gait[1:, :], self.gait[0, :]))
-            else:
-                self.gait = np.vstack((self.gait[1:, :], self.gait[-1, :]))
+
+            # print(self.gait)
+            # print("-----------------------")
 
         t_mpc = time.time()
         self.t_mpc = t_mpc - t_measures
 
         if not self.error:
             self.mpc_result = self.mpc.get_latest_result()
+            self.gait = self.mpc_result.gait
             xs = self.mpc_result.xs
             if self.mpc_result.new_result:
                 self.mpc_solved = True
@@ -212,7 +213,7 @@ class Controller:
                 t = (self.k - self.k_solve + 1) * self.params.dt_wbc
                 q, v = self.interpolator.interpolate(t)
             else:
-                q, v = self.integrate_x(m)
+                q, v = self.integrate_x()
 
             self.result.q_des = q[:]
             self.result.v_des = v[:]
@@ -261,15 +262,15 @@ class Controller:
                 print(self.q_estimate[7:])
                 print(np.abs(self.q_estimate[7:]) > self.q_security)
                 self.error = True
-            elif (np.abs(self.v_estimate[6:]) > 1000 * np.pi / 180).any():
+            elif (np.abs(self.v_estimate[6:]) > 100.).any():
                 print("-- VELOCITY TOO HIGH ERROR --")
                 print(self.v_estimate[6:])
-                print(np.abs(self.v_estimate[6:]) > 1000 * np.pi / 180)
+                print(np.abs(self.v_estimate[6:]) > 100.)
                 self.error = True
-            elif (np.abs(self.result.FF) > 3.2).any():
+            elif (np.abs(self.result.FF) > 5.).any():
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")
                 print(self.result.FF)
-                print(np.abs(self.result.FF) > 3.2)
+                print(np.abs(self.result.FF) > 5.)
                 self.error = True
 
     def clamp(self, num, min_value=None, max_value=None):
@@ -373,8 +374,7 @@ class Controller:
             b_baseVel_perfect,
         )
 
-        # Add joystck reference velocity when needed
-        self.estimator.update_reference_state(np.zeros(6))
+        self.estimator.update_reference_state(self.joystick.get_v_ref())
 
         oRh = self.estimator.get_oRh()
         hRb = self.estimator.get_hRb()
@@ -428,7 +428,7 @@ class Controller:
         tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
         return tau
 
-    def integrate_x(self, m):
+    def integrate_x(self):
         """
         Integrate the position and velocity using the acceleration computed from the
         feedforward torque

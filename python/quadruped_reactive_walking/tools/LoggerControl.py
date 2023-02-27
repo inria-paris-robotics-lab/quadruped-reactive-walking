@@ -67,7 +67,8 @@ class LoggerControl:
         self.MPC_equivalent_Kd = np.zeros([size, self.pd.nu])
 
         self.target = np.zeros([size, 3])
-        self.target_base = np.zeros([size, 3])
+        self.target_base_linear = np.zeros([size, 3])
+        self.target_base_angular = np.zeros([size, 3])
 
         # Whole body control
         self.wbc_P = np.zeros([size, 12])  # proportionnal gains of the PD+
@@ -135,16 +136,23 @@ class LoggerControl:
                 self.target[i] = controller.footsteps[i // self.params.mpc_wbc_ratio][
                     :, 1
                 ]
-                self.target_base[i] = controller.base_refs[
+                self.target_base_linear[i] = controller.base_refs[
                     i // self.params.mpc_wbc_ratio
-                ]
+                ][:3]
+                self.target_base_angular[i] = controller.base_refs[
+                    i // self.params.mpc_wbc_ratio
+                ][3:]
         if self.i + self.params.T * self.params.mpc_wbc_ratio < self.log_size:
             self.target[
                 self.i + self.params.T * self.params.mpc_wbc_ratio
             ] = controller.target_footstep[:, 1]
-            self.target_base[
+            self.target_base_linear[
                 self.i + self.params.T * self.params.mpc_wbc_ratio
-            ] = controller.target_base[:]
+            ] = controller.v_ref[:][:3]
+
+            self.target_base_angular[
+                self.i + self.params.T * self.params.mpc_wbc_ratio
+            ] = controller.v_ref[:][3:]
 
         if not self.params.enable_multiprocessing:
             self.t_ocp_update[self.i] = controller.mpc.ocp.t_update
@@ -171,9 +179,9 @@ class LoggerControl:
         self.plot_torques(save, fileName)
         self.plot_target(save, fileName)
         # self.plot_riccati_gains(0, save, fileName)
-        self.plot_controller_times()
-        if not self.params.enable_multiprocessing:
-            self.plot_OCP_times()
+        self.plot_controller_times(save, fileName)
+        # if not self.params.enable_multiprocessing:
+        #     self.plot_OCP_times()
 
         plt.show()
 
@@ -236,47 +244,72 @@ class LoggerControl:
     def plot_target(self, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
+        t_range = np.array([k * self.params.dt_wbc for k in range(self.tstamps.shape[0])])
         x = np.concatenate([self.q_filtered, self.v_filtered], axis=1)
         m_feet_p_log = {
             idx: get_translation_array(self.pd, x, idx)[0] for idx in self.pd.feet_ids
         }
+
+        x_mpc = [self.ocp_xs[0][0, :]]
+        [x_mpc.append(x[1, :]) for x in self.ocp_xs[:-1]]
+        x_mpc = np.array(x_mpc)
+
+        feet_p_log = {
+            idx: get_translation_array(self.pd, x_mpc, idx)[0]
+            for idx in self.pd.feet_ids
+        }
+
 
         # Target plot
         _, axs = plt.subplots(3, 2, sharex=True)
         legend = ["x", "y", "z"]
         for p in range(3):
             axs[p, 0].set_title("Base position on " + legend[p])
-            axs[p, 0].plot(self.target_base[:, p])
             axs[p, 0].plot(self.q_estimate[:, p])
             axs[p, 0].plot(self.q_filtered[:, p])
-            axs[p, 0].legend(["Target", "Estimated", "Filtered"])
+            axs[p, 0].legend(["Estimated", "Filtered"])
 
             axs[p, 1].set_title("Base rotation on " + legend[p])
             axs[p, 1].plot(self.q_estimate_rpy[:, 3 + p])
             axs[p, 1].legend(["Estimated"])
 
+        if save:
+            plt.savefig(fileName + "/base_position_target")
+
         _, axs = plt.subplots(3, 2, sharex=True)
         legend = ["x", "y", "z"]
         for p in range(3):
             axs[p, 0].set_title("Base velocity on " + legend[p])
-            axs[p, 0].plot([self.pd.xref[19 + p]] * self.log_size)
+            axs[p, 0].plot(self.target_base_linear[:, p])
             axs[p, 0].plot(self.v_estimate[:, p])
             axs[p, 0].plot(self.v_filtered[:, p])
             axs[p, 0].legend(["Target", "Estimated", "Filtered"])
 
             axs[p, 1].set_title("Base angular velocity on " + legend[p])
+            axs[p, 1].plot(self.target_base_angular[:, p])
             axs[p, 1].plot(self.v_estimate[:, 3 + p])
             axs[p, 1].plot(self.v_filtered[:, 3 + p])
-            axs[p, 1].legend(["Estimated", "Filtered"])
+            axs[p, 1].legend(["Target", "Estimated", "Filtered"])
+        if save:
+            plt.savefig(fileName + "/base_velocity_target")
 
         _, axs = plt.subplots(3, sharex=True)
         legend = ["x", "y", "z"]
         for p in range(3):
             axs[p].set_title("Free foot on " + legend[p])
-            axs[p].plot(self.target[:, p])
-            axs[p].plot(m_feet_p_log[self.pd.feet_ids[1]][:, p])
-            axs[p].legend(["Target", "Measured"])
+            [axs[p].plot(m_feet_p_log[foot_id][:, p]) for foot_id in self.pd.feet_ids]
+            axs[p].legend(self.pd.feet_names)
             # "Predicted"])
+        if save:
+            plt.savefig(fileName + "/target")
+        
+        _, axs = plt.subplots(3, sharex=True)
+        legend = ["x", "y", "z"]
+        for p in range(3):
+            axs[p].set_title("Predicted free foot on z over " + legend[p])
+            [axs[p].plot(t_range, feet_p_log[foot_id][:, p]) for foot_id in self.pd.feet_ids]
+            axs[p].legend(self.pd.feet_names)
+
         if save:
             plt.savefig(fileName + "/target")
 
@@ -306,7 +339,7 @@ class LoggerControl:
         if save:
             plt.savefig(fileName + "/Riccati_gains")
 
-    def plot_controller_times(self):
+    def plot_controller_times(self, save=False, fileName="/tmp"):
         import matplotlib.pyplot as plt
 
         t_range = np.array(
@@ -324,6 +357,9 @@ class LoggerControl:
         plt.legend(lgd)
         plt.xlabel("Time [s]")
         plt.ylabel("Time [s]")
+
+        if save:
+            plt.savefig(fileName + "/timings")
 
     def plot_OCP_times(self):
         import matplotlib.pyplot as plt
@@ -349,7 +385,8 @@ class LoggerControl:
         np.savez_compressed(
             name,
             target=self.target,
-            target_base=self.target_base,
+            target_base_linear=self.target_base_linear,
+            target_base_angular=self.target_base_angular,
             q_estimate_rpy=self.q_estimate_rpy,
             q_estimate=self.q_estimate,
             v_estimate=self.v_estimate,
@@ -401,7 +438,13 @@ class LoggerControl:
 
         # Load sensors arrays
         self.target = self.data["target"]
-        self.target_base = self.data["target_base"]
+        self.target_base_linear = self.data["target_base_linear"]
+        self.target_base_angular = self.data["target_base_angular"]
+        self.q_estimate_rpy=self.data["q_estimate_rpy"]
+        self.q_estimate=self.data["q_estimate"]
+        self.v_estimate=self.data["v_estimate"]
+        self.q_filtered=self.data["q_filtered"]
+        self.v_filtered=self.data["v_filtered"]
         self.q_mes = self.data["q_mes"]
         self.v_mes = self.data["v_mes"]
         self.baseOrientation = self.data["baseOrientation"]
@@ -422,34 +465,24 @@ class LoggerControl:
         self.energy = self.data["energy"]
 
         # TODO: load your new data
-        self.t_mpc = self.data["mpc_solving_duration"]
+        self.tstamps = self.data["tstamps"]
+        self.t_mpc = self.data["t_mpc"]
         self.t_send = self.data["t_send"]
         self.t_loop = self.data["t_loop"]
-        self.t_measures = self.data["t_meausres"]
-
-        self.q_estimate_rpy = self.data["q_estimate_rpy"]
-        self.q_estimate = self.data["q_estimate"]
+        self.t_ocp_ddp = self.data["t_ocp_ddp"]
+        self.t_measures = self.data["t_measures"]
         self.v_estimate = self.data["v_estimate"]
         self.q_filtered = self.data["q_filtered"]
         self.v_filtered = self.data["v_filtered"]
         self.ocp_xs = self.data["ocp_xs"]
         self.ocp_us = self.data["ocp_us"]
         self.ocp_K = self.data["ocp_K"]
-        self.MPC_equivalent_Kp = self.data["self.MPC_equivalent_Kp"]
-        self.MPC_equivalent_Kd = self.data["self.MPC_equivalent_Kd"]
-
-        self.t_measures = self.data["t_measures"]
         self.t_mpc = self.data["t_mpc"]
         self.t_send = self.data["t_send"]
         self.t_loop = self.data["t_loop"]
         self.wbc_P = self.data["wbc_P"]
         self.wbc_D = self.data["wbc_D"]
         self.wbc_q_des = self.data["wbc_q_des"]
-        self.wbc_v_des = self.data["wbc_v_des"]
-        self.wbc_FF = self.data["wbc_FF"]
-        self.wbc_tau_ff = self.data["wbc_tau_ff"]
-
-        self.tstamps = self.data["tstamps"]
 
 
 if __name__ == "__main__":
@@ -457,14 +490,19 @@ if __name__ == "__main__":
     import os
     import argparse
     import quadruped_reactive_walking as qrw
-    from quadruped_reactive_walking.tools import self
+    from  ..WB_MPC.ProblemData import ProblemData
+    from .Utils import init_robot
 
     sys.path.insert(0, os.getcwd())
 
     parser = argparse.ArgumentParser(description="Process logs.")
     parser.add_argument("--file", type=str, help="A valid log file path")
     args = parser.parse_args()
+    params = qrw.Params()
+    init_robot(params.q_init, params)
+    pd = ProblemData(params)
 
-    logger = LoggerControl(file=args.file)
+    logger = LoggerControl(pd, params, file="/tmp/logs/2022_09_12_16_43/data.npz")
+
     logger.load()
     logger.plot()
