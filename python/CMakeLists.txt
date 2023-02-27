@@ -7,7 +7,7 @@ set(${PY_NAME}_SOURCES
 )
 
 set(PY_LIB ${${PY_NAME}_LIB})
-message(WARNING "PYTHONLIB = ${PY_LIB}")
+message(STATUS "PY_LIB = ${PY_LIB}")
 add_library(${PY_LIB} SHARED ${${PY_NAME}_SOURCES})
 target_link_libraries(${PY_LIB} PUBLIC ${PROJECT_NAME} ${PYTHON_LIBRARY} eigenpy::eigenpy)
 target_include_directories(${PY_LIB} SYSTEM PRIVATE ${PYTHON_INCLUDE_DIR})

@@ -6,19 +6,27 @@ set(PROJECT_NAME quadruped-reactive-walking)
 set(PROJECT_DESCRIPTION "Reactive walking control architecture for quadrupeds")
 set(PROJECT_URL https://gitlab.laas.fr/${PROJECT_NAMESPACE}/${PROJECT_NAME})
 
+# JRL-cmakemodule setup
+include(cmake/base.cmake)
+include(cmake/boost.cmake)
+include(CMakeDependentOption)
+
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to 'Release' as none was specified.")
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
 # Project options
 option(BUILD_PYTHON_INTERFACE "Build the python binding" ON)
-option(INSTALL_PYTHON_INTERFACE_ONLY "Install *ONLY* the python bindings" OFF)
+cmake_dependent_option(INSTALL_PYTHON_INTERFACE_ONLY "Install *ONLY* the python bindings" OFF BUILD_PYTHON_INTERFACE OFF)
 option(SUFFIX_SO_VERSION "Suffix library name with its version" ON)
 
 # Project configuration
 if(NOT INSTALL_PYTHON_INTERFACE_ONLY)
   set(PROJECT_USE_CMAKE_EXPORT TRUE)
 endif()
-
-# JRL-cmakemodule setup
-include(cmake/base.cmake)
-include(cmake/boost.cmake)
 
 # Disable -Werror on Unix.
 SET(CXX_DISABLE_WERROR True)
@@ -38,10 +46,7 @@ if(BUILD_PYTHON_INTERFACE)
   string(REGEX REPLACE "-" "_" PY_NAME ${PROJECT_NAME})
   set(${PY_NAME}_LIB "${PY_NAME}_pywrap")
   set(${PY_NAME}_INSTALL_DIR ${PYTHON_SITELIB}/${PY_NAME})
-  set(BOOST_COMPONENTS ${BOOST_COMPONENTS} python)
 endif()
-
-SEARCH_FOR_BOOST()
 
 # Main Library
 set(${PROJECT_NAME}_HEADERS
@@ -68,8 +73,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include/qr
 target_link_libraries(${PROJECT_NAME} PUBLIC example-robot-data::example-robot-data)
 
 # Include Eigen3 directories
-TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
-TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} SYSTEM INTERFACE ${EIGEN3_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
 
 # Find pinocchio library
 add_project_dependency(pinocchio REQUIRED)
@@ -92,8 +96,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${YAML_CPP_LIBRARIES})
 if(SUFFIX_SO_VERSION)
   set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION ${PROJECT_VERSION})
 endif()
-
-target_compile_options(${PROJECT_NAME} PUBLIC -DNDEBUG -O3)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC CONFIG_SOLO12_YAML="${PROJECT_SOURCE_DIR}/config/config_solo12.yaml")
 target_compile_definitions(${PROJECT_NAME} PUBLIC WALK_PARAMETERS_YAML="${PROJECT_SOURCE_DIR}/config/walk_parameters.yaml")
