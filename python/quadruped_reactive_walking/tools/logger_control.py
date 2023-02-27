@@ -2,7 +2,7 @@ from datetime import datetime
 from time import time
 import numpy as np
 import pathlib
-from .kinematics_utils import get_translation, get_translation_array
+from .kinematics_utils import get_translation_array
 from ..controller import Controller
 
 FIG_DPI = 100
@@ -186,8 +186,6 @@ class LoggerControl:
         self.i += 1
 
     def plot(self, save=False, filename=TEMP_DIRNAME):
-        import matplotlib.pyplot as plt
-
         self.plot_states(save, filename)
         # self.plot_torques(save, filename)
         # self.plot_target(save, filename)

@@ -1,5 +1,4 @@
 from multiprocessing import Process, Value, Array
-from time import time, sleep
 
 import numpy as np
 

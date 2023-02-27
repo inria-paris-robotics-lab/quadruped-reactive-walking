@@ -1,5 +1,4 @@
 from .problem_data import TaskSpec
-from .target import Target
 import crocoddyl
 import sobec
 import pinocchio as pin

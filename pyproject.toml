@@ -8,3 +8,4 @@ line-length = 120
 
 [tool.ruff.per-file-ignores]
 "python/quadruped_reactive_walking/__init__.py" = ["F401", "F403"]
+"python/quadruped_reactive_walking/wb_mpc/__init__.py" = ["F401", "F403"]

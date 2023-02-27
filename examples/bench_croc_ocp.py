@@ -1,12 +1,9 @@
 import quadruped_reactive_walking as qrw
 from quadruped_reactive_walking.wb_mpc import CrocOCP as OCP
-from quadruped_reactive_walking.wb_mpc.problem_data import TaskSpec, TaskSpecFull
+from quadruped_reactive_walking.wb_mpc.problem_data import TaskSpecFull
 from quadruped_reactive_walking.wb_mpc.target import Target
 
 import crocoddyl
-import pinocchio
-import example_robot_data
-import numpy as np
 import sys
 import time
 

@@ -6,16 +6,12 @@ Author:
 """
 import time
 import numpy as np
-import pinocchio as pin
 import crocoddyl
 
 import proxddp
-from proxddp import manifolds, dynamics
 from colorama import Fore
 
 from .problem_data import TaskSpec
-from .target import Target
-from .ocp_abstract import OCPAbstract
 from .ocp_crocoddyl import CrocOCP
 from quadruped_reactive_walking import Params
 

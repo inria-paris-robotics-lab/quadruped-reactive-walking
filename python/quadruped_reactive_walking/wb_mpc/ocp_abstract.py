@@ -1,5 +1,4 @@
 import abc
-import numpy as np
 
 from .problem_data import TaskSpec
 import quadruped_reactive_walking as qrw

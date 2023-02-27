@@ -12,7 +12,6 @@ from quadruped_reactive_walking.tools.logger_control import (
     TEMP_DIRNAME,
     DATE_STRFORMAT,
 )
-from quadruped_reactive_walking.tools import meshcat_viewer
 from quadruped_reactive_walking.wb_mpc import CrocOCP, AlgtrOCP
 
 import tqdm
@@ -21,7 +20,6 @@ import matplotlib.pyplot as plt
 import enum
 import colorama
 
-from typing import Type, Literal
 from colorama import Fore
 
 colorama.init()

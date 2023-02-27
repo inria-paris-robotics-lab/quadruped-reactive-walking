@@ -9,7 +9,6 @@ from . import wb_mpc
 from .wb_mpc.target import Target
 from .tools.Utils import init_robot, quaternionToRPY
 from .wb_mpc.problem_data import TaskSpec
-from .tools.kinematics_utils import get_translation_array
 from .tools.Interpolator import Interpolator
 from typing import Type
 
