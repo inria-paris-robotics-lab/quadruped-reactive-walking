@@ -20,6 +20,10 @@ from .ocp_crocoddyl import CrocOCP
 from quadruped_reactive_walking import Params
 
 
+def infNorm(x):
+    return np.linalg.norm(x, np.inf)
+
+
 class AlgtrOCP(CrocOCP):
     """Solve the OCP using proxddp."""
 
