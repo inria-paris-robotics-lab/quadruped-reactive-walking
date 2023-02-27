@@ -1,0 +1,10 @@
+[tool.ruff]
+select = ["E", "F"]
+ignore = ["E501"]
+exclude = [".git", "build*", "cmake"]
+fixable = ["E"]
+
+line-length = 120
+
+[tool.ruff.per-file-ignores]
+"python/quadruped_reactive_walking/__init__.py" = ["F401", "F403"]
