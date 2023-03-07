@@ -96,7 +96,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
 add_project_dependency(pinocchio REQUIRED)
 
 # Link pinocchio library
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC pinocchio::pinocchio)
+target_link_libraries(${PROJECT_NAME} PUBLIC pinocchio::pinocchio)
 
 # Link odri_control_interface library
 # find_package(odri_control_interface REQUIRED)
