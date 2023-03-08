@@ -18,7 +18,7 @@ def createProblem():
 
     x0 = pd.x0_reduced
 
-    ocp = OCP(pd, target)
+    ocp = OCP(target)
     ocp.make_ocp()
     ocp.x0 = x0
 

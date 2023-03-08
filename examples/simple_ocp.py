@@ -23,7 +23,7 @@ footsteps, base_refs = make_footsteps_and_refs(params, target)
 x0 = task.x0
 print("x0:", x0)
 
-ocp = CrocOCP(task, params, footsteps, base_refs)
+ocp = CrocOCP(params, footsteps, base_refs)
 
 nsteps = ocp.ddp.problem.T
 xs_i = [x0] * (nsteps + 1)
@@ -32,7 +32,7 @@ us_i = ocp.problem.quasiStatic(xs_i[:nsteps])
 ocp.solve(0, xs_i, us_i)
 
 
-ocp2 = AlgtrOCP(task, params, footsteps, base_refs)
+ocp2 = AlgtrOCP(params, footsteps, base_refs)
 ocp2.solve(0, xs_i, us_i)
 ocp2_res = ocp2.prox_ddp.getResults()
 

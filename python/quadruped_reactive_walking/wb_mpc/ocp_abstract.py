@@ -2,13 +2,15 @@ import abc
 
 from .problem_data import TaskSpec
 import quadruped_reactive_walking as qrw
+from .problem_data import TaskSpec
+
 
 
 class OCPAbstract(abc.ABC):
     num_iters: int
 
-    def __init__(self, pd: TaskSpec, params: qrw.Params):
-        self.pd = pd
+    def __init__(self, params: qrw.Params):
+        self.pd = TaskSpec(params)
         self.params = params
         self.max_iter = 1000 if params.save_guess else params.ocp.max_iter
         self.init_max_iters = params.ocp.init_max_iters

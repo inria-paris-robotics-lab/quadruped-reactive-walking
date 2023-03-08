@@ -25,14 +25,13 @@ class AlgtrOCP(CrocOCP):
 
     def __init__(
         self,
-        pd: TaskSpec,
         params: Params,
         footsteps,
         base_refs,
         use_prox=False,
         run_croc=False,
     ):
-        super().__init__(pd, params, footsteps, base_refs)
+        super().__init__(params, footsteps, base_refs)
 
         self.my_problem: proxddp.TrajOptProblem = proxddp.croc.convertCrocoddylProblem(
             self.problem

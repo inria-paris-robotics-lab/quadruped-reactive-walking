@@ -116,7 +116,6 @@ class Controller:
         )
 
         self.mpc = wbmpc_wrapper.MPCWrapper(
-            self.pd,
             params,
             self.footsteps,
             self.base_refs,

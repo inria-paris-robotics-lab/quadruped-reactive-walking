@@ -4,6 +4,8 @@ import numpy as np
 import pathlib
 from .kinematics_utils import get_translation_array
 from ..controller import Controller
+from ..wb_mpc.problem_data import TaskSpec
+
 
 FIG_DPI = 100
 TEMP_DIRNAME = pathlib.Path.home() / ".tmp"
@@ -11,7 +13,7 @@ DATE_STRFORMAT = "%Y_%m_%d_%H_%m_%S"
 
 
 class LoggerControl:
-    def __init__(self, pd, params, log_size=60e3, loop_buffer=False, filename=None):
+    def __init__(self, params, log_size=60e3, loop_buffer=False, filename=None):
         if filename is not None:
             self.data = np.load(filename, allow_pickle=True)
 
@@ -21,7 +23,7 @@ class LoggerControl:
         self.params = params
 
         size = self.log_size
-        self.pd = pd
+        self.pd = TaskSpec(params)
 
         # IMU and actuators:
         self.q_mes = np.zeros([size, 12])
@@ -61,13 +63,13 @@ class LoggerControl:
         self.t_ocp_solve = np.zeros(size)
 
         # MPC
-        self.q_estimate_rpy = np.zeros([size, pd.nq - 1])
-        self.q_estimate = np.zeros([size, pd.nq])
-        self.v_estimate = np.zeros([size, pd.nv])
-        self.q_filtered = np.zeros([size, pd.nq])
-        self.v_filtered = np.zeros([size, pd.nv])
-        self.ocp_xs = np.zeros([size, params.T + 1, pd.nx])
-        self.ocp_us = np.zeros([size, params.T, pd.nu])
+        self.q_estimate_rpy = np.zeros([size, self.pd.nq - 1])
+        self.q_estimate = np.zeros([size, self.pd.nq])
+        self.v_estimate = np.zeros([size, self.pd.nv])
+        self.q_filtered = np.zeros([size, self.pd.nq])
+        self.v_filtered = np.zeros([size, self.pd.nv])
+        self.ocp_xs = np.zeros([size, params.T + 1, self.pd.nx])
+        self.ocp_us = np.zeros([size, params.T, self.pd.nu])
         self.ocp_K = np.zeros([size, self.pd.nu, self.pd.ndx])
         self.ocp_num_iters = np.zeros([size], dtype=int)
         self.MPC_equivalent_Kp = np.zeros([size, self.pd.nu])
@@ -538,7 +540,7 @@ if __name__ == "__main__":
 
     today = datetime.now()
     today = today.strftime(DATE_STRFORMAT)
-    logger = LoggerControl(pd, params, filename=str(TEMP_DIRNAME / today / "data.npz"))
+    logger = LoggerControl(params, filename=str(TEMP_DIRNAME / today / "data.npz"))
 
     logger.load()
     logger.plot()

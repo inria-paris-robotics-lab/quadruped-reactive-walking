@@ -3,12 +3,15 @@ from multiprocessing import Process, Value, Array
 import numpy as np
 
 from .wb_mpc.ocp_abstract import OCPAbstract
+from .wb_mpc.problem_data import TaskSpec
+
 
 from typing import Type
 
 
 class Result:
-    def __init__(self, pd, params):
+    def __init__(self, params):
+        pd = TaskSpec(params)
         self.gait = np.zeros((params.T + 1, 4))
         self.xs = list(np.zeros((params.T + 1, pd.nx)))
         self.us = list(np.zeros((params.T, pd.nu)))
@@ -25,14 +28,14 @@ class MPCWrapper:
     """
 
     def __init__(
-        self, pd, params, footsteps, base_refs, solver_cls: Type[OCPAbstract], **kwargs
+        self, params, footsteps, base_refs, solver_cls: Type[OCPAbstract], **kwargs
     ):
         self.params = params
-        self.pd = pd
+        self.pd = TaskSpec(params)
         self.T = params.T
-        self.nu = pd.nu
-        self.nx = pd.nx
-        self.ndx = pd.ndx
+        self.nu = self.pd.nu
+        self.nx = self.pd.nx
+        self.ndx = self.pd.ndx
         self.solver_cls = solver_cls
         self._solver_kwargs = kwargs
 
@@ -58,9 +61,9 @@ class MPCWrapper:
             self.out_num_iters = Value("i", 0)
             self.out_solving_time = Value("d", 0.0)
         else:
-            self.ocp = solver_cls(pd, params, footsteps, base_refs, **kwargs)
+            self.ocp = solver_cls(params, footsteps, base_refs, **kwargs)
 
-        self.last_available_result: Result = Result(pd, params)
+        self.last_available_result: Result = Result(params)
         self.new_result = Value("b", False)
 
     def solve(self, k, x0, footstep, base_ref, xs=None, us=None):
@@ -145,7 +148,6 @@ class MPCWrapper:
 
             if k == 0:
                 loop_ocp = self.solver_cls(
-                    self.pd,
                     self.params,
                     self.footsteps_plan,
                     self.base_refs,

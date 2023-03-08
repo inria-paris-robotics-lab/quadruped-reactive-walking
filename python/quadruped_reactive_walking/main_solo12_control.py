@@ -206,7 +206,7 @@ def main(args):
     # viewer = meshcat_viewer.MeshcatViewer(controller.pd.robot)
 
     if params.LOGGING or params.PLOTTING:
-        logger = LoggerControl(controller.pd, params, log_size=params.N_SIMULATION)
+        logger = LoggerControl(params, log_size=params.N_SIMULATION)
     else:
         logger = None
 
