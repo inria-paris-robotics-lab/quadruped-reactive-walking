@@ -5,9 +5,9 @@ import numpy as np
 from .wb_mpc.ocp_abstract import OCPAbstract
 from .wb_mpc.problem_data import TaskSpec
 
-
 from typing import Type
 
+import abc
 
 class Result:
     def __init__(self, params):
@@ -20,8 +20,35 @@ class Result:
         self.num_iters = 0
         self.new_result = False
 
+class MPCWrapperAbstract:
+    """
+    Wrapper to run both types of MPC (OQSP or Crocoddyl) with the possibility to run OSQP in
+    a parallel process
+    """
 
-class MPCWrapper:
+    @abc.abstractclassmethod
+    def __init__(
+        self, params, footsteps, base_refs, solver_cls: Type[OCPAbstract], **kwargs
+    ):
+        pass
+
+    @abc.abstractclassmethod
+    def solve(self, k, x0, footstep, base_ref, xs=None, us=None):
+        pass
+
+    @abc.abstractclassmethod
+    def get_latest_result(self):
+        pass
+
+    @abc.abstractclassmethod
+    def add_new_data(self, k, x0, footstep, base_ref, xs, us):
+        pass
+
+    @abc.abstractclassmethod
+    def stop_parallel_loop(self):
+        pass
+
+class MultithreadingMPCWrapper(MPCWrapperAbstract):
     """
     Wrapper to run both types of MPC (OQSP or Crocoddyl) with the possibility to run OSQP in
     a parallel process
@@ -75,9 +102,9 @@ class MPCWrapper:
             k (int): Number of inv dynamics iterations since the start of the simulation
         """
         if self.multiprocessing:
-            self.run_mpc_async(k, x0, footstep, base_ref, xs, us)
+            self._run_mpc_async(k, x0, footstep, base_ref, xs, us)
         else:
-            self.run_mpc_sync(k, x0, footstep, base_ref, xs, us)
+            self._run_mpc_sync(k, x0, footstep, base_ref, xs, us)
 
     def get_latest_result(self):
         """
@@ -95,7 +122,7 @@ class MPCWrapper:
                     self.last_available_result.K,
                     self.last_available_result.solving_duration,
                     self.last_available_result.num_iters,
-                ) = self.decompress_dataOut()
+                ) = self._decompress_dataOut()
 
             self.last_available_result.new_result = True
             self.new_result.value = False
@@ -104,7 +131,7 @@ class MPCWrapper:
 
         return self.last_available_result
 
-    def run_mpc_sync(self, k, x0, footstep, base_ref, xs, us):
+    def _run_mpc_sync(self, k, x0, footstep, base_ref, xs, us):
         """
         Run the MPC (synchronous version)
         """
@@ -119,7 +146,7 @@ class MPCWrapper:
         ) = self.ocp.get_results()
         self.new_result.value = True
 
-    def run_mpc_async(self, k, x0, footstep, base_ref, xs, us):
+    def _run_mpc_async(self, k, x0, footstep, base_ref, xs, us):
         """
         Run the MPC (asynchronous version)
         """
@@ -144,7 +171,7 @@ class MPCWrapper:
 
             self.new_data.value = False
 
-            k, x0, footstep, base_ref, xs, us = self.decompress_dataIn()
+            k, x0, footstep, base_ref, xs, us = self._decompress_dataIn()
 
             if k == 0:
                 loop_ocp = self.solver_cls(
@@ -157,7 +184,7 @@ class MPCWrapper:
             loop_ocp.make_ocp(k, x0, footstep, base_ref)
             loop_ocp.solve(k, xs, us)
             gait, xs, us, K, solving_time = loop_ocp.get_results()
-            self.compress_dataOut(gait, xs, us, K, loop_ocp.num_iters, solving_time)
+            self._compress_dataOut(gait, xs, us, K, loop_ocp.num_iters, solving_time)
             self.new_result.value = True
 
     def add_new_data(self, k, x0, footstep, base_ref, xs, us):
@@ -167,10 +194,10 @@ class MPCWrapper:
         that there is a new data
         """
 
-        self.compress_dataIn(k, x0, footstep, base_ref, xs, us)
+        self._compress_dataIn(k, x0, footstep, base_ref, xs, us)
         self.new_data.value = True
 
-    def compress_dataIn(self, k, x0, footstep, base_ref, xs, us):
+    def _compress_dataIn(self, k, x0, footstep, base_ref, xs, us):
         """
         Decompress data from a C-type structure that belongs to the shared memory to
         retrieve data from the main control loop in the asynchronous MPC
@@ -199,7 +226,7 @@ class MPCWrapper:
                 :, :
             ] = np.array(us)
 
-    def decompress_dataIn(self):
+    def _decompress_dataIn(self):
         """
         Decompress data from a C-type structure that belongs to the shared memory to
         retrieve data from the main control loop in the asynchronous MPC
@@ -225,7 +252,7 @@ class MPCWrapper:
 
         return k, x0, footstep, base_ref, xs, us
 
-    def compress_dataOut(self, gait, xs, us, K, num_iters, solving_time):
+    def _compress_dataOut(self, gait, xs, us, K, num_iters, solving_time):
         """
         Compress data to a C-type structure that belongs to the shared memory to
         retrieve data in the main control loop from the asynchronous MPC
@@ -250,7 +277,7 @@ class MPCWrapper:
         self.out_num_iters = num_iters
         self.out_solving_time.value = solving_time
 
-    def decompress_dataOut(self):
+    def _decompress_dataOut(self):
         """
         Return the result of the asynchronous MPC (desired contact forces) that is
         stored in the shared memory

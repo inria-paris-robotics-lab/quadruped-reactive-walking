@@ -116,7 +116,7 @@ class Controller:
             self.params, self.target
         )
 
-        self.mpc = wbmpc_wrapper.MPCWrapper(
+        self.mpc = wbmpc_wrapper.MultithreadingMPCWrapper(
             params,
             self.footsteps,
             self.base_refs,
