@@ -13,6 +13,8 @@ class CrocOCP(OCPAbstract):
 
         self.state = crocoddyl.StateMultibody(self.pd.model)
 
+        self.rdata = self.pd.create_rdata()
+
         # Set the problem parameters
         self.initialized = False
         self.t_problem_update = 0
@@ -97,8 +99,8 @@ class CrocOCP(OCPAbstract):
         :param base_task:
         """
         self.x0 = x0
-        pin.forwardKinematics(self.pd.model, self.pd.rdata, self.x0[: self.pd.nq])
-        pin.updateFramePlacements(self.pd.model, self.pd.rdata)
+        pin.forwardKinematics(self.pd.model, self.rdata, self.x0[: self.pd.nq])
+        pin.updateFramePlacements(self.pd.model, self.rdata)
 
         if self.initialized:
             tasks = self.make_task(footstep)
@@ -230,8 +232,8 @@ class CrocOCP(OCPAbstract):
         :param isTterminal: true for the terminal node
         :return action model for a swing foot phase
         """
-        pin.forwardKinematics(self.pd.model, self.pd.rdata, self.pd.q0)
-        pin.updateFramePlacements(self.pd.model, self.pd.rdata)
+        pin.forwardKinematics(self.pd.model, self.rdata, self.pd.q0)
+        pin.updateFramePlacements(self.pd.model, self.rdata)
 
         model = self.create_standard_model(support_feet)
         if is_terminal:
@@ -315,7 +317,7 @@ class CrocOCP(OCPAbstract):
         nu = model.differential.actuation.nu
         costs = model.differential.costs
         for i in self.pd.feet_ids:
-            start_pos = self.pd.rdata.oMf[i].translation
+            start_pos = self.rdata.oMf[i].translation
 
             # Contact forces
             cone = crocoddyl.FrictionCone(self.pd.Rsurf, self.pd.mu, 4, False, 3)

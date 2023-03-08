@@ -92,6 +92,7 @@ class Controller:
         self.params = params
         init_robot(q_init, params)
         self.pd = TaskSpec(params)
+        self.rdata = self.pd.create_rdata()
 
         self.k = 0
         self.error = False
@@ -432,7 +433,7 @@ class Controller:
         v0 = self.v_estimate.copy()
         tau = np.concatenate([np.zeros(6), self.result.tau_ff.copy()])
 
-        a = pin.aba(self.pd.model, self.pd.rdata, q0, v0, tau)
+        a = pin.aba(self.pd.model, self.rdata, q0, v0, tau)
 
         v = v0 + a * self.params.dt_wbc
         q = pin.integrate(self.pd.model, q0, v * self.params.dt_wbc)

@@ -12,7 +12,6 @@ class TaskSpecBase:
         self.q0[7:] = params.q_init
 
         self.model = self.robot.model
-        self.rdata = self.model.createData()
         self.collision_model = self.robot.collision_model
         self.visual_model = self.robot.visual_model
 
@@ -45,6 +44,9 @@ class TaskSpecBase:
         self.feet_ids = [self.model.getFrameId(f) for f in self.feet_names]
 
         self.Rsurf = np.eye(3)
+
+    def create_rdata(self):
+        return self.model.createData()
 
     def freeze(self):
         geom_models = [self.visual_model, self.collision_model]
