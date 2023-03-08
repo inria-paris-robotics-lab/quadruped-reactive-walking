@@ -301,14 +301,16 @@ class Controller:
                 print("Clamping knee n " + str(i))
                 self.error = set_error
 
-        clamped_motors = []
+        clamped_tau = []
+        clamped_pos = []
+        clamped_vel = []
         for i in range(12):
             if self.clamp(
                 self.result.q_des[i],
                 device.joints.positions[i] - 4.0,
                 device.joints.positions[i] + 4.0,
             ):
-                print("Clamping position difference of motor n " + str(i))
+                clamped_pos.append(i)
                 self.error = set_error
 
             if self.clamp(
@@ -316,14 +318,18 @@ class Controller:
                 device.joints.velocities[i] - 100.0,
                 device.joints.velocities[i] + 100.0,
             ):
-                print("Clamping velocity of motor n " + str(i))
+                clamped_vel.append(i)
                 self.error = set_error
 
             if self.clamp(self.result.tau_ff[i], -3.2, 3.2):
-                clamped_motors.append(i)
+                clamped_tau.append(i)
                 self.error = set_error
-            if len(clamped_motors) > 0:
-                print("Clamping torque of motors {}".format(clamped_motors))
+        if len(clamped_tau) > 0:
+            print("Clamping torque of motors {}".format(clamped_tau))
+        if len(clamped_pos) > 0:
+            print("Clamping position of motors {}".format(clamped_pos))
+        if len(clamped_vel) > 0:
+            print("Clamping velocity of motors {}".format(clamped_vel))
 
     def set_null_control(self):
         """
