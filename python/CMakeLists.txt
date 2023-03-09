@@ -17,7 +17,7 @@ set_target_properties(
 target_link_boost_python(${PY_LIB} PRIVATE)
 install(TARGETS ${PY_LIB} DESTINATION ${${PY_NAME}_INSTALL_DIR})
 
-set(${PY_NAME}_PYTHON __init__.py controller.py main_solo12_control.py wbmpc_wrapper.py)
+set(${PY_NAME}_PYTHON __init__.py controller.py main_solo12_control.py wbmpc_wrapper_abstract.py wbmpc_wrapper_sync.py)
 
 set(${PY_NAME}_WB_MPC_PYTHON
     __init__.py
