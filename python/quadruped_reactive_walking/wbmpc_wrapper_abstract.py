@@ -20,8 +20,7 @@ class Result:
 
 class MPCWrapperAbstract:
     """
-    Wrapper to run both types of MPC (OQSP or Crocoddyl) with the possibility to run OSQP in
-    a parallel process
+    Wrapper to run both types of MPC (OQSP or Crocoddyl)
     """
 
     @abc.abstractclassmethod

@@ -9,8 +9,7 @@ from .wbmpc_wrapper_abstract import MPCWrapperAbstract, Result
 
 class SyncMPCWrapper(MPCWrapperAbstract):
     """
-    Wrapper to run both types of MPC (OQSP or Crocoddyl) with the possibility to run OSQP in
-    a parallel process
+    Wrapper to run both types of MPC (OQSP or Crocoddyl) in a synchronous manner in the main thread.
     """
 
     def __init__(
