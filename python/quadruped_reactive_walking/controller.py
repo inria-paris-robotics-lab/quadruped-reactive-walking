@@ -116,7 +116,7 @@ class Controller:
         )
 
         if params.enable_multiprocessing:
-            from .wbmpc_wrapper_async import AsyncMPCWrapper as MPCWrapper
+            from .wbmpc_wrapper_multiprocess import MultiprocessMPCWrapper as MPCWrapper
         else:
             from .wbmpc_wrapper_sync import SyncMPCWrapper as MPCWrapper
 

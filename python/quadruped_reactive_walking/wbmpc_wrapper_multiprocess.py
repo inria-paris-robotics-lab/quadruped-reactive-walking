@@ -9,7 +9,7 @@ from typing import Type
 
 from .wbmpc_wrapper_abstract import MPCWrapperAbstract, Result
 
-class AsyncMPCWrapper(MPCWrapperAbstract):
+class MultiprocessMPCWrapper(MPCWrapperAbstract):
     """
     Wrapper to run both types of MPC (OQSP or Crocoddyl) asynchronously in a new process
     """
