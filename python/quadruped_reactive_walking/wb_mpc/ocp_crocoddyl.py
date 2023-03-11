@@ -1,4 +1,3 @@
-from .problem_data import TaskSpec
 import crocoddyl
 import sobec
 import pinocchio as pin
@@ -47,8 +46,8 @@ class CrocOCP(OCPAbstract):
     def initialize_models(self, gait, footsteps=[], base_refs=[]):
         models = []
         for t, step in enumerate(gait):
-            tasks = self.make_task(footsteps[t]) if footsteps else []
-            base_task = base_refs[t] if base_refs else []
+            feet_pos = self.get_active_feet(footsteps[t]) if footsteps else []
+            base_pose = base_refs[t] if base_refs else []
             support_feet = [self.pd.feet_ids[i] for i in np.nonzero(step == 1)[0]]
             switch_matrix = (
                 gait[t] if ((gait[t] != gait[t - 1]).any() or t == 0) else []
@@ -57,7 +56,7 @@ class CrocOCP(OCPAbstract):
                 self.pd.feet_ids[i] for i in np.nonzero(switch_matrix == 1)[0]
             ]
             models.append(
-                self.create_model(support_feet, switch_feet, tasks, base_task)
+                self.create_model(support_feet, switch_feet, feet_pos, base_pose)
             )
 
         support_feet = [self.pd.feet_ids[i] for i in np.nonzero(gait[-1] == 1)[0]]
@@ -89,21 +88,21 @@ class CrocOCP(OCPAbstract):
         self.t_solve = time() - t_start
         self.num_iters = self.ddp.iter
 
-    def make_ocp(self, k, x0, footstep, base_task):
+    def make_ocp(self, k, x0, footstep, base_pose):
         """
         Create a shooting problem for a simple walking gait.
 
         :param k: current MPC iteration
         :param x0: initial condition
         :param footstep:
-        :param base_task:
+        :param base_pose:
         """
         self.x0 = x0
         pin.forwardKinematics(self.pd.model, self.rdata, self.x0[: self.pd.nq])
         pin.updateFramePlacements(self.pd.model, self.rdata)
 
         if self.initialized:
-            tasks = self.make_task(footstep)
+            feet_pos = self.get_active_feet(footstep)
             t = int(k / self.params.mpc_wbc_ratio) - 1
 
             if t < len(self.start_rm):
@@ -157,9 +156,9 @@ class CrocOCP(OCPAbstract):
                         self.ending_gait[0].reshape(1, -1),
                         axis=0,
                     )
-                base_task = []
+                base_pose = []
 
-            self.update_model(m, tasks, base_task, support_feet)
+            self.update_model(m, feet_pos, base_pose, support_feet)
             self.circular_append(m)
 
         self.problem.x0 = self.x0
@@ -211,17 +210,22 @@ class CrocOCP(OCPAbstract):
         [acc.append(m.differential.xout) for m in self.ddp.problem.runningDatas]
         return acc
 
-    def update_model(self, model, tasks, base_task, support_feet, is_terminal=False):
+    def update_model(self, model, feet_pos, base_pose, support_feet, is_terminal=False):
         for i in self.pd.feet_ids:
             name = self.pd.model.frames[i].name + "_contact"
             model.differential.contacts.changeContactStatus(name, i in support_feet)
         if not is_terminal:
             self.update_tracking_costs(
-                model.differential.costs, tasks, base_task, support_feet
+                model.differential.costs, feet_pos, base_pose, support_feet
             )
 
     def create_model(
-        self, support_feet=[], switch_feet=[], tasks=[], base_task=[], is_terminal=False
+        self,
+        support_feet=[],
+        switch_feet=[],
+        feet_pos=[],
+        base_pose=[],
+        is_terminal=False,
     ):
         """
         Create the action model
@@ -239,7 +243,9 @@ class CrocOCP(OCPAbstract):
         if is_terminal:
             self.make_terminal_model(model)
         else:
-            self.make_running_model(model, support_feet, switch_feet, tasks, base_task)
+            self.make_running_model(
+                model, support_feet, switch_feet, feet_pos, base_pose
+            )
 
         return model
 
@@ -310,7 +316,7 @@ class CrocOCP(OCPAbstract):
         state_cost = crocoddyl.CostModelResidual(self.state, activation, residual)
         model.differential.costs.addCost("terminal_velocity", state_cost, 1)
 
-    def make_running_model(self, model, support_feet, switch_feet, tasks, base_task):
+    def make_running_model(self, model, support_feet, switch_feet, feet_pos, base_pose):
         """
         Add all the costs to the running models
         """
@@ -448,8 +454,8 @@ class CrocOCP(OCPAbstract):
                     )
 
         name = "base_velocity_tracking"
-        if list(base_task):
-            ref = pin.Motion(base_task[:3], base_task[3:])
+        if list(base_pose):
+            ref = pin.Motion(base_pose[:3], base_pose[3:])
         else:
             ref = pin.Motion.Zero()
 
@@ -474,15 +480,15 @@ class CrocOCP(OCPAbstract):
         )
         costs.addCost("control_bound", control_bound, self.pd.control_bound_w)
 
-        self.update_tracking_costs(costs, tasks, base_task, support_feet)
+        self.update_tracking_costs(costs, feet_pos, base_pose, support_feet)
 
-    def update_tracking_costs(self, costs, tasks, base_task, support_feet):
+    def update_tracking_costs(self, costs, feet_pos, base_pose, support_feet):
         index = 0
         for i in self.pd.feet_ids:
             if self.pd.foot_tracking_w > 0:
                 name = self.pd.model.frames[i].name + "_foot_tracking"
-                if i in tasks[0]:
-                    costs.costs[name].cost.residual.reference = tasks[1][index]
+                if i in feet_pos[0]:
+                    costs.costs[name].cost.residual.reference = feet_pos[1][index]
                     index += 1
                 costs.changeCostStatus(name, i not in support_feet)
 
@@ -498,7 +504,7 @@ class CrocOCP(OCPAbstract):
             name = "%s_vel_zReg" % self.pd.model.frames[i].name
             costs.changeCostStatus(name, i not in support_feet)
 
-        if list(base_task) and self.pd.base_velocity_tracking_w > 0:
+        if list(base_pose) and self.pd.base_velocity_tracking_w > 0:
             name = "base_velocity_tracking"
-            ref = pin.Motion(base_task[:3], base_task[3:])
+            ref = pin.Motion(base_pose[:3], base_pose[3:])
             costs.costs[name].cost.residual.reference = ref

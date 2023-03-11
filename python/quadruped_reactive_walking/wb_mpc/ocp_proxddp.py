@@ -11,7 +11,6 @@ import crocoddyl
 import proxddp
 from colorama import Fore
 
-from .problem_data import TaskSpec
 from .ocp_crocoddyl import CrocOCP
 from quadruped_reactive_walking import Params
 

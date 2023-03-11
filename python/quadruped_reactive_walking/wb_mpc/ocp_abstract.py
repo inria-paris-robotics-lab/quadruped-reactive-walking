@@ -2,8 +2,6 @@ import abc
 
 from .problem_data import TaskSpec
 import quadruped_reactive_walking as qrw
-from .problem_data import TaskSpec
-
 
 
 class OCPAbstract(abc.ABC):
@@ -31,11 +29,8 @@ class OCPAbstract(abc.ABC):
     def make_ocp(self, k, x0, footstep, base_task):
         pass
 
-    def make_task(self, footstep):
-        task = [[], []]
-        # if base_ref is not None:
-        #     task[0].append(self.pd.base_id)
-        #     task[1].append(base_ref)
+    def get_active_feet(self, footstep):
+        task = ([], [])
         for foot in range(4):
             if footstep[:, foot].any():
                 task[0].append(self.pd.feet_ids[foot])
