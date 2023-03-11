@@ -29,7 +29,5 @@ def get_translation_array(pd: TaskSpec, x, idx, ref_frame=pin.WORLD, x0=None):
         pin.forwardKinematics(pd.model, rdata, q, v)
         pin.updateFramePlacements(pd.model, rdata)
         frame_p += [rdata.oMf[idx].translation.copy()]
-        frame_v += [
-            pin.getFrameVelocity(pd.model, rdata, idx, ref_frame).linear.copy()
-        ]
+        frame_v += [pin.getFrameVelocity(pd.model, rdata, idx, ref_frame).linear.copy()]
     return np.array(frame_p), np.array(frame_v)

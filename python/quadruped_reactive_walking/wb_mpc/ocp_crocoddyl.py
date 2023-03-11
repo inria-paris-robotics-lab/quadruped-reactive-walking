@@ -56,11 +56,11 @@ class CrocOCP(OCPAbstract):
                 self.pd.feet_ids[i] for i in np.nonzero(switch_matrix == 1)[0]
             ]
             models.append(
-                self.create_model(support_feet, switch_feet, feet_pos, base_pose)
+                self.make_running_model(support_feet, switch_feet, feet_pos, base_pose)
             )
 
         support_feet = [self.pd.feet_ids[i] for i in np.nonzero(gait[-1] == 1)[0]]
-        terminal_model = self.create_model(support_feet, is_terminal=True)
+        terminal_model = self.make_terminal_model(support_feet)
 
         return models, terminal_model
 
@@ -219,37 +219,7 @@ class CrocOCP(OCPAbstract):
                 model.differential.costs, feet_pos, base_pose, support_feet
             )
 
-    def create_model(
-        self,
-        support_feet=[],
-        switch_feet=[],
-        feet_pos=[],
-        base_pose=[],
-        is_terminal=False,
-    ):
-        """
-        Create the action model
-
-        :param state: swinging foot task
-        :param support_feet: list of support feet ids
-        :param task: list of support feet ids and associated tracking reference
-        :param isTterminal: true for the terminal node
-        :return action model for a swing foot phase
-        """
-        pin.forwardKinematics(self.pd.model, self.rdata, self.pd.q0)
-        pin.updateFramePlacements(self.pd.model, self.rdata)
-
-        model = self.create_standard_model(support_feet)
-        if is_terminal:
-            self.make_terminal_model(model)
-        else:
-            self.make_running_model(
-                model, support_feet, switch_feet, feet_pos, base_pose
-            )
-
-        return model
-
-    def create_standard_model(self, support_feet):
+    def _create_standard_model(self, support_feet):
         """
         Create a standard action model
 
@@ -257,6 +227,8 @@ class CrocOCP(OCPAbstract):
         :param support_feet: list of support feet ids
         :return action model for a swing foot phase
         """
+        pin.forwardKinematics(self.pd.model, self.rdata, self.pd.q0)
+        pin.updateFramePlacements(self.pd.model, self.rdata)
         actuation = crocoddyl.ActuationModelFloatingBase(self.state)
         nu = actuation.nu
 
@@ -304,10 +276,11 @@ class CrocOCP(OCPAbstract):
 
         return model
 
-    def make_terminal_model(self, model):
+    def make_terminal_model(self, support_feet):
         """
         Add the final velocity cost to the terminal model
         """
+        model = self._create_standard_model(support_feet)
         nu = model.differential.actuation.nu
         residual = crocoddyl.ResidualModelState(self.state, self.pd.xref, nu)
         activation = crocoddyl.ActivationModelWeightedQuad(
@@ -315,11 +288,13 @@ class CrocOCP(OCPAbstract):
         )
         state_cost = crocoddyl.CostModelResidual(self.state, activation, residual)
         model.differential.costs.addCost("terminal_velocity", state_cost, 1)
+        return model
 
-    def make_running_model(self, model, support_feet, switch_feet, feet_pos, base_pose):
+    def make_running_model(self, support_feet, switch_feet, feet_pos, base_pose):
         """
         Add all the costs to the running models
         """
+        model = self._create_standard_model(support_feet)
         nu = model.differential.actuation.nu
         costs = model.differential.costs
         for i in self.pd.feet_ids:
@@ -481,6 +456,7 @@ class CrocOCP(OCPAbstract):
         costs.addCost("control_bound", control_bound, self.pd.control_bound_w)
 
         self.update_tracking_costs(costs, feet_pos, base_pose, support_feet)
+        return model
 
     def update_tracking_costs(self, costs, feet_pos, base_pose, support_feet):
         index = 0
