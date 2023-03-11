@@ -15,7 +15,6 @@ class CrocOCP(OCPAbstract):
         self.rdata = self.pd.create_rdata()
 
         # Set the problem parameters
-        self.initialized = False
         self.t_problem_update = 0
         self.t_update_last_model = 0.0
         self.t_shift = 0.0
@@ -105,69 +104,65 @@ class CrocOCP(OCPAbstract):
         pin.forwardKinematics(self.pd.model, self.rdata, self.x0[: self.pd.nq])
         pin.updateFramePlacements(self.pd.model, self.rdata)
 
-        if self.initialized:
-            feet_pos = self.get_active_feet(footstep)
-            t = int(k / self.params.mpc_wbc_ratio) - 1
-
-            if t < len(self.start_rm):
-                support_feet = [
-                    self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[t] == 1)[0]
-                ]
-                m = self.life_rm[t]
-                self.current_gait = np.insert(
-                    self.current_gait[1:], -1, self.life_gait[t].reshape(1, -1), axis=0
-                )
-
-            elif (
-                t
-                < len(self.start_rm) + len(self.life_rm) * self.params.gait_repetitions
-            ):
-                self.life_gait = np.roll(self.life_gait, -1, axis=0)
-                support_feet = [
-                    self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[-1] == 1)[0]
-                ]
-                m = self.problem.runningModels[0]
-                self.current_gait = np.insert(
-                    self.current_gait[1:], -1, self.life_gait[-1].reshape(1, -1), axis=0
-                )
-
-            else:
-                i = (
-                    0
-                    if t
-                    == len(self.start_rm)
-                    + len(self.life_rm) * self.params.gait_repetitions
-                    else 1
-                )
-                # choose to pich the node with impact or not
-                support_feet = [
-                    self.pd.feet_ids[i] for i in np.nonzero(self.ending_gait[i] == 1)[0]
-                ]
-
-                if i:
-                    m = self.end_rm[1]
-                    self.current_gait = np.insert(
-                        self.current_gait[1:],
-                        -1,
-                        self.ending_gait[1].reshape(1, -1),
-                        axis=0,
-                    )
-                else:
-                    m = self.end_rm[0]
-                    self.current_gait = np.insert(
-                        self.current_gait[1:],
-                        -1,
-                        self.ending_gait[0].reshape(1, -1),
-                        axis=0,
-                    )
-                base_pose = []
-
-            self.update_model(m, feet_pos, base_pose, support_feet)
-            self.circular_append(m)
+        feet_pos = self.get_active_feet(footstep)
+        t = int(k / self.params.mpc_wbc_ratio) - 1
 
         self.problem.x0 = self.x0
 
-        self.initialized = True
+        if k == 0:
+            return
+
+        if t < len(self.start_rm):
+            support_feet = [
+                self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[t] == 1)[0]
+            ]
+            m = self.life_rm[t]
+            self.current_gait = np.insert(
+                self.current_gait[1:], -1, self.life_gait[t].reshape(1, -1), axis=0
+            )
+
+        elif t < len(self.start_rm) + len(self.life_rm) * self.params.gait_repetitions:
+            self.life_gait = np.roll(self.life_gait, -1, axis=0)
+            support_feet = [
+                self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[-1] == 1)[0]
+            ]
+            m = self.problem.runningModels[0]
+            self.current_gait = np.insert(
+                self.current_gait[1:], -1, self.life_gait[-1].reshape(1, -1), axis=0
+            )
+
+        else:
+            i = (
+                0
+                if t
+                == len(self.start_rm) + len(self.life_rm) * self.params.gait_repetitions
+                else 1
+            )
+            # choose to pich the node with impact or not
+            support_feet = [
+                self.pd.feet_ids[i] for i in np.nonzero(self.ending_gait[i] == 1)[0]
+            ]
+
+            if i:
+                m = self.end_rm[1]
+                self.current_gait = np.insert(
+                    self.current_gait[1:],
+                    -1,
+                    self.ending_gait[1].reshape(1, -1),
+                    axis=0,
+                )
+            else:
+                m = self.end_rm[0]
+                self.current_gait = np.insert(
+                    self.current_gait[1:],
+                    -1,
+                    self.ending_gait[0].reshape(1, -1),
+                    axis=0,
+                )
+            base_pose = []
+
+        self.update_model(m, feet_pos, base_pose, support_feet)
+        self.circular_append(m)
 
     def circular_append(self, m):
         d = m.createData()
