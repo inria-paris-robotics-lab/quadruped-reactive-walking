@@ -32,18 +32,22 @@ class CrocOCP(OCPAbstract):
         )
         self.x0 = self.pd.x0
 
-        self.life_rm, self.life_tm = self.initialize_models(
+        self.life_rm, self.life_tm = self.initialize_models_from_gait(
             self.life_gait, footsteps, base_refs
         )
-        self.start_rm, self.start_tm = self.initialize_models(self.ending_gait)
-        self.end_rm, self.end_tm = self.initialize_models(self.ending_gait)
+        self.start_rm, self.start_tm = self.initialize_models_from_gait(
+            self.ending_gait
+        )
+        self.end_rm, self.end_tm = self.initialize_models_from_gait(self.ending_gait)
 
         self.problem = crocoddyl.ShootingProblem(self.x0, self.start_rm, self.start_tm)
         self.ddp = crocoddyl.SolverFDDP(self.problem)
         if params.ocp.verbose:
             self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
 
-    def initialize_models(self, gait, footsteps=[], base_refs=[]):
+    def initialize_models_from_gait(self, gait, footsteps=[], base_refs=[]):
+        """Create action models (problem stages) from a gait matrix and other optional data."""
+        assert len(footsteps) == len(base_refs)
         models = []
         for t, step in enumerate(gait):
             feet_pos = self.get_active_feet(footsteps[t]) if footsteps else []

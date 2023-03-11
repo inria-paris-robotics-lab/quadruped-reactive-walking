@@ -14,7 +14,7 @@ class OCPAbstract(abc.ABC):
         self.init_max_iters = params.ocp.init_max_iters
 
     @abc.abstractmethod
-    def initialize_models(self, gait, footsteps=[], base_refs=[]):
+    def initialize_models_from_gait(self, gait, footsteps=[], base_refs=[]):
         pass
 
     @abc.abstractmethod
