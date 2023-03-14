@@ -10,7 +10,8 @@ std::ostream &operator<<(std::ostream &oss, const OCPParams &p) {
 }
 
 Params::Params()
-    : config_file(""),
+    : raw_str(""),
+      config_file(""),
       interface(""),
       DEMONSTRATION(false),
       SIMULATION(false),
@@ -117,6 +118,11 @@ void Params::initialize_from_file(const std::string &file_path) {
   std::cout << "Loading robot config file " << config_file << std::endl;
 
   mpc_wbc_ratio = (int)(dt_mpc / dt_wbc);
+
+  // Save the raw_str
+  YAML::Emitter emitter;
+  emitter << param;
+  raw_str.assign(emitter.c_str());
 }
 
 void Params::initialize_from_str(const std::string &content) {
@@ -130,6 +136,11 @@ void Params::initialize_from_str(const std::string &content) {
   std::cout << "Loading robot config file " << config_file << std::endl;
 
   mpc_wbc_ratio = (int)(dt_mpc / dt_wbc);
+
+  // Save the raw_str
+  YAML::Emitter emitter;
+  emitter << param;
+  raw_str.assign(emitter.c_str());
 }
 
 namespace YAML {

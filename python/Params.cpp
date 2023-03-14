@@ -12,6 +12,7 @@ void exposeParams() {
       .def("initialize_from_str", &Params::initialize_from_file, bp::args("self", "content"), "Initialize Params from Python with a yaml string.\n")
 
       // Read Params from Python
+      .def_readonly("raw_str", &Params::raw_str)
       .def_readwrite("config_file", &Params::config_file)
       .def_readwrite("interface", &Params::interface)
       .def_readwrite("DEMONSTRATION", &Params::DEMONSTRATION)
