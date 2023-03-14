@@ -29,10 +29,11 @@ class OCPAbstract(abc.ABC):
     def make_ocp(self, k, x0, footstep, base_task):
         pass
 
-    def get_active_feet(self, footstep):
+    def get_active_feet(self, footstep, support_feet):
+        # Use the mask to get the subset of footsteps for active feet.
         task = ([], [])
-        for foot in range(4):
-            if footstep[:, foot].any():
-                task[0].append(self.pd.feet_ids[foot])
-                task[1].append(footstep[:, foot])
+        for i, fid in enumerate(self.pd.feet_ids):
+            if fid in support_feet:
+                task[0].append(self.pd.feet_ids[i])
+                task[1].append(footstep[:, i])
         return task

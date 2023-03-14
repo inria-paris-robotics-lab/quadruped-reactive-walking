@@ -48,21 +48,21 @@ class CrocOCP(OCPAbstract):
         """Create action models (problem stages) from a gait matrix and other optional data."""
         assert len(footsteps) == len(base_refs)
         models = []
-        for t, step in enumerate(gait):
-            feet_pos = self.get_active_feet(footsteps[t]) if footsteps else []
-            base_pose = base_refs[t] if base_refs else []
-            support_feet = [self.pd.feet_ids[i] for i in np.nonzero(step == 1)[0]]
-            switch_matrix = (
-                gait[t] if ((gait[t] != gait[t - 1]).any() or t == 0) else []
+        pd_feet = np.asarray(self.pd.feet_ids)
+        for t in range(gait.shape[0]):
+            support_feet = pd_feet[gait[t] == 1]
+            feet_pos = (
+                self.get_active_feet(footsteps[t], support_feet) if footsteps else ()
             )
-            switch_feet = [
-                self.pd.feet_ids[i] for i in np.nonzero(switch_matrix == 1)[0]
-            ]
+            base_pose = base_refs[t] if base_refs else []
+            has_switched = np.any(gait[t] != gait[t - 1])
+            switch_matrix = gait[t] if has_switched else np.array([])
+            switch_feet = pd_feet[switch_matrix == 1]
             models.append(
                 self.make_running_model(support_feet, switch_feet, feet_pos, base_pose)
             )
 
-        support_feet = [self.pd.feet_ids[i] for i in np.nonzero(gait[-1] == 1)[0]]
+        support_feet = pd_feet[gait[-1] == 1]
         terminal_model = self.make_terminal_model(support_feet)
 
         return models, terminal_model
@@ -104,7 +104,6 @@ class CrocOCP(OCPAbstract):
         pin.forwardKinematics(self.pd.model, self.rdata, self.x0[: self.pd.nq])
         pin.updateFramePlacements(self.pd.model, self.rdata)
 
-        feet_pos = self.get_active_feet(footstep)
         t = int(k / self.params.mpc_wbc_ratio) - 1
 
         self.problem.x0 = self.x0
@@ -161,6 +160,7 @@ class CrocOCP(OCPAbstract):
                 )
             base_pose = []
 
+        feet_pos = self.get_active_feet(footstep, support_feet)
         self.update_model(m, feet_pos, base_pose, support_feet)
         self.circular_append(m)
 
