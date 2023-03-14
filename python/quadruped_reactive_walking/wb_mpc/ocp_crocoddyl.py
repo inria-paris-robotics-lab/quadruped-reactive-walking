@@ -6,6 +6,20 @@ from time import time
 from .ocp_abstract import OCPAbstract
 
 
+def no_copy_roll_insert(x, a):
+    tail = x[1:]
+    x[:-1] = tail
+    x[-1] = a
+
+
+def no_copy_roll(x):
+    """No copy (except for the head) left roll along the 0-th axis."""
+    import copy
+
+    tmp = copy.copy(x[0])
+    no_copy_roll_insert(x, tmp)
+
+
 class CrocOCP(OCPAbstract):
     def __init__(self, params, footsteps, base_refs, **kwargs):
         super().__init__(params)
@@ -21,8 +35,8 @@ class CrocOCP(OCPAbstract):
 
         params = self.params
         self.life_gait = params.gait
-        self.starting_gait = np.array([[1, 1, 1, 1]] * params.starting_nodes)
-        self.ending_gait = np.array([[1, 1, 1, 1]] * params.ending_nodes)
+        self.starting_gait = np.ones((params.starting_nodes, 4))
+        self.ending_gait = np.ones((params.ending_nodes, 4))
         self.initialization_gait = np.concatenate(
             [self.starting_gait, self.life_gait, self.ending_gait]
         )
@@ -107,28 +121,24 @@ class CrocOCP(OCPAbstract):
         t = int(k / self.params.mpc_wbc_ratio) - 1
 
         self.problem.x0 = self.x0
+        pd_feet = np.asarray(self.pd.feet_ids)
 
         if k == 0:
             return
 
         if t < len(self.start_rm):
-            support_feet = [
-                self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[t] == 1)[0]
-            ]
-            m = self.life_rm[t]
-            self.current_gait = np.insert(
-                self.current_gait[1:], -1, self.life_gait[t].reshape(1, -1), axis=0
-            )
+            mask = self.life_gait[t] == 1
+            support_feet = pd_feet[mask]
+            model = self.life_rm[t]
+            no_copy_roll_insert(self.current_gait, self.life_gait[t])
 
         elif t < len(self.start_rm) + len(self.life_rm) * self.params.gait_repetitions:
-            self.life_gait = np.roll(self.life_gait, -1, axis=0)
-            support_feet = [
-                self.pd.feet_ids[i] for i in np.nonzero(self.life_gait[-1] == 1)[0]
-            ]
-            m = self.problem.runningModels[0]
-            self.current_gait = np.insert(
-                self.current_gait[1:], -1, self.life_gait[-1].reshape(1, -1), axis=0
-            )
+            # self.life_gait = np.roll(self.life_gait, -1, axis=0)
+            no_copy_roll(self.life_gait)
+            mask = self.life_gait[-1] == 1
+            support_feet = pd_feet[mask]
+            model = self.problem.runningModels[0]
+            no_copy_roll_insert(self.current_gait, self.life_gait[-1])
 
         else:
             i = (
@@ -138,31 +148,14 @@ class CrocOCP(OCPAbstract):
                 else 1
             )
             # choose to pich the node with impact or not
-            support_feet = [
-                self.pd.feet_ids[i] for i in np.nonzero(self.ending_gait[i] == 1)[0]
-            ]
-
-            if i:
-                m = self.end_rm[1]
-                self.current_gait = np.insert(
-                    self.current_gait[1:],
-                    -1,
-                    self.ending_gait[1].reshape(1, -1),
-                    axis=0,
-                )
-            else:
-                m = self.end_rm[0]
-                self.current_gait = np.insert(
-                    self.current_gait[1:],
-                    -1,
-                    self.ending_gait[0].reshape(1, -1),
-                    axis=0,
-                )
+            support_feet = pd_feet[self.ending_gait[i] == 1]
+            model = self.end_rm[i]
+            no_copy_roll_insert(self.current_gait, self.ending_gait[i])
             base_pose = []
 
         feet_pos = self.get_active_feet(footstep, support_feet)
-        self.update_model(m, feet_pos, base_pose, support_feet)
-        self.circular_append(m)
+        self.update_model(model, feet_pos, base_pose, support_feet)
+        self.circular_append(model)
 
     def circular_append(self, m):
         d = m.createData()
@@ -205,9 +198,7 @@ class CrocOCP(OCPAbstract):
         return forces
 
     def get_croco_acc(self):
-        acc = []
-        [acc.append(m.differential.xout) for m in self.ddp.problem.runningDatas]
-        return acc
+        return [m.differential.xout for m in self.ddp.problem.runningDatas]
 
     def update_model(self, model, feet_pos, base_pose, support_feet, is_terminal=False):
         for i in self.pd.feet_ids:
@@ -428,8 +419,8 @@ class CrocOCP(OCPAbstract):
                     )
 
         name = "base_velocity_tracking"
-        if list(base_pose):
-            ref = pin.Motion(base_pose[:3], base_pose[3:])
+        if len(base_pose) > 0:
+            ref = pin.Motion(base_pose)
         else:
             ref = pin.Motion.Zero()
 
@@ -481,5 +472,4 @@ class CrocOCP(OCPAbstract):
 
         if list(base_pose) and self.pd.base_velocity_tracking_w > 0:
             name = "base_velocity_tracking"
-            ref = pin.Motion(base_pose[:3], base_pose[3:])
-            costs.costs[name].cost.residual.reference = ref
+            costs.costs[name].cost.residual.reference.np[:] = base_pose[:6]
