@@ -7,6 +7,7 @@ from typing import Type
 
 import abc
 
+
 class Result:
     def __init__(self, params):
         pd = TaskSpec(params)
@@ -17,6 +18,7 @@ class Result:
         self.solving_duration = 0.0
         self.num_iters = 0
         self.new_result = False
+
 
 class MPCWrapperAbstract:
     """

@@ -1,11 +1,10 @@
-import numpy as np
-
 from .wb_mpc.ocp_abstract import OCPAbstract
 from .wb_mpc.problem_data import TaskSpec
 
 from typing import Type
 
 from .wbmpc_wrapper_abstract import MPCWrapperAbstract, Result
+
 
 class SyncMPCWrapper(MPCWrapperAbstract):
     """
@@ -57,4 +56,4 @@ class SyncMPCWrapper(MPCWrapperAbstract):
         return self.last_available_result
 
     def stop_parallel_loop(self):
-        pass # Do nothing since it is single threaded
+        pass  # Do nothing since it is single threaded

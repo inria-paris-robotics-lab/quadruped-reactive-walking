@@ -526,7 +526,6 @@ if __name__ == "__main__":
     import os
     import argparse
     import quadruped_reactive_walking as qrw
-    from ..wb_mpc.problem_data import TaskSpec
     from .Utils import init_robot
 
     sys.path.insert(0, os.getcwd())
