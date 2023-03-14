@@ -116,6 +116,8 @@ struct Params {
   Eigen::Ref<MatrixN> get_v_switch() { return v_switch; }
   void set_v_switch(MatrixN v_switch_in) { v_switch = v_switch_in; }
 
+  std::string raw_str;
+
   // See .yaml file for meaning of parameters
   // General parameters
   std::string

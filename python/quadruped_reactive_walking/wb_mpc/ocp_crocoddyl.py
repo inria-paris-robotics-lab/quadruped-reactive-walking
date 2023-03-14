@@ -58,6 +58,9 @@ class CrocOCP(OCPAbstract):
         if params.ocp.verbose:
             self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
 
+    def get_type_str():
+        return "croc"
+
     def initialize_models_from_gait(self, gait, footsteps=None, base_refs=None):
         """Create action models (problem stages) from a gait matrix and other optional data."""
         assert (footsteps is None) == (

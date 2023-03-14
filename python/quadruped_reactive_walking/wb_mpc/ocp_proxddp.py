@@ -70,6 +70,9 @@ class AlgtrOCP(CrocOCP):
         self.prox_iters = []
         self.croc_iters = []
 
+    def get_type_str():
+        return "algtr"
+
     def solve(self, k, xs_init=None, us_init=None):
         t_start = time.time()
         self.my_problem.x0_init = self.x0

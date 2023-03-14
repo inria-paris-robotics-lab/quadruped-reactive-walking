@@ -115,10 +115,12 @@ class Controller:
             self.params, self.target
         )
 
-        if params.enable_multiprocessing:
-            from .wbmpc_wrapper_multiprocess import MultiprocessMPCWrapper as MPCWrapper
-        else:
-            from .wbmpc_wrapper_sync import SyncMPCWrapper as MPCWrapper
+        # if params.enable_multiprocessing:
+        #     from .wbmpc_wrapper_multiprocess import MultiprocessMPCWrapper as MPCWrapper
+        # else:
+        #     from .wbmpc_wrapper_sync import SyncMPCWrapper as MPCWrapper
+        from .wbmpc_wrapper_ros import ROSMPCWrapperClient as MPCWrapper
+
 
         self.mpc = MPCWrapper(
             params,
