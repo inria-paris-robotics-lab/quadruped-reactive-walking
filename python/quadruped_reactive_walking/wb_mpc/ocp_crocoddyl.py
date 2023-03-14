@@ -154,7 +154,7 @@ class CrocOCP(OCPAbstract):
             base_pose = []
 
         feet_pos = self.get_active_feet(footstep, support_feet)
-        self.update_model(model, feet_pos, base_pose, support_feet)
+        self._update_model(model, feet_pos, base_pose, support_feet)
         self.circular_append(model)
 
     def circular_append(self, m):
@@ -200,7 +200,9 @@ class CrocOCP(OCPAbstract):
     def get_croco_acc(self):
         return [m.differential.xout for m in self.ddp.problem.runningDatas]
 
-    def update_model(self, model, feet_pos, base_pose, support_feet, is_terminal=False):
+    def _update_model(
+        self, model, feet_pos, base_pose, support_feet, is_terminal=False
+    ):
         for i in self.pd.feet_ids:
             name = self.pd.model.frames[i].name + "_contact"
             model.differential.contacts.changeContactStatus(name, i in support_feet)
