@@ -218,9 +218,11 @@ class CrocOCP(OCPAbstract):
                 model.differential.costs, feet_pos, base_pose, support_feet
             )
 
-    def _create_standard_model(self, support_feet):
+    def _create_standard_model(
+        self, support_feet
+    ) -> crocoddyl.IntegratedActionModelAbstract:
         """
-        Create a standard action model
+        Create a standard integrated action model, to be modified by the callee.
 
         :param state: swinging foot task
         :param support_feet: list of support feet ids
@@ -269,11 +271,9 @@ class CrocOCP(OCPAbstract):
         differential = sobec.DifferentialActionModelContactFwdDynamics(
             self.state, actuation, contacts, costs, 0.0, True
         )
-        model = crocoddyl.IntegratedActionModelEuler(
+        return crocoddyl.IntegratedActionModelEuler(
             differential, control, self.params.dt_mpc
         )
-
-        return model
 
     def make_terminal_model(self, support_feet):
         """
