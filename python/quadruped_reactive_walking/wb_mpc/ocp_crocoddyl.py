@@ -37,9 +37,6 @@ class CrocOCP(OCPAbstract):
         self.life_gait = params.gait
         self.starting_gait = np.ones((params.starting_nodes, 4))
         self.ending_gait = np.ones((params.ending_nodes, 4))
-        self.initialization_gait = np.concatenate(
-            [self.starting_gait, self.life_gait, self.ending_gait]
-        )
         self.current_gait = np.append(
             self.starting_gait, self.ending_gait[0].reshape(1, -1), axis=0
         )
@@ -49,7 +46,7 @@ class CrocOCP(OCPAbstract):
             self.life_gait, footsteps, base_refs
         )
         self.start_rm, self.start_tm = self.initialize_models_from_gait(
-            self.ending_gait
+            self.starting_gait
         )
         self.end_rm, self.end_tm = self.initialize_models_from_gait(self.ending_gait)
 
@@ -133,7 +130,6 @@ class CrocOCP(OCPAbstract):
             no_copy_roll_insert(self.current_gait, self.life_gait[t])
 
         elif t < len(self.start_rm) + len(self.life_rm) * self.params.gait_repetitions:
-            # self.life_gait = np.roll(self.life_gait, -1, axis=0)
             no_copy_roll(self.life_gait)
             mask = self.life_gait[-1] == 1
             support_feet = pd_feet[mask]
