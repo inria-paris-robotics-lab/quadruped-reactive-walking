@@ -314,7 +314,7 @@ class CrocOCP(OCPAbstract):
             costs.addCost(friction_name, friction_cone, self.pd.friction_cone_w)
             costs.changeCostStatus(friction_name, i in support_feet)
 
-            name = "%s_forceReg" % self.pd.model.frames[i].name
+            name = "{}_forceReg".format(self.pd.model.frames[i].name)
             nc = len(model.differential.contacts.active_set)
             ref_force = np.array([0, 0, self.pd.robot_weight / nc])
             ref_Force = pin.Force(ref_force, ref_force * 0)
@@ -348,7 +348,7 @@ class CrocOCP(OCPAbstract):
                 self.state, groundColAct, groundColRes
             )
 
-            name = "%s_groundCol" % self.pd.model.frames[i].name
+            name = "{}_groundCol".format(self.pd.model.frames[i].name)
             if self.pd.ground_collision_w > 0:
                 costs.addCost(
                     name,
@@ -362,7 +362,7 @@ class CrocOCP(OCPAbstract):
             )
             flyHighCost = crocoddyl.CostModelResidual(self.state, flyHighResidual)
 
-            name = "%s_flyHigh" % self.pd.model.frames[i].name
+            name = "{}_flyHigh".format(self.pd.model.frames[i].name)
             if self.pd.fly_high_w > 0:
                 costs.addCost(
                     name,
@@ -382,7 +382,7 @@ class CrocOCP(OCPAbstract):
                 np.array([0, 0, 1, 0, 0, 0])
             )
 
-            name = "%s_vel_zReg" % self.pd.model.frames[i].name
+            name = "{}_vel_zReg".format(self.pd.model.frames[i].name)
             vertical_velocity_reg_cost = crocoddyl.CostModelResidual(
                 self.state,
                 vertical_velocity_activation,
@@ -405,7 +405,7 @@ class CrocOCP(OCPAbstract):
                 )
                 if self.pd.impact_altitude_w > 0:
                     costs.addCost(
-                        "%s_altitudeImpact" % self.pd.model.frames[i].name,
+                        "{}_altitudeImpact".format(self.pd.model.frames[i].name),
                         impactCost,
                         self.pd.impact_altitude_w / self.params.dt_mpc,
                     )
@@ -422,7 +422,7 @@ class CrocOCP(OCPAbstract):
                         self.state, impactVelResidual
                     )
                     costs.addCost(
-                        "%s_velimpact" % self.pd.model.frames[i].name,
+                        "{}_velimpact".format(self.pd.model.frames[i].name),
                         impactVelCost,
                         self.pd.impact_velocity_w / self.params.dt_mpc,
                     )
@@ -461,22 +461,22 @@ class CrocOCP(OCPAbstract):
         index = 0
         for i in self.pd.feet_ids:
             if self.pd.foot_tracking_w > 0:
-                name = self.pd.model.frames[i].name + "_foot_tracking"
+                name = "{}_foot_tracking".format(self.pd.model.frames[i].name)
                 if i in feet_pos[0]:
                     costs.costs[name].cost.residual.reference = feet_pos[1][index]
                     index += 1
                 costs.changeCostStatus(name, i not in support_feet)
 
-            name = "%s_forceReg" % self.pd.model.frames[i].name
+            name = "{}_forceReg".format(self.pd.model.frames[i].name)
             costs.changeCostStatus(name, i in support_feet)
 
-            name = "%s_groundCol" % self.pd.model.frames[i].name
+            name = "{}_groundCol".format(self.pd.model.frames[i].name)
             costs.changeCostStatus(name, i not in support_feet)
 
-            name = "%s_flyHigh" % self.pd.model.frames[i].name
+            name = "{}_flyHigh".format(self.pd.model.frames[i].name)
             costs.changeCostStatus(name, i not in support_feet)
 
-            name = "%s_vel_zReg" % self.pd.model.frames[i].name
+            name = "{}_vel_zReg".format(self.pd.model.frames[i].name)
             costs.changeCostStatus(name, i not in support_feet)
 
         if list(base_pose) and self.pd.base_velocity_tracking_w > 0:
