@@ -533,7 +533,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process logs.")
     parser.add_argument("--file", type=str, help="A valid log file path")
     args = parser.parse_args()
-    params = qrw.Params()
+    params = qrw.Params.create_from_file()
     init_robot(params.q_init, params)
     pd = TaskSpec(params)
 

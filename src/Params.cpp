@@ -9,7 +9,7 @@ std::ostream &operator<<(std::ostream &oss, const OCPParams &p) {
   return oss;
 }
 
-Params::Params(const std::string &file_path)
+Params::Params()
     : config_file(""),
       interface(""),
       DEMONSTRATION(false),
@@ -88,11 +88,23 @@ Params::Params(const std::string &file_path)
                      0.0),  // Fill with zeros, will be filled with values later
       footsteps_under_shoulders(
           12, 0.0)  // Fill with zeros, will be filled with values later
+{}
+
+Params Params::create_from_file(const std::string &file_path)
 {
-  if (!file_path.empty()) initialize(expand_env(file_path));
+  Params params;
+  params.initialize_from_file(expand_env(file_path));
+  return params;
 }
 
-void Params::initialize(const std::string &file_path) {
+Params Params::create_from_str(const std::string &content)
+{
+  Params params;
+  params.initialize_from_str(content);
+  return params;
+}
+
+void Params::initialize_from_file(const std::string &file_path) {
   std::cout << "Loading params file " << file_path << std::endl;
   // Load YAML file
   assert_file_exists(file_path);
@@ -100,6 +112,19 @@ void Params::initialize(const std::string &file_path) {
 
   // Check if YAML node is detected and retrieve it
   assert_yaml_parsing(param, file_path, "robot");
+  const YAML::Node &robot_node = param["robot"];
+  YAML::convert<Params>::decode(robot_node, *this);
+  std::cout << "Loading robot config file " << config_file << std::endl;
+
+  mpc_wbc_ratio = (int)(dt_mpc / dt_wbc);
+}
+
+void Params::initialize_from_str(const std::string &content) {
+  // Load YAML file
+  YAML::Node param = YAML::Load(content);
+
+  // Check if YAML node is detected and retrieve it
+  assert_yaml_parsing(param, "[yamlstring]", "robot");
   const YAML::Node &robot_node = param["robot"];
   YAML::convert<Params>::decode(robot_node, *this);
   std::cout << "Loading robot config file " << config_file << std::endl;

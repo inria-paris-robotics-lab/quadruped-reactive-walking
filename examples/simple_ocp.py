@@ -7,7 +7,7 @@ from quadruped_reactive_walking.wb_mpc.task_spec import TaskSpec
 from quadruped_reactive_walking.wb_mpc.target import Target
 from quadruped_reactive_walking.tools.Utils import init_robot
 
-params = qrw.Params()
+params = qrw.Params.create_from_file()
 params.ocp: qrw.OCPParams
 params.ocp.init_max_iters = 1
 q_init = np.array(params.q_init.tolist())

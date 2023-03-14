@@ -3,11 +3,13 @@
 #include "bindings/python.hpp"
 
 void exposeParams() {
-  bp::class_<Params>("Params", bp::no_init)
-      .def(bp::init<std::string>(
-          (bp::arg("self"), bp::arg("config_path") = WALK_PARAMETERS_YAML)))
-      .def("initialize", &Params::initialize, bp::args("self", "file_path"),
-           "Initialize Params from Python.\n")
+  bp::class_<Params>("Params", bp::init<>("self"))
+      .def("create_from_file", &Params::create_from_file, (bp::arg("file_path") = WALK_PARAMETERS_YAML), "Create Params from Python with yaml file.\n")
+        .staticmethod("create_from_file")
+      .def("create_from_str", &Params::create_from_str, bp::arg("content"), "Create Params from Python with a yaml string.\n")
+        .staticmethod("create_from_str")
+      .def("initialize_from_file", &Params::initialize_from_file, bp::args("self", "file_path"), "Initialize Params from Python with yaml file.\n")
+      .def("initialize_from_str", &Params::initialize_from_file, bp::args("self", "content"), "Initialize Params from Python with a yaml string.\n")
 
       // Read Params from Python
       .def_readwrite("config_file", &Params::config_file)

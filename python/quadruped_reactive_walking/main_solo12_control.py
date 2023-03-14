@@ -50,7 +50,7 @@ def parse_args():
     return parser.parse_args()
 
 
-params = qrw.Params()  # Object that holds all controller parameters
+params = qrw.Params.create_from_file()  # Object that holds all controller parameters
 
 try:
     repo = git.Repo(search_parent_directories=True)
