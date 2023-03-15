@@ -27,9 +27,9 @@ class CrocOCP(OCPAbstract):
     def __init__(self, params, footsteps, base_refs, **kwargs):
         super().__init__(params)
 
-        self.state = crocoddyl.StateMultibody(self.pd.model)
+        self.state = crocoddyl.StateMultibody(self.task.model)
 
-        self.rdata = self.pd.model.createData()
+        self.rdata = self.task.model.createData()
 
         # Set the problem parameters
         self.t_problem_update = 0
@@ -43,7 +43,7 @@ class CrocOCP(OCPAbstract):
         self.current_gait = np.append(
             self.starting_gait, self.ending_gait[0].reshape(1, -1), axis=0
         )
-        self.x0 = self.pd.x0
+        self.x0 = self.task.x0
 
         self.life_rm, self.life_tm = self.initialize_models_from_gait(
             self.life_gait, footsteps, base_refs
@@ -66,7 +66,7 @@ class CrocOCP(OCPAbstract):
         if footsteps is not None:
             assert len(footsteps) == len(base_refs)
         running_models = []
-        feet_ids = np.asarray(self.pd.feet_ids)
+        feet_ids = np.asarray(self.task.feet_ids)
         for t in range(gait.shape[0]):
             support_feet = feet_ids[gait[t] == 1]
             feet_pos = (
@@ -119,13 +119,13 @@ class CrocOCP(OCPAbstract):
         :param base_pose:
         """
         self.x0 = x0
-        pin.forwardKinematics(self.pd.model, self.rdata, self.x0[: self.pd.nq])
-        pin.updateFramePlacements(self.pd.model, self.rdata)
+        pin.forwardKinematics(self.task.model, self.rdata, self.x0[: self.task.nq])
+        pin.updateFramePlacements(self.task.model, self.rdata)
 
         t = int(k / self.params.mpc_wbc_ratio) - 1
 
         self.problem.x0 = self.x0
-        feet_ids = np.asarray(self.pd.feet_ids)
+        feet_ids = np.asarray(self.task.feet_ids)
 
         if k == 0:
             return
@@ -206,8 +206,8 @@ class CrocOCP(OCPAbstract):
     def _update_model(
         self, model, feet_pos, base_pose, support_feet, is_terminal=False
     ):
-        for i in self.pd.feet_ids:
-            name = self.pd.model.frames[i].name + "_contact"
+        for i in self.task.feet_ids:
+            name = self.task.model.frames[i].name + "_contact"
             model.differential.contacts.changeContactStatus(name, i in support_feet)
         if not is_terminal:
             self.update_tracking_costs(
@@ -224,8 +224,8 @@ class CrocOCP(OCPAbstract):
         :param support_feet: list of support feet ids
         :return action model for a swing foot phase
         """
-        pin.forwardKinematics(self.pd.model, self.rdata, self.pd.q0)
-        pin.updateFramePlacements(self.pd.model, self.rdata)
+        pin.forwardKinematics(self.task.model, self.rdata, self.task.q0)
+        pin.updateFramePlacements(self.task.model, self.rdata)
         actuation = crocoddyl.ActuationModelFloatingBase(self.state)
         nu = actuation.nu
 
@@ -233,31 +233,31 @@ class CrocOCP(OCPAbstract):
         zero_vec = np.zeros(3)
 
         contacts = sobec.ContactModelMultiple(self.state, nu)
-        for i in self.pd.feet_ids:
-            name = self.pd.model.frames[i].name + "_contact"
+        for i in self.task.feet_ids:
+            name = self.task.model.frames[i].name + "_contact"
             contact = sobec.ContactModel3D(
                 self.state,
                 i,
                 zero_vec,
                 nu,
-                self.pd.baumgarte_gains,
+                self.task.baumgarte_gains,
                 pin.LOCAL_WORLD_ALIGNED,
             )
             contacts.addContact(name, contact)
             contacts.changeContactStatus(name, i in support_feet)
 
         costs = crocoddyl.CostModelSum(self.state, nu)
-        residual = crocoddyl.ResidualModelState(self.state, self.pd.xref, nu)
-        activation = crocoddyl.ActivationModelWeightedQuad(self.pd.state_reg_w**2)
+        residual = crocoddyl.ResidualModelState(self.state, self.task.xref, nu)
+        activation = crocoddyl.ActivationModelWeightedQuad(self.task.state_reg_w**2)
         state_cost = crocoddyl.CostModelResidual(self.state, activation, residual)
         costs.addCost("state_reg", state_cost, 1)
 
         state_bound_residual = crocoddyl.ResidualModelState(
-            self.state, self.pd.xref, nu
+            self.state, self.task.xref, nu
         )
         activation = crocoddyl.ActivationModelWeightedQuadraticBarrier(
-            crocoddyl.ActivationBounds(-self.pd.state_limit, self.pd.state_limit),
-            self.pd.state_bound_w**2,
+            crocoddyl.ActivationBounds(-self.task.state_limit, self.task.state_limit),
+            self.task.state_bound_w**2,
         )
         state_bound_cost = crocoddyl.CostModelResidual(
             self.state, activation, state_bound_residual
@@ -277,9 +277,9 @@ class CrocOCP(OCPAbstract):
         """
         model = self._create_standard_model(support_feet)
         nu = model.differential.actuation.nu
-        residual = crocoddyl.ResidualModelState(self.state, self.pd.xref, nu)
+        residual = crocoddyl.ResidualModelState(self.state, self.task.xref, nu)
         activation = crocoddyl.ActivationModelWeightedQuad(
-            self.pd.terminal_velocity_w**2
+            self.task.terminal_velocity_w**2
         )
         state_cost = crocoddyl.CostModelResidual(self.state, activation, residual)
         model.differential.costs.addCost("terminal_velocity", state_cost, 1)
@@ -292,11 +292,11 @@ class CrocOCP(OCPAbstract):
         model = self._create_standard_model(support_feet)
         nu = model.differential.actuation.nu
         costs = model.differential.costs
-        for i in self.pd.feet_ids:
+        for i in self.task.feet_ids:
             start_pos = self.rdata.oMf[i].translation
 
             # Contact forces
-            cone = crocoddyl.FrictionCone(self.pd.Rsurf, self.pd.mu, 4, False, 3)
+            cone = crocoddyl.FrictionCone(self.task.Rsurf, self.task.mu, 4, False, 3)
             residual = crocoddyl.ResidualModelContactFrictionCone(
                 self.state, i, cone, nu
             )
@@ -306,29 +306,29 @@ class CrocOCP(OCPAbstract):
             friction_cone = crocoddyl.CostModelResidual(
                 self.state, activation, residual
             )
-            friction_name = self.pd.model.frames[i].name + "_friction_cone"
-            costs.addCost(friction_name, friction_cone, self.pd.friction_cone_w)
+            friction_name = self.task.model.frames[i].name + "_friction_cone"
+            costs.addCost(friction_name, friction_cone, self.task.friction_cone_w)
             costs.changeCostStatus(friction_name, i in support_feet)
 
-            name = "{}_forceReg".format(self.pd.model.frames[i].name)
+            name = "{}_forceReg".format(self.task.model.frames[i].name)
             nc = len(model.differential.contacts.active_set)
-            ref_force = np.array([0, 0, self.pd.robot_weight / nc])
+            ref_force = np.array([0, 0, self.task.robot_weight / nc])
             ref_Force = pin.Force(ref_force, ref_force * 0)
             forceRegResidual = sobec.ResidualModelContactForce(
                 self.state, i, ref_Force, 3, nu
             )
             forceRegCost = crocoddyl.CostModelResidual(self.state, forceRegResidual)
-            costs.addCost(name, forceRegCost, self.pd.force_reg_w)
+            costs.addCost(name, forceRegCost, self.task.force_reg_w)
             costs.changeCostStatus(name, False)
 
             # Tracking foot trajectory
-            name = self.pd.model.frames[i].name + "_foot_tracking"
+            name = self.task.model.frames[i].name + "_foot_tracking"
             residual = crocoddyl.ResidualModelFrameTranslation(
                 self.state, i, np.zeros(3), nu
             )
             foot_tracking = crocoddyl.CostModelResidual(self.state, residual)
-            if self.pd.foot_tracking_w > 0:
-                costs.addCost(name, foot_tracking, self.pd.foot_tracking_w)
+            if self.task.foot_tracking_w > 0:
+                costs.addCost(name, foot_tracking, self.task.foot_tracking_w)
                 costs.changeCostStatus(name, False)
 
             # Swing foot
@@ -344,26 +344,26 @@ class CrocOCP(OCPAbstract):
                 self.state, groundColAct, groundColRes
             )
 
-            name = "{}_groundCol".format(self.pd.model.frames[i].name)
-            if self.pd.ground_collision_w > 0:
+            name = "{}_groundCol".format(self.task.model.frames[i].name)
+            if self.task.ground_collision_w > 0:
                 costs.addCost(
                     name,
                     groundColCost,
-                    self.pd.ground_collision_w,
+                    self.task.ground_collision_w,
                 )
             costs.changeCostStatus(name, False)
 
             flyHighResidual = sobec.ResidualModelFlyHigh(
-                self.state, i, self.pd.fly_high_slope / 2.0, nu
+                self.state, i, self.task.fly_high_slope / 2.0, nu
             )
             flyHighCost = crocoddyl.CostModelResidual(self.state, flyHighResidual)
 
-            name = "{}_flyHigh".format(self.pd.model.frames[i].name)
-            if self.pd.fly_high_w > 0:
+            name = "{}_flyHigh".format(self.task.model.frames[i].name)
+            if self.task.fly_high_w > 0:
                 costs.addCost(
                     name,
                     flyHighCost,
-                    self.pd.fly_high_w,
+                    self.task.fly_high_w,
                 )
             costs.changeCostStatus(name, False)
 
@@ -378,7 +378,7 @@ class CrocOCP(OCPAbstract):
                 np.array([0, 0, 1, 0, 0, 0])
             )
 
-            name = "{}_vel_zReg".format(self.pd.model.frames[i].name)
+            name = "{}_vel_zReg".format(self.task.model.frames[i].name)
             vertical_velocity_reg_cost = crocoddyl.CostModelResidual(
                 self.state,
                 vertical_velocity_activation,
@@ -387,7 +387,7 @@ class CrocOCP(OCPAbstract):
             costs.addCost(
                 name,
                 vertical_velocity_reg_cost,
-                self.pd.vertical_velocity_reg_w,
+                self.task.vertical_velocity_reg_w,
             )
 
             # Fake impoact
@@ -399,11 +399,11 @@ class CrocOCP(OCPAbstract):
                 impactCost = crocoddyl.CostModelResidual(
                     self.state, impactAct, impactResidual
                 )
-                if self.pd.impact_altitude_w > 0:
+                if self.task.impact_altitude_w > 0:
                     costs.addCost(
-                        "{}_altitudeImpact".format(self.pd.model.frames[i].name),
+                        "{}_altitudeImpact".format(self.task.model.frames[i].name),
                         impactCost,
-                        self.pd.impact_altitude_w / self.params.dt_mpc,
+                        self.task.impact_altitude_w / self.params.dt_mpc,
                     )
 
                 impactVelResidual = crocoddyl.ResidualModelFrameVelocity(
@@ -413,14 +413,14 @@ class CrocOCP(OCPAbstract):
                     pin.ReferenceFrame.WORLD,
                     nu,
                 )
-                if self.pd.impact_velocity_w > 0:
+                if self.task.impact_velocity_w > 0:
                     impactVelCost = crocoddyl.CostModelResidual(
                         self.state, impactVelResidual
                     )
                     costs.addCost(
-                        "{}_velimpact".format(self.pd.model.frames[i].name),
+                        "{}_velimpact".format(self.task.model.frames[i].name),
                         impactVelCost,
-                        self.pd.impact_velocity_w / self.params.dt_mpc,
+                        self.task.impact_velocity_w / self.params.dt_mpc,
                     )
 
         name = "base_velocity_tracking"
@@ -430,51 +430,51 @@ class CrocOCP(OCPAbstract):
             ref = pin.Motion.Zero()
 
         residual_base_velocity = crocoddyl.ResidualModelFrameVelocity(
-            self.state, self.pd.base_id, ref, pin.LOCAL, nu
+            self.state, self.task.base_id, ref, pin.LOCAL, nu
         )
         base_velocity = crocoddyl.CostModelResidual(self.state, residual_base_velocity)
 
-        if self.pd.base_velocity_tracking_w > 0:
-            costs.addCost(name, base_velocity, self.pd.base_velocity_tracking_w)
+        if self.task.base_velocity_tracking_w > 0:
+            costs.addCost(name, base_velocity, self.task.base_velocity_tracking_w)
 
-        control_residual = crocoddyl.ResidualModelControl(self.state, self.pd.uref)
+        control_residual = crocoddyl.ResidualModelControl(self.state, self.task.uref)
         control_reg = crocoddyl.CostModelResidual(self.state, control_residual)
-        costs.addCost("control_reg", control_reg, self.pd.control_reg_w)
+        costs.addCost("control_reg", control_reg, self.task.control_reg_w)
 
         control_bound_residual = crocoddyl.ResidualModelControl(self.state, nu)
         control_bound_activation = crocoddyl.ActivationModelQuadraticBarrier(
-            crocoddyl.ActivationBounds(-self.pd.effort_limit, self.pd.effort_limit)
+            crocoddyl.ActivationBounds(-self.task.effort_limit, self.task.effort_limit)
         )
         control_bound = crocoddyl.CostModelResidual(
             self.state, control_bound_activation, control_bound_residual
         )
-        costs.addCost("control_bound", control_bound, self.pd.control_bound_w)
+        costs.addCost("control_bound", control_bound, self.task.control_bound_w)
 
         self.update_tracking_costs(costs, feet_pos, base_pose, support_feet)
         return model
 
     def update_tracking_costs(self, costs, feet_pos, base_pose, support_feet):
         index = 0
-        for i in self.pd.feet_ids:
-            if self.pd.foot_tracking_w > 0:
-                name = "{}_foot_tracking".format(self.pd.model.frames[i].name)
+        for i in self.task.feet_ids:
+            if self.task.foot_tracking_w > 0:
+                name = "{}_foot_tracking".format(self.task.model.frames[i].name)
                 if i in feet_pos[0]:
                     costs.costs[name].cost.residual.reference = feet_pos[1][index]
                     index += 1
                 costs.changeCostStatus(name, i not in support_feet)
 
-            name = "{}_forceReg".format(self.pd.model.frames[i].name)
+            name = "{}_forceReg".format(self.task.model.frames[i].name)
             costs.changeCostStatus(name, i in support_feet)
 
-            name = "{}_groundCol".format(self.pd.model.frames[i].name)
+            name = "{}_groundCol".format(self.task.model.frames[i].name)
             costs.changeCostStatus(name, i not in support_feet)
 
-            name = "{}_flyHigh".format(self.pd.model.frames[i].name)
+            name = "{}_flyHigh".format(self.task.model.frames[i].name)
             costs.changeCostStatus(name, i not in support_feet)
 
-            name = "{}_vel_zReg".format(self.pd.model.frames[i].name)
+            name = "{}_vel_zReg".format(self.task.model.frames[i].name)
             costs.changeCostStatus(name, i not in support_feet)
 
-        if list(base_pose) and self.pd.base_velocity_tracking_w > 0:
+        if list(base_pose) and self.task.base_velocity_tracking_w > 0:
             name = "base_velocity_tracking"
             costs.costs[name].cost.residual.reference.np[:] = base_pose[:6]

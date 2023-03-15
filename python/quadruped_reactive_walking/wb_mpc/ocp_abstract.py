@@ -8,7 +8,7 @@ class OCPAbstract(abc.ABC):
     num_iters: int
 
     def __init__(self, params: qrw.Params):
-        self.pd = TaskSpec(params)
+        self.task = TaskSpec(params)
         self.params = params
         self.max_iter = 1000 if params.save_guess else params.ocp.max_iter
         self.init_max_iters = params.ocp.init_max_iters
@@ -32,7 +32,7 @@ class OCPAbstract(abc.ABC):
     def get_active_feet(self, footstep, support_feet):
         """Get the positions for all the active feet."""
         feet_pos = ([], [])
-        for i, fid in enumerate(self.pd.feet_ids):
+        for i, fid in enumerate(self.task.feet_ids):
             if fid in support_feet:
                 feet_pos[0].append(fid)
                 feet_pos[1].append(footstep[:, i])
