@@ -1,5 +1,3 @@
-import numpy as np
-
 from .wb_mpc import get_ocp_from_str
 from .wb_mpc.ocp_abstract import OCPAbstract
 from .wb_mpc.problem_data import TaskSpec
@@ -10,21 +8,31 @@ from .wbmpc_wrapper_abstract import MPCWrapperAbstract, Result
 
 from threading import Lock
 
-import rospy
-from ros_qrw_wbmpc.srv import MPCInit
-from std_msgs.msg import MultiArrayDimension, Float64MultiArray, String
+from std_msgs.msg import MultiArrayDimension, Float64MultiArray
 import numpy as np
+
+import rospy
+from ros_qrw_wbmpc.srv import MPCInit, MPCInitResponse  # , MPCSolve
+from quadruped_reactive_walking import Params
+
 
 def array_np_to_ros_float64(np_array):
     multiarray = Float64MultiArray()
-    multiarray.layout.dim = [MultiArrayDimension('dim%d' % i, np_array.shape[i], np_array.shape[i] * np_array.dtype.itemsize) for i in range(np_array.ndim)];
+    multiarray.layout.dim = [
+        MultiArrayDimension(
+            "dim%d" % i, np_array.shape[i], np_array.shape[i] * np_array.dtype.itemsize
+        )
+        for i in range(np_array.ndim)
+    ]
     multiarray.data = np_array.reshape([1, -1])[0].tolist()
+
 
 def array_ros_to_np_float64(ros_array):
     dims = [d.size for d in ros_array.layout.dim]
-    if(dims == []):
+    if dims == []:
         return np.array([])
     return np.array(ros_array.data).reshape(dims)
+
 
 class ROSMPCWrapperClient(MPCWrapperAbstract):
     """
@@ -43,7 +51,12 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
         footsteps__multiarray = array_np_to_ros_float64(footsteps)
 
         init_solver_srv = rospy.ServiceProxy("qrw_wbmpc/init", MPCInit)
-        self.solver_id = init_solver_srv(String(solver_cls.get_type_str()), String(params.raw_str), base_refs__multiarray, footsteps__multiarray)
+        self.solver_id = init_solver_srv(
+            solver_cls.get_type_str(),
+            params.raw_str,
+            base_refs__multiarray,
+            footsteps__multiarray,
+        )
 
         # rospy.SubscribeListener("Result", ...)
         # rospy.Publisher("Solve", ...)
@@ -82,25 +95,31 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
 
     def stop_parallel_loop(self):
         # rospy.pub("Kill")
-        pass # Do nothing since it is single threaded
+        pass  # Do nothing since it is single threaded
 
-
-import rospy
-from quadruped_reactive_walking import Params
-from ros_qrw_wbmpc.srv import MPCInit, MPCInitResponse #, MPCSolve
 
 class ROSMPCWrapperServer:
     def __init__(self):
-        self._init_service = rospy.Service('qrw_wbmpc/init', MPCInit, self._trigger_init)
+        self.is_init = False
+        self._init_service = rospy.Service(
+            "qrw_wbmpc/init", MPCInit, self._trigger_init
+        )
+        # self._solve_service = rospy.Service(
+        #     "qrw_wbmpc/solve", MPCSolve, self._trigger_solve
+        # )
 
     def _trigger_init(self, msg):
-        self.params = Params.create_from_str(msg.params.data)
+        if self.is_init:
+            return MPCInitResponse(False)
+
+        self.is_init = True
+        self.params = Params.create_from_str(msg.params)
         self.pd = TaskSpec(self.params)
         self.T = self.params.N_gait
         self.nu = self.pd.nu
         self.nx = self.pd.nx
         self.ndx = self.pd.ndx
-        self.solver_cls = get_ocp_from_str(msg.solver_type.data)
+        self.solver_cls = get_ocp_from_str(msg.solver_type)
 
         footsteps = array_ros_to_np_float64(msg.footsteps)
         base_refs = array_ros_to_np_float64(msg.base_refs)
@@ -110,8 +129,7 @@ class ROSMPCWrapperServer:
         self.last_available_result: Result = Result(self.params)
         self.new_result = False
 
-        return MPCInitResponse()
-        # self._solve_service = rospy.Service('qrw_wbmpc/solve', MPCSolve, self._trigger_solve)
+        return MPCInitResponse(True)
 
     def _trigger_solve(self, msg):
         pass
