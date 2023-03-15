@@ -5,7 +5,6 @@ Author:
     Wilson Jallet
 """
 import time
-import numpy as np
 import crocoddyl
 
 import proxddp
@@ -13,14 +12,19 @@ from colorama import Fore
 
 from .ocp_crocoddyl import CrocOCP
 from quadruped_reactive_walking import Params
+import abc
 
 
-def infNorm(x):
-    return np.linalg.norm(x, np.inf)
-
-
-class AlgtrOCP(CrocOCP):
+class AlgtrOCPAbstract(CrocOCP):
     """Solve the OCP using proxddp."""
+
+    @abc.abstractclassmethod
+    def get_init_prox_ddp(tolerance):
+        pass
+
+    @abc.abstractclassmethod
+    def get_type_str():
+        pass
 
     def __init__(
         self,
@@ -28,7 +32,6 @@ class AlgtrOCP(CrocOCP):
         footsteps,
         base_refs,
         use_prox=False,
-        run_croc=False,
     ):
         super().__init__(params, footsteps, base_refs)
 
@@ -40,22 +43,14 @@ class AlgtrOCP(CrocOCP):
         if hasattr(self.problem, "num_threads"):
             self.problem.num_threads = self.num_threads
         self.my_problem.setNumThreads(self.num_threads)
-        self.run_croc_compare = run_croc
 
         self.verbose = proxddp.QUIET
         if params.ocp.verbose:
             self.verbose = proxddp.VERBOSE
             self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
         self.tol = 1e-3
-        if use_prox:
-            mu_init = 1e-9
-            print(Fore.GREEN + "[using SolverProxDDP]")
-            self.prox_ddp = proxddp.SolverProxDDP(self.tol, mu_init, 0.0)
-            self.prox_ddp.reg_init = 1e-8
-        else:
-            print(Fore.BLUE + "[using SolverFDDP]")
-            self.prox_ddp = proxddp.SolverFDDP(self.tol)
-        print(Fore.RESET)
+        self.get_init_prox_ddp = self.get_init_prox_ddp(self.tol)
+
         self.prox_ddp.verbose = self.verbose
         self.prox_ddp.max_iters = self.max_iter
         self.prox_ddp.setup(self.my_problem)
@@ -69,9 +64,6 @@ class AlgtrOCP(CrocOCP):
         self.croc_stops = []
         self.prox_iters = []
         self.croc_iters = []
-
-    def get_type_str():
-        return "algtr"
 
     def solve(self, k, xs_init=None, us_init=None):
         t_start = time.time()
@@ -109,18 +101,6 @@ class AlgtrOCP(CrocOCP):
         self.prox_stops_2.append(prox_norm_2)
         self.prox_iters.append(res.num_iters)
 
-        if self.run_croc_compare:
-            # run crocoddyl
-            self.ddp.th_stop = prox_norm_2
-            self.ddp.solve(xs, us, maxiter, False)
-
-            croc_norm_inf = max([infNorm(q) for q in Qus])
-            croc_norm_2 = sum([q.dot(q) for q in Qus])
-
-            self.croc_stops.append(croc_norm_inf)
-            self.croc_stops_2.append(croc_norm_2)
-            self.croc_iters.append(self.ddp.iter)
-
         t_ddp = time.time()
         self.t_ddp = t_ddp - t_warm_start
 
@@ -139,27 +119,9 @@ class AlgtrOCP(CrocOCP):
     def get_results(self):
         res = self.prox_ddp.getResults()
         ws = self.prox_ddp.getWorkspace()  # noqa
-        nsteps = self.problem.T
         feedbacks = [-K.copy() for K in res.controlFeedbacks()]
         xs = res.xs.tolist()
         us = res.us.tolist()
-
-        if self.params.LOGGING and self.run_croc_compare:
-            np.set_printoptions(precision=4, linewidth=250)
-            X_err = [
-                infNorm(self.state.diff(xs[i], self.ddp.xs[i]))
-                for i in range(nsteps + 1)
-            ]
-            U_err = [infNorm(us[i] - self.ddp.us[i]) for i in range(nsteps)]
-            self.x_solver_errs.append(max(X_err))
-            self.u_solver_errs.append(max(U_err))
-
-            croc_fb = self.ddp.K
-            fb_err = [infNorm(feedbacks[i] - croc_fb[i]) for i in range(nsteps)]
-            self.fb_errs.append(max(fb_err))
-            # if max(self.x_solver_errs[-1], self.u_solver_errs[-1]) > 1e-7:
-            #     import ipdb;
-            #     ipdb.set_trace()
 
         return (
             self.current_gait.copy(),
@@ -181,3 +143,31 @@ class AlgtrOCP(CrocOCP):
         self.croc_stops.clear()
         self.croc_stops_2.clear()
         self.croc_iters.clear()
+
+
+class AlgtrOCPProx(AlgtrOCPAbstract):
+    """Solve the OCP using proxddp."""
+
+    def get_init_prox_ddp(tolerance):
+        print(Fore.BLUE + "[using SolverFDDP]")
+        prox_ddp = proxddp.SolverFDDP(tolerance)
+        print(Fore.RESET)
+        return prox_ddp
+
+    def get_type_str():
+        return "algtr-prox"
+
+
+class AlgtrOCPFDDP(AlgtrOCPAbstract):
+    """Solve the OCP using proxddp."""
+
+    def get_init_prox_ddp(tolerance):
+        print(Fore.GREEN + "[using SolverProxDDP]")
+        mu_init = 1e-9
+        prox_ddp = proxddp.SolverProxDDP(tolerance, mu_init, 0.0)
+        prox_ddp.reg_init = 1e-8
+        print(Fore.RESET)
+        return prox_ddp
+
+    def get_type_str():
+        return "algtr-fddp"

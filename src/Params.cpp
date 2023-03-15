@@ -79,21 +79,19 @@ Params::Params()
       Fz_min(0.0),
       enable_comp_forces(false),
 
-      T_gait(0.0),         // Period of the gait
+      T_gait(0.0),  // Period of the gait
       h_ref(0.0),
       footsteps_under_shoulders(
           12, 0.0)  // Fill with zeros, will be filled with values later
 {}
 
-Params Params::create_from_file(const std::string &file_path)
-{
+Params Params::create_from_file(const std::string &file_path) {
   Params params;
   params.initialize_from_file(expand_env(file_path));
   return params;
 }
 
-Params Params::create_from_str(const std::string &content)
-{
+Params Params::create_from_str(const std::string &content) {
   Params params;
   params.initialize_from_str(content);
   return params;

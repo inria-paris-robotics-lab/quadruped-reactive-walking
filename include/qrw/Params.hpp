@@ -62,7 +62,8 @@ struct Params {
   /// \brief Constructor using a path to a configuration file.
   Params();
 
-  static Params create_from_file(const std::string &file_path = WALK_PARAMETERS_YAML);
+  static Params create_from_file(
+      const std::string &file_path = WALK_PARAMETERS_YAML);
   static Params create_from_str(const std::string &content);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -251,10 +252,10 @@ struct Params {
   int bezier_degree;         //  Degree of the Bezier curve
 
   // Not defined in yaml
-  MatrixNi gait;                   // Initial gait matrix (Eigen)
-  double T_gait;                   // Period of the gait
-  int N_gait;                      // Number of steps in gait
-  double h_ref;                    // Reference height for the base
+  MatrixNi gait;  // Initial gait matrix (Eigen)
+  double T_gait;  // Period of the gait
+  int N_gait;     // Number of steps in gait
+  double h_ref;   // Reference height for the base
   std::vector<double> footsteps_under_shoulders;  // Positions of footsteps to
                                                   // be "under the shoulder"
 };

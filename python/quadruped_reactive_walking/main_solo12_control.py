@@ -12,12 +12,15 @@ from quadruped_reactive_walking.tools.logger_control import (
     TEMP_DIRNAME,
     DATE_STRFORMAT,
 )
-from quadruped_reactive_walking.wb_mpc import CrocOCP, AlgtrOCP
+from quadruped_reactive_walking.wb_mpc import (
+    get_ocp_from_str,
+    get_ocp_list_str,
+    AlgtrOCPAbstract,
+)
 
 import tqdm
 import argparse
 import matplotlib.pyplot as plt
-import enum
 import colorama
 
 from colorama import Fore
@@ -28,25 +31,15 @@ plt.style.use("seaborn-v0_8-whitegrid")
 plt.rcParams["lines.linewidth"] = 1.0
 
 
-class SolverChoices(enum.Enum):
-    croc = "croc"
-    prox = "prox"
-    fddp = "fddp"
-
-    def __str__(self):
-        return self.value
-
-
 def parse_args():
     parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument(
         "--solver",
-        choices=list(SolverChoices),
-        type=SolverChoices,
+        choices=list(get_ocp_list_str()),
+        type=str,
         required=True,
         help="Solver choice. Default: %(default)s.",
     )
-    parser.add_argument("--run_croc", action="store_true")
     return parser.parse_args()
 
 
@@ -191,12 +184,7 @@ def main(args):
 
     # Default position after calibration
     q_init = np.array(params.q_init.tolist())
-    if args.solver == SolverChoices.croc:
-        solver_cls = CrocOCP
-    else:
-        solver_cls = AlgtrOCP
-        solver_kwargs["run_croc"] = args.run_croc
-        solver_kwargs["use_prox"] = args.solver == SolverChoices.prox
+    solver_cls = get_ocp_from_str(args.solver)
 
     controller = Controller(
         params, q_init, 0.0, solver_cls, solver_kwargs=solver_kwargs
@@ -310,10 +298,8 @@ def main(args):
 
             mpc = controller.mpc
 
-            def plot_prox_ocp(ocp: AlgtrOCP):
+            def plot_prox_ocp(ocp: AlgtrOCPAbstract):
                 nplt = 3
-                if args.run_croc:
-                    nplt += 1
                 h = 7.2
                 fig, axs = plt.subplots(nplt, 1, figsize=(6.4, h), layout="constrained")
                 fig: plt.Figure
@@ -340,16 +326,7 @@ def main(args):
                 plt.grid(visible=True, which="minor", axis="y")
                 plt.legend()
 
-                if args.run_croc:
-                    plt.sca(axs[3])
-                    plt.plot(ocp.x_solver_errs, label="state $x$", c="b")
-                    plt.plot(ocp.u_solver_errs, label="control $u$", c="r", ls="dotted")
-                    plt.plot(ocp.fb_errs, label="feedbacks $K$", c="g", ls="dotted")
-                    plt.legend()
-                    plt.yscale("log")
-                    plt.title("$\\ell_\\infty$ error between solver solutions")
-
-            if hasattr(mpc, "ocp") and isinstance(mpc.ocp, AlgtrOCP):
+            if hasattr(mpc, "ocp") and isinstance(mpc.ocp, AlgtrOCPAbstract):
                 plot_prox_ocp(mpc.ocp)
 
             plt.show()

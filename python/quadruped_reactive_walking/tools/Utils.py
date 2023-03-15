@@ -2,6 +2,7 @@ from example_robot_data import load
 import numpy as np
 import pinocchio as pin
 
+
 def make_footstep(q_init):
     # Load robot model and data
     solo = load("solo12")
