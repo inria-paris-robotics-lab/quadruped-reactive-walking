@@ -190,7 +190,7 @@ def main(args):
     solver_kwargs = {}
 
     # Default position after calibration
-    q_init = np.array(params.q_init.tolist())
+    q_init = params.q_init
     if args.solver == SolverChoices.croc:
         solver_cls = CrocOCP
     else:
