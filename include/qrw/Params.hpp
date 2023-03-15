@@ -12,7 +12,7 @@
 #ifndef PARAMS_H_INCLUDED
 #define PARAMS_H_INCLUDED
 
-#include <yaml-cpp/yaml.h>
+#include "qrw/yaml-eigen.hpp"
 
 #include <fstream>
 #include <vector>
@@ -26,6 +26,9 @@
 #ifndef WALK_PARAMETERS_YAML
 #error Variable WALK_PARAMETERS_YAML not defined.
 #endif
+
+extern template struct YAML::convert<MatrixN>;
+extern template struct YAML::convert<VectorN>;
 
 // fwd-declaration
 struct Params;
@@ -78,31 +81,17 @@ struct Params {
   ////////////////////////////////////////////////////////////////////////////////////////////////
   void initialize(const std::string &file_path);
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
   /// \brief Convert the gait vector of the yaml into an Eigen matrix
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
   void convert_gait_vec();
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
-  /// \brief Convert the t_switch vector of the yaml into an Eigen vector
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  void convert_t_switch();
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
-  /// \brief Convert the v_switch vector of the yaml into an Eigen matrix
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  void convert_v_switch();
+  // void convert_v_switch();
 
   Eigen::Ref<MatrixNi> get_gait() { return gait; }
   Eigen::Ref<VectorN> get_t_switch() { return t_switch; }
-  Eigen::Ref<MatrixN> get_v_switch() { return v_switch; }
-  void set_v_switch(MatrixN v_switch_in) { v_switch = v_switch_in; }
+  Eigen::Ref<RowMatrix6N> get_v_switch() { return v_switch; }
+  void set_v_switch(Eigen::Ref<const RowMatrix6N> &v_switch_in) {
+    v_switch = v_switch_in;
+  }
 
   // See .yaml file for meaning of parameters
   // General parameters
@@ -132,9 +121,9 @@ struct Params {
   OCPParams ocp;           // OCP parameters
 
   // General control parameters
-  std::vector<double> q_init;  // Initial articular positions
-  double dt_wbc;               // Time step of the whole body control
-  double dt_mpc;               // Time step of the model predictive control
+  VectorN q_init;  // Initial articular positions
+  double dt_wbc;   // Time step of the whole body control
+  double dt_mpc;   // Time step of the model predictive control
   int mpc_wbc_ratio;
   uint N_periods;   // Number of gait periods in the MPC prediction horizon
   int type_MPC;     // Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3
@@ -164,10 +153,8 @@ struct Params {
                         // velocity
   double gp_alpha_pos;  // Coefficient of the low pass filter applied to gamepad
                         // position
-  std::vector<double> t_switch_vec;  // Predefined velocity switch times vector
-  VectorN t_switch;                  // Predefined velocity switch times matrix
-  std::vector<double> v_switch_vec;  // Predefined velocity switch values vector
-  MatrixN v_switch;                  // Predefined velocity switch values matrix
+  VectorN t_switch;      // Predefined velocity switch times matrix
+  RowMatrix6N v_switch;  // Predefined velocity switch values matrix
 
   // Parameters of Estimator
   double fc_v_esti;  // Cut frequency for the low pass that filters the

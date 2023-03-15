@@ -1,6 +1,9 @@
 #include "qrw/Params.hpp"
 #include <iostream>
 
+template struct YAML::convert<MatrixN>;
+template struct YAML::convert<VectorN>;
+
 std::ostream &operator<<(std::ostream &oss, const OCPParams &p) {
   oss << "OCPParams {"
       << "\n\tnum_threads:\t" << p.num_threads << "\n\tmax_iter:\t"
@@ -26,7 +29,7 @@ Params::Params(const std::string &file_path)
       perfect_estimator(false),
       use_qualisys(false),
 
-      q_init(12, 0.0),  // Fill with zeros, will be filled with values later
+      q_init(12),  // Fill with zeros, will be filled with values later
       dt_wbc(0.0),
       dt_mpc(0.0),
       N_periods(0),
@@ -48,9 +51,8 @@ Params::Params(const std::string &file_path)
 
       gp_alpha_pos(0.0),
 
-      t_switch_vec(1, 0.0),
-
-      v_switch_vec(6, 0.0),
+      t_switch(),
+      v_switch(),
       fc_v_esti(0.0),
       k_feedback(0.0),
 
@@ -135,7 +137,7 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.env_id = robot_node["env_id"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "q_init");
-  rhs.q_init = robot_node["q_init"].as<std::vector<double>>();
+  YAML::convert<VectorN>::decode(robot_node["q_init"], rhs.q_init);
 
   assert_yaml_parsing(robot_node, "robot", "dt_mpc");
   rhs.dt_mpc = robot_node["dt_mpc"].as<double>();
@@ -217,12 +219,11 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.gp_alpha_pos = robot_node["gp_alpha_pos"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "t_switch");
-  rhs.t_switch_vec = robot_node["t_switch"].as<std::vector<double>>();
-  rhs.convert_t_switch();
+  rhs.t_switch = robot_node["t_switch"].as<VectorN>();
 
   assert_yaml_parsing(robot_node, "robot", "v_switch");
-  rhs.v_switch_vec = robot_node["v_switch"].as<std::vector<double>>();
-  rhs.convert_v_switch();
+  rhs.v_switch.resize(6, rhs.t_switch.size());
+  YAML::convert<RowMatrix6N>::decode(robot_node["v_switch"], rhs.v_switch);
 
   assert_yaml_parsing(robot_node, "robot", "fc_v_esti");
   rhs.fc_v_esti = robot_node["fc_v_esti"].as<double>();
@@ -387,30 +388,20 @@ void Params::convert_gait_vec() {
   }
 }
 
-void Params::convert_t_switch() {
-  // Resize t_switch matrix
-  Index size = (Index)t_switch_vec.size();
-  t_switch = Eigen::Map<VectorN>(t_switch_vec.data(), size);
-}
+// void Params::convert_v_switch() {
+//   if (v_switch_vec.size() % 6 != 0) {
+//     throw std::runtime_error(
+//         "v_switch matrix in yaml is not in the correct "
+//         "format. It should have six "
+//         "lines, containing the values switch values for "
+//         "each coordinate of the velocity.");
+//   }
 
-void Params::convert_v_switch() {
-  if (v_switch_vec.size() % 6 != 0) {
-    throw std::runtime_error(
-        "v_switch matrix in yaml is not in the correct "
-        "format. It should have six "
-        "lines, containing the values switch values for "
-        "each coordinate of the velocity.");
-  }
+//   if (v_switch_vec.size() / 6 != t_switch_vec.size()) {
+//   }
 
-  if (v_switch_vec.size() / 6 != t_switch_vec.size()) {
-    throw std::runtime_error(
-        "v_switch matrix in yaml is not in the correct "
-        "format. the same number of colums as t_switch.");
-  }
+//   Index n_col = v_switch_vec.size() / 6;
 
-  Index n_col = v_switch_vec.size() / 6;
-
-  // Resize v_switch matrix
-  using RowMatrix6N = Eigen::Matrix<Scalar, 6, Eigen::Dynamic, Eigen::RowMajor>;
-  v_switch = Eigen::Map<RowMatrix6N>(v_switch_vec.data(), 6, n_col);
-}
+//   // Resize v_switch matrix
+//   v_switch = Eigen::Map<RowMatrix6N>(v_switch_vec.data(), 6, n_col);
+// }
