@@ -14,7 +14,7 @@ class OCPAbstract(abc.ABC):
         self.init_max_iters = params.ocp.init_max_iters
 
     @abc.abstractmethod
-    def initialize_models_from_gait(self, gait, footsteps=[], base_refs=[]):
+    def initialize_models_from_gait(self, gait, footsteps=None, base_refs=None):
         pass
 
     @abc.abstractmethod
@@ -30,10 +30,10 @@ class OCPAbstract(abc.ABC):
         pass
 
     def get_active_feet(self, footstep, support_feet):
-        # Use the mask to get the subset of footsteps for active feet.
-        task = ([], [])
+        """Get the positions for all the active feet."""
+        feet_pos = ([], [])
         for i, fid in enumerate(self.pd.feet_ids):
             if fid in support_feet:
-                task[0].append(self.pd.feet_ids[i])
-                task[1].append(footstep[:, i])
-        return task
+                feet_pos[0].append(fid)
+                feet_pos[1].append(footstep[:, i])
+        return feet_pos

@@ -2,6 +2,7 @@ import crocoddyl
 import sobec
 import pinocchio as pin
 import numpy as np
+import copy
 from time import time
 from .ocp_abstract import OCPAbstract
 
@@ -14,19 +15,21 @@ def no_copy_roll_insert(x, a):
 
 def no_copy_roll(x):
     """No copy (except for the head) left roll along the 0-th axis."""
-    import copy
-
     tmp = copy.copy(x[0])
     no_copy_roll_insert(x, tmp)
 
 
 class CrocOCP(OCPAbstract):
+    """
+    Generate a Crocoddyl OCP for the control task.
+    """
+
     def __init__(self, params, footsteps, base_refs, **kwargs):
         super().__init__(params)
 
         self.state = crocoddyl.StateMultibody(self.pd.model)
 
-        self.rdata = self.pd.create_rdata()
+        self.rdata = self.pd.model.createData()
 
         # Set the problem parameters
         self.t_problem_update = 0
@@ -55,28 +58,32 @@ class CrocOCP(OCPAbstract):
         if params.ocp.verbose:
             self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
 
-    def initialize_models_from_gait(self, gait, footsteps=[], base_refs=[]):
+    def initialize_models_from_gait(self, gait, footsteps=None, base_refs=None):
         """Create action models (problem stages) from a gait matrix and other optional data."""
-        assert len(footsteps) == len(base_refs)
-        models = []
-        pd_feet = np.asarray(self.pd.feet_ids)
+        assert (footsteps is None) == (
+            base_refs is None
+        )  # both or neither must be none
+        if footsteps is not None:
+            assert len(footsteps) == len(base_refs)
+        running_models = []
+        feet_ids = np.asarray(self.pd.feet_ids)
         for t in range(gait.shape[0]):
-            support_feet = pd_feet[gait[t] == 1]
+            support_feet = feet_ids[gait[t] == 1]
             feet_pos = (
                 self.get_active_feet(footsteps[t], support_feet) if footsteps else ()
             )
             base_pose = base_refs[t] if base_refs else []
             has_switched = np.any(gait[t] != gait[t - 1])
             switch_matrix = gait[t] if has_switched else np.array([])
-            switch_feet = pd_feet[switch_matrix == 1]
-            models.append(
+            switch_feet = feet_ids[switch_matrix == 1]
+            running_models.append(
                 self.make_running_model(support_feet, switch_feet, feet_pos, base_pose)
             )
 
-        support_feet = pd_feet[gait[-1] == 1]
+        support_feet = feet_ids[gait[-1] == 1]
         terminal_model = self.make_terminal_model(support_feet)
 
-        return models, terminal_model
+        return running_models, terminal_model
 
     def solve(self, k, xs_init=None, us_init=None):
         t_start = time()
@@ -118,21 +125,21 @@ class CrocOCP(OCPAbstract):
         t = int(k / self.params.mpc_wbc_ratio) - 1
 
         self.problem.x0 = self.x0
-        pd_feet = np.asarray(self.pd.feet_ids)
+        feet_ids = np.asarray(self.pd.feet_ids)
 
         if k == 0:
             return
 
         if t < len(self.start_rm):
             mask = self.life_gait[t] == 1
-            support_feet = pd_feet[mask]
+            support_feet = feet_ids[mask]
             model = self.life_rm[t]
             no_copy_roll_insert(self.current_gait, self.life_gait[t])
 
         elif t < len(self.start_rm) + len(self.life_rm) * self.params.gait_repetitions:
             no_copy_roll(self.life_gait)
             mask = self.life_gait[-1] == 1
-            support_feet = pd_feet[mask]
+            support_feet = feet_ids[mask]
             model = self.problem.runningModels[0]
             no_copy_roll_insert(self.current_gait, self.life_gait[-1])
 
@@ -144,7 +151,7 @@ class CrocOCP(OCPAbstract):
                 else 1
             )
             # choose to pich the node with impact or not
-            support_feet = pd_feet[self.ending_gait[i] == 1]
+            support_feet = feet_ids[self.ending_gait[i] == 1]
             model = self.end_rm[i]
             no_copy_roll_insert(self.current_gait, self.ending_gait[i])
             base_pose = []
@@ -223,6 +230,7 @@ class CrocOCP(OCPAbstract):
         nu = actuation.nu
 
         control = crocoddyl.ControlParametrizationModelPolyZero(nu)
+        zero_vec = np.zeros(3)
 
         contacts = sobec.ContactModelMultiple(self.state, nu)
         for i in self.pd.feet_ids:
@@ -230,14 +238,13 @@ class CrocOCP(OCPAbstract):
             contact = sobec.ContactModel3D(
                 self.state,
                 i,
-                np.zeros(3),
+                zero_vec,
                 nu,
                 self.pd.baumgarte_gains,
                 pin.LOCAL_WORLD_ALIGNED,
             )
             contacts.addContact(name, contact)
-            if i not in support_feet:
-                contacts.changeContactStatus(name, False)
+            contacts.changeContactStatus(name, i in support_feet)
 
         costs = crocoddyl.CostModelSum(self.state, nu)
         residual = crocoddyl.ResidualModelState(self.state, self.pd.xref, nu)
