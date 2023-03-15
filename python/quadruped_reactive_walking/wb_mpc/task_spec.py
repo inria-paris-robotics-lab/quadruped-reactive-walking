@@ -36,7 +36,8 @@ class TaskSpecBase:
         self.v0 = np.zeros(18)
         self.x0 = np.concatenate([self.q0, self.v0])
 
-        self.u0 = np.array([0.0, 0.0, 9.81 * params.mass / 4.0] * 4)
+        pin.centerOfMass(self.robot.model, self.robot.data, self.q0, np.zeros((18, 1)))
+        self.u0 = np.array([0.0, 0.0, 9.81 * self.robot.data.mass[0] / 4.0] * 4)
 
         self.baumgarte_gains = np.array([0, 100])
 

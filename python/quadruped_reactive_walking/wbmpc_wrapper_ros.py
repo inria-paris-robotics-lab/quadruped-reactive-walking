@@ -15,6 +15,17 @@ from ros_qrw_wbmpc.srv import MPCInit
 from std_msgs.msg import MultiArrayDimension, Float64MultiArray, String
 import numpy as np
 
+def array_np_to_ros_float64(np_array):
+    multiarray = Float64MultiArray()
+    multiarray.layout.dim = [MultiArrayDimension('dim%d' % i, np_array.shape[i], np_array.shape[i] * np_array.dtype.itemsize) for i in range(np_array.ndim)];
+    multiarray.data = np_array.reshape([1, -1])[0].tolist()
+
+def array_ros_to_np_float64(ros_array):
+    dims = [d.size for d in ros_array.layout.dim]
+    if(dims == []):
+        return np.array([])
+    return np.array(ros_array.data).reshape(dims)
+
 class ROSMPCWrapperClient(MPCWrapperAbstract):
     """
     Wrapper to run both types of MPC (OQSP or Crocoddyl) in a synchronous manner in the main thread.
@@ -28,13 +39,8 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
 
         self._result_lock = Lock()
 
-        base_refs__multiarray = Float64MultiArray()
-        base_refs__multiarray.layout.dim = [MultiArrayDimension('dim%d' % i, base_refs.shape[i], base_refs.shape[i] * base_refs.dtype.itemsize) for i in range(base_refs.ndim)];
-        base_refs__multiarray.data = base_refs.reshape([1, -1])[0].tolist()
-
-        footsteps__multiarray = Float64MultiArray()
-        footsteps__multiarray.layout.dim = [MultiArrayDimension('dim%d' % i, footsteps.shape[i], footsteps.shape[i] * footsteps.dtype.itemsize) for i in range(footsteps.ndim)];
-        footsteps__multiarray.data = footsteps.reshape([1, -1])[0].tolist()
+        base_refs__multiarray = array_np_to_ros_float64(base_refs)
+        footsteps__multiarray = array_np_to_ros_float64(footsteps)
 
         init_solver_srv = rospy.ServiceProxy("qrw_wbmpc/init", MPCInit)
         self.solver_id = init_solver_srv(String(solver_cls.get_type_str()), String(params.raw_str), base_refs__multiarray, footsteps__multiarray)
@@ -81,7 +87,7 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
 
 import rospy
 from quadruped_reactive_walking import Params
-from ros_qrw_wbmpc.srv import MPCInit #, MPCSolve
+from ros_qrw_wbmpc.srv import MPCInit, MPCInitResponse #, MPCSolve
 
 class ROSMPCWrapperServer:
     def __init__(self):
@@ -90,17 +96,21 @@ class ROSMPCWrapperServer:
     def _trigger_init(self, msg):
         self.params = Params.create_from_str(msg.params.data)
         self.pd = TaskSpec(self.params)
-        self.T = self.params.T
+        self.T = self.params.N_gait
         self.nu = self.pd.nu
         self.nx = self.pd.nx
         self.ndx = self.pd.ndx
-        self.solver_cls = get_ocp_from_str(msg.solver_type)
+        self.solver_cls = get_ocp_from_str(msg.solver_type.data)
 
-        self.ocp = self.solver_cls(self.params, msg.footsteps, msg.base_refs)
+        footsteps = array_ros_to_np_float64(msg.footsteps)
+        base_refs = array_ros_to_np_float64(msg.base_refs)
+
+        self.ocp = self.solver_cls(self.params, footsteps, base_refs)
 
         self.last_available_result: Result = Result(self.params)
         self.new_result = False
 
+        return MPCInitResponse()
         # self._solve_service = rospy.Service('qrw_wbmpc/solve', MPCSolve, self._trigger_solve)
 
     def _trigger_solve(self, msg):

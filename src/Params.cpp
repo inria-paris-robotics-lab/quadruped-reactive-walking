@@ -80,13 +80,7 @@ Params::Params()
       enable_comp_forces(false),
 
       T_gait(0.0),         // Period of the gait
-      mass(0.0),           // Mass of the robot
-      I_mat(9, 0.0),       // Fill with zeros, will be filled with values later
-      CoM_offset(3, 0.0),  // Fill with zeros, will be filled with values later
       h_ref(0.0),
-      shoulders(12, 0.0),  // Fill with zeros, will be filled with values later
-      footsteps_init(12,
-                     0.0),  // Fill with zeros, will be filled with values later
       footsteps_under_shoulders(
           12, 0.0)  // Fill with zeros, will be filled with values later
 {}
@@ -172,6 +166,9 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
 
   assert_yaml_parsing(robot_node, "robot", "q_init");
   rhs.q_init = robot_node["q_init"].as<std::vector<double>>();
+
+  assert_yaml_parsing(robot_node, "robot", "h_ref");
+  rhs.h_ref = robot_node["h_ref"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "dt_mpc");
   rhs.dt_mpc = robot_node["dt_mpc"].as<double>();
@@ -396,7 +393,7 @@ void Params::convert_gait_vec() {
   }
 
   // Get the number of lines in the gait matrix
-  int N_gait = 0;
+  N_gait = 0;
   for (uint i = 0; i < gait_vec.size() / 5; i++) {
     N_gait += gait_vec[5 * i];
   }
