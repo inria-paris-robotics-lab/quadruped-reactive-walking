@@ -1,6 +1,6 @@
 from .wb_mpc import get_ocp_from_str
 from .wb_mpc.ocp_abstract import OCPAbstract
-from .wb_mpc.problem_data import TaskSpec
+from .wb_mpc.task_spec import TaskSpec
 
 from typing import Type
 

@@ -18,9 +18,8 @@ import abc
 class AlgtrOCPAbstract(CrocOCP):
     """Solve the OCP using proxddp."""
 
-    @abc.abstractclassmethod
-    def get_init_prox_ddp(tolerance):
-        pass
+    # Must be set by child class
+    prox_ddp = None  # Solver instance
 
     @abc.abstractclassmethod
     def get_type_str():
@@ -31,7 +30,6 @@ class AlgtrOCPAbstract(CrocOCP):
         params: Params,
         footsteps,
         base_refs,
-        use_prox=False,
     ):
         super().__init__(params, footsteps, base_refs)
 
@@ -48,8 +46,6 @@ class AlgtrOCPAbstract(CrocOCP):
         if params.ocp.verbose:
             self.verbose = proxddp.VERBOSE
             self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
-        self.tol = 1e-3
-        self.get_init_prox_ddp = self.get_init_prox_ddp(self.tol)
 
         self.prox_ddp.verbose = self.verbose
         self.prox_ddp.max_iters = self.max_iter
@@ -148,11 +144,17 @@ class AlgtrOCPAbstract(CrocOCP):
 class AlgtrOCPProx(AlgtrOCPAbstract):
     """Solve the OCP using proxddp."""
 
-    def get_init_prox_ddp(tolerance):
+    def __init__(
+        self,
+        params: Params,
+        footsteps,
+        base_refs,
+    ):
         print(Fore.BLUE + "[using SolverFDDP]")
-        prox_ddp = proxddp.SolverFDDP(tolerance)
+        tolerance = 1e-3  # todo: move to params
+        self.prox_ddp = proxddp.SolverFDDP(tolerance)
         print(Fore.RESET)
-        return prox_ddp
+        super().__init__(params, footsteps, base_refs)
 
     def get_type_str():
         return "algtr-prox"
@@ -161,13 +163,19 @@ class AlgtrOCPProx(AlgtrOCPAbstract):
 class AlgtrOCPFDDP(AlgtrOCPAbstract):
     """Solve the OCP using proxddp."""
 
-    def get_init_prox_ddp(tolerance):
+    def __init__(
+        self,
+        params: Params,
+        footsteps,
+        base_refs,
+    ):
         print(Fore.GREEN + "[using SolverProxDDP]")
         mu_init = 1e-9
-        prox_ddp = proxddp.SolverProxDDP(tolerance, mu_init, 0.0)
-        prox_ddp.reg_init = 1e-8
+        tolerance = 1e-3  # todo: move to params
+        self.prox_ddp = proxddp.SolverProxDDP(tolerance, mu_init, 0.0)
+        self.prox_ddp.reg_init = 1e-8
         print(Fore.RESET)
-        return prox_ddp
+        super().__init__(params, footsteps, base_refs)
 
     def get_type_str():
         return "algtr-fddp"

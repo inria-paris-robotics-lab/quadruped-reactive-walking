@@ -6,13 +6,8 @@ import pinocchio as pin
 import quadruped_reactive_walking as qrw
 from . import wb_mpc
 from .wb_mpc.target import Target
-<<<<<<< HEAD
-from .tools.Utils import init_robot, quaternionToRPY
 from .wb_mpc.task_spec import TaskSpec
-=======
 from .tools.Utils import quaternionToRPY, make_footstep
-from .wb_mpc.problem_data import TaskSpec
->>>>>>> Simplify Params and make wbmpc_wrapper_ros init properly through service
 from .tools.Interpolator import Interpolator
 from typing import Type
 
@@ -119,11 +114,11 @@ class Controller:
             self.params, self.target
         )
 
-        # if params.enable_multiprocessing:
-        #     from .wbmpc_wrapper_multiprocess import MultiprocessMPCWrapper as MPCWrapper
-        # else:
-        #     from .wbmpc_wrapper_sync import SyncMPCWrapper as MPCWrapper
-        from .wbmpc_wrapper_ros import ROSMPCWrapperClient as MPCWrapper
+        if params.enable_multiprocessing:
+            from .wbmpc_wrapper_multiprocess import MultiprocessMPCWrapper as MPCWrapper
+        else:
+            from .wbmpc_wrapper_sync import SyncMPCWrapper as MPCWrapper
+        # from .wbmpc_wrapper_ros import ROSMPCWrapperClient as MPCWrapper
 
         self.mpc = MPCWrapper(
             params,
