@@ -47,7 +47,8 @@ Params::Params(const std::string &file_path)
       starting_nodes(0),
       ending_nodes(0),
       gait_repetitions(0),  // Fill with zeros, will be filled with values later
-      gp_alpha_vel(0.0),    // Fill with zeros, will be filled with values later
+      gait_vec(),
+      gp_alpha_vel(0.0),  // Fill with zeros, will be filled with values later
 
       gp_alpha_pos(0.0),
 
@@ -209,7 +210,7 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.gait_repetitions = robot_node["gait_repetitions"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "gait");
-  rhs.gait_vec = robot_node["gait"].as<std::vector<int>>();
+  rhs.gait_vec = robot_node["gait"].as<VectorNi>();
   rhs.convert_gait_vec();
 
   assert_yaml_parsing(robot_node, "robot", "gp_alpha_vel");
