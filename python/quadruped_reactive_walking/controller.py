@@ -114,6 +114,8 @@ class Controller:
             self.params, self.target
         )
 
+        self.default_footstep = make_footstep(params.q_init)
+
         if params.enable_multiprocessing:
             from .wbmpc_wrapper_multiprocess import MultiprocessMPCWrapper as MPCWrapper
         else:
@@ -363,14 +365,13 @@ class Controller:
         @param q_perfect 6D perfect position of the base in world frame
         @param v_baseVel_perfect 3D perfect linear velocity of the base in base frame
         """
-        footstep = make_footstep(self.params.q_init)
 
         if self.k < 2:
             self.estimator.initialize_IMU_Yaw()
 
         self.estimator.run(
             self.gait,
-            footstep,
+            self.default_footstep,
             device.imu.linear_acceleration,
             device.imu.gyroscope,
             device.imu.attitude_euler,

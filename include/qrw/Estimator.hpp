@@ -49,9 +49,11 @@ class Estimator {
   /// states of the robot
   ///
   /// \param[in] gait Gait matrix that stores current and future contact status
-  /// of the feet \param[in] goals Target positions of the four feet \param[in]
-  /// baseLinearAcceleration Linear acceleration of the IMU (gravity
-  /// compensated) \param[in] baseAngularVelocity Angular velocity of the IMU
+  /// of the feet
+  /// \param[in] goals Target positions of the four feet
+  /// \param[in] baseLinearAcceleration Linear acceleration of the IMU (gravity
+  /// compensated)
+  /// \param[in] baseAngularVelocity Angular velocity of the IMU
   /// \param[in] baseOrientation Quaternion orientation of the IMU
   /// \param[in] q_mes Position of the 12 actuators
   /// \param[in] v_mes Velocity of the 12 actuators
