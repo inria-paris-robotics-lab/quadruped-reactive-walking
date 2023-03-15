@@ -22,9 +22,7 @@ class Target:
                 [self.velocity_lin_target, self.velocity_ang_target]
             )
         else:
-            self.initial_footsteps = np.array(params.footsteps_init.tolist()).reshape(
-                (3, 4), order="F"
-            )
+            self.initial_footsteps = params.footsteps_init.reshape((3, 4), order="F")
             if params.movement == "circle":
                 self.A = np.array([0.05, 0.0, 0.04])
                 self.offset = np.array([0.05, 0, 0.05])

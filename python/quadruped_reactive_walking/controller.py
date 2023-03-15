@@ -363,7 +363,7 @@ class Controller:
         @param q_perfect 6D perfect position of the base in world frame
         @param v_baseVel_perfect 3D perfect linear velocity of the base in base frame
         """
-        footstep = np.array(self.params.footsteps_init.tolist())
+        footstep = self.params.footsteps_init
 
         if self.k < 2:
             self.estimator.initialize_IMU_Yaw()

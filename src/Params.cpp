@@ -86,11 +86,10 @@ Params::Params(const std::string &file_path)
       I_mat(9, 0.0),       // Fill with zeros, will be filled with values later
       CoM_offset(3, 0.0),  // Fill with zeros, will be filled with values later
       h_ref(0.0),
-      shoulders(12, 0.0),  // Fill with zeros, will be filled with values later
-      footsteps_init(12,
-                     0.0),  // Fill with zeros, will be filled with values later
+      shoulders(12),       // Fill with zeros, will be filled with values later
+      footsteps_init(12),  // Fill with zeros, will be filled with values later
       footsteps_under_shoulders(
-          12, 0.0)  // Fill with zeros, will be filled with values later
+          12)  // Fill with zeros, will be filled with values later
 {
   if (!file_path.empty()) initialize(expand_env(file_path));
 }
@@ -107,6 +106,9 @@ void Params::initialize(const std::string &file_path) {
   YAML::convert<Params>::decode(robot_node, *this);
   std::cout << "Loading robot config file " << config_file << std::endl;
 
+  shoulders.setZero();
+  footsteps_init.setZero();
+  footsteps_under_shoulders.setZero();
   mpc_wbc_ratio = (int)(dt_mpc / dt_wbc);
 }
 
