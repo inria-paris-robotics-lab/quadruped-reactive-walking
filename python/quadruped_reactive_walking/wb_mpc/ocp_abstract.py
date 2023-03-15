@@ -1,6 +1,6 @@
 import abc
 
-from .problem_data import TaskSpec
+from .task_spec import TaskSpec
 import quadruped_reactive_walking as qrw
 
 

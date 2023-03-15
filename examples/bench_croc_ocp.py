@@ -1,6 +1,6 @@
 import quadruped_reactive_walking as qrw
 from quadruped_reactive_walking.wb_mpc import CrocOCP as OCP
-from quadruped_reactive_walking.wb_mpc.problem_data import TaskSpecFull
+from quadruped_reactive_walking.wb_mpc.task_spec import TaskSpecFull
 from quadruped_reactive_walking.wb_mpc.target import Target
 
 import crocoddyl

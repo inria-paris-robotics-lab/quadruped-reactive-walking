@@ -3,7 +3,7 @@ from multiprocessing import Process, Value, Array
 import numpy as np
 
 from .wb_mpc.ocp_abstract import OCPAbstract
-from .wb_mpc.problem_data import TaskSpec
+from .wb_mpc.task_spec import TaskSpec
 
 from typing import Type
 

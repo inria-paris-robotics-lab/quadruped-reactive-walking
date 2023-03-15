@@ -1,6 +1,6 @@
 import pinocchio as pin
 import numpy as np
-from ..wb_mpc.problem_data import TaskSpec
+from ..wb_mpc.task_spec import TaskSpec
 
 
 def get_translation(pd: TaskSpec, x, idx, ref_frame=pin.WORLD):

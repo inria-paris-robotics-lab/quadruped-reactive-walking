@@ -4,7 +4,7 @@ import numpy as np
 import pathlib
 from .kinematics_utils import get_translation_array
 from ..controller import Controller
-from ..wb_mpc.problem_data import TaskSpec
+from ..wb_mpc.task_spec import TaskSpec
 
 
 FIG_DPI = 100

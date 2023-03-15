@@ -27,7 +27,7 @@ set(${PY_NAME}_WB_MPC_PYTHON
     ocp_proxddp.py
     ocp_crocoddyl.py
     ocp_casadi.py
-    problem_data.py
+    task_spec.py
     target.py)
 
 set(${PY_NAME}_TOOLS_PYTHON

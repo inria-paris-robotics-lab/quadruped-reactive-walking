@@ -7,7 +7,7 @@ import quadruped_reactive_walking as qrw
 from . import wb_mpc
 from .wb_mpc.target import Target
 from .tools.Utils import init_robot, quaternionToRPY
-from .wb_mpc.problem_data import TaskSpec
+from .wb_mpc.task_spec import TaskSpec
 from .tools.Interpolator import Interpolator
 from typing import Type
 
