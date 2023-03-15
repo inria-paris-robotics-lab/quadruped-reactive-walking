@@ -73,9 +73,11 @@ class CrocOCP(OCPAbstract):
         for t in range(gait.shape[0]):
             support_feet = feet_ids[gait[t] == 1]
             feet_pos = (
-                self.get_active_feet(footsteps[t], support_feet) if footsteps else ()
+                self.get_active_feet(footsteps[t], support_feet)
+                if footsteps is not None
+                else ()
             )
-            base_pose = base_refs[t] if base_refs else []
+            base_pose = base_refs[t] if base_refs is not None else []
             has_switched = np.any(gait[t] != gait[t - 1])
             switch_matrix = gait[t] if has_switched else np.array([])
             switch_feet = feet_ids[switch_matrix == 1]

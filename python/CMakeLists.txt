@@ -42,6 +42,7 @@ set(${PY_NAME}_TOOLS_PYTHON
     pybullet_sim.py
     Utils.py
     qualisys_client.py
+    ros_tools.py
     kinematics_utils.py
     meshcat_viewer.py
     Interpolator.py)

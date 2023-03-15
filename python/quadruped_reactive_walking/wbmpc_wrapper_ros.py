@@ -1,37 +1,22 @@
+from quadruped_reactive_walking import Params
+
 from .wb_mpc import get_ocp_from_str
 from .wb_mpc.ocp_abstract import OCPAbstract
 from .wb_mpc.task_spec import TaskSpec
 
-from typing import Type
-
 from .wbmpc_wrapper_abstract import MPCWrapperAbstract, Result
 
+from typing import Type
 from threading import Lock
-
-from std_msgs.msg import MultiArrayDimension, Float64MultiArray
 import numpy as np
 
 import rospy
-from ros_qrw_wbmpc.srv import MPCInit, MPCInitResponse  # , MPCSolve
-from quadruped_reactive_walking import Params
-
-
-def array_np_to_ros_float64(np_array):
-    multiarray = Float64MultiArray()
-    multiarray.layout.dim = [
-        MultiArrayDimension(
-            "dim%d" % i, np_array.shape[i], np_array.shape[i] * np_array.dtype.itemsize
-        )
-        for i in range(np_array.ndim)
-    ]
-    multiarray.data = np_array.reshape([1, -1])[0].tolist()
-
-
-def array_ros_to_np_float64(ros_array):
-    dims = [d.size for d in ros_array.layout.dim]
-    if dims == []:
-        return np.array([])
-    return np.array(ros_array.data).reshape(dims)
+from ros_qrw_wbmpc.srv import MPCInit, MPCInitResponse, MPCSolve, MPCSolveResponse
+from .tools.ros_tools import (
+    numpy_to_multiarray_float64,
+    multiarray_to_numpy_float64,
+    AsyncServiceProxy,
+)
 
 
 class ROSMPCWrapperClient(MPCWrapperAbstract):
@@ -46,36 +31,45 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
         base_refs = np.array(base_refs)
 
         self._result_lock = Lock()
+        self.new_result: bool = False
+        self.last_available_result: Result = Result(params)
 
-        base_refs__multiarray = array_np_to_ros_float64(base_refs)
-        footsteps__multiarray = array_np_to_ros_float64(footsteps)
+        base_refs_multiarray = numpy_to_multiarray_float64(base_refs)
+        footsteps_multiarray = numpy_to_multiarray_float64(footsteps)
 
         init_solver_srv = rospy.ServiceProxy("qrw_wbmpc/init", MPCInit)
-        self.solver_id = init_solver_srv(
-            solver_cls.get_type_str(),
-            params.raw_str,
-            base_refs__multiarray,
-            footsteps__multiarray,
+        success = init_solver_srv(
+            solver_type=solver_cls.get_type_str(),
+            params=params.raw_str,
+            footsteps=footsteps_multiarray,
+            base_refs=base_refs_multiarray,
+        )
+        assert success, "Error while initializing mpc on server"
+
+        self.solve_solver_srv = AsyncServiceProxy(
+            "qrw_wbmpc/solve", MPCSolve, callback=self._result_cb
         )
 
-        # rospy.SubscribeListener("Result", ...)
-        # rospy.Publisher("Solve", ...)
-
     def solve(self, k, x0, footstep, base_ref, xs=None, us=None):
-        print("======= Solve =======")
-        print("k", k, "\n")
-        print("x0", x0, "\n")
-        print("footstep", footstep, "\n")
-        print("base_ref", base_ref, "\n")
-        print("xs", us, "\n")
-        print("us", xs, "\n")
-        # pub.publish
-        pass
+        self.solve_solver_srv(
+            k=k,
+            x0=numpy_to_multiarray_float64(x0),
+            footstep=numpy_to_multiarray_float64(footstep),
+            base_ref=numpy_to_multiarray_float64(base_ref),
+            xs=numpy_to_multiarray_float64(np.array(xs if xs is not None else [])),
+            us=numpy_to_multiarray_float64(np.array(us if us is not None else [])),
+        )
 
-    def _result_cb(self, msg):
+    def _result_cb(self, fut):
+        msg = fut.result()
         with self._result_lock:
             self.new_result = True
-            self.last_available_result = msg
+            self.last_available_result.P = multiarray_to_numpy_float64(msg.P)
+            self.last_available_result.D = multiarray_to_numpy_float64(msg.D)
+            self.last_available_result.FF = multiarray_to_numpy_float64(msg.FF)
+            self.last_available_result.q_des = multiarray_to_numpy_float64(msg.q_des)
+            self.last_available_result.v_des = multiarray_to_numpy_float64(msg.v_des)
+            self.last_available_result.FF = multiarray_to_numpy_float64(msg.FF)
 
     def get_latest_result(self):
         """
@@ -85,11 +79,8 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
         Otherwise return the old result again.
         """
         with self._result_lock:
-            if self.new_result:
-                self.last_available_result.new_result = True
-                self.new_result = False
-            else:
-                self.last_available_result.new_result = False
+            self.last_available_result.new_result = self.new_result
+            self.new_result = False
 
         return self.last_available_result
 
@@ -104,9 +95,9 @@ class ROSMPCWrapperServer:
         self._init_service = rospy.Service(
             "qrw_wbmpc/init", MPCInit, self._trigger_init
         )
-        # self._solve_service = rospy.Service(
-        #     "qrw_wbmpc/solve", MPCSolve, self._trigger_solve
-        # )
+        self._solve_service = rospy.Service(
+            "qrw_wbmpc/solve", MPCSolve, self._trigger_solve
+        )
 
     def _trigger_init(self, msg):
         if self.is_init:
@@ -121,18 +112,38 @@ class ROSMPCWrapperServer:
         self.ndx = self.pd.ndx
         self.solver_cls = get_ocp_from_str(msg.solver_type)
 
-        footsteps = array_ros_to_np_float64(msg.footsteps)
-        base_refs = array_ros_to_np_float64(msg.base_refs)
+        footsteps = multiarray_to_numpy_float64(msg.footsteps)
+        base_refs = multiarray_to_numpy_float64(msg.base_refs)
 
         self.ocp = self.solver_cls(self.params, footsteps, base_refs)
 
         self.last_available_result: Result = Result(self.params)
-        self.new_result = False
 
         return MPCInitResponse(True)
 
     def _trigger_solve(self, msg):
-        pass
+        self.ocp.make_ocp(
+            msg.k,
+            multiarray_to_numpy_float64(msg.x0),
+            multiarray_to_numpy_float64(msg.footstep),
+            multiarray_to_numpy_float64(msg.base_ref),
+        )
+
+        xs = multiarray_to_numpy_float64(msg.xs)
+        us = multiarray_to_numpy_float64(msg.us)
+
+        self.ocp.solve(msg.k, xs, us)
+
+        result = self.ocp.get_results()
+
+        return MPCSolveResponse(
+            P=numpy_to_multiarray_float64(result.P),
+            D=numpy_to_multiarray_float64(result.D),
+            FF=numpy_to_multiarray_float64(result.FF),
+            q_des=numpy_to_multiarray_float64(result.q_des),
+            v_des=numpy_to_multiarray_float64(result.v_des),
+            tau_ff=numpy_to_multiarray_float64(result.tau_ff),
+        )
 
 
 if __name__ == "__main__":
