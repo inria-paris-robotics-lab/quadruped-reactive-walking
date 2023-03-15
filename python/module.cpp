@@ -8,6 +8,7 @@ BOOST_PYTHON_MODULE(quadruped_reactive_walking_pywrap) {
   bp::import("warnings");
 
   eigenpy::enableEigenPySpecific<Vector6>();
+  eigenpy::enableEigenPySpecific<RowMatrix6N>();
 
   exposeAnimators();
   exposeParams();

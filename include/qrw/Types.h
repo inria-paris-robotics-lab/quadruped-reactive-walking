@@ -27,6 +27,7 @@ using VectorN = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 using VectorNi = Eigen::Matrix<int, Eigen::Dynamic, 1>;
 
 using RowVector4 = Eigen::Matrix<Scalar, 1, 4>;
+using RowMatrix6N = Eigen::Matrix<Scalar, 6, Eigen::Dynamic, Eigen::RowMajor>;
 
 using Matrix2 = Eigen::Matrix<Scalar, 2, 2>;
 using Matrix3 = Eigen::Matrix<Scalar, 3, 3>;
