@@ -141,8 +141,8 @@ class AlgtrOCPAbstract(CrocOCP):
         self.croc_iters.clear()
 
 
-class AlgtrOCPProx(AlgtrOCPAbstract):
-    """Solve the OCP using proxddp."""
+class AlgtrOCPFDDP(AlgtrOCPAbstract):
+    """Solve the OCP using fddp."""
 
     def __init__(
         self,
@@ -157,10 +157,10 @@ class AlgtrOCPProx(AlgtrOCPAbstract):
         super().__init__(params, footsteps, base_refs)
 
     def get_type_str():
-        return "algtr-prox"
+        return "algtr-fddp"
 
 
-class AlgtrOCPFDDP(AlgtrOCPAbstract):
+class AlgtrOCPProx(AlgtrOCPAbstract):
     """Solve the OCP using proxddp."""
 
     def __init__(
@@ -178,4 +178,4 @@ class AlgtrOCPFDDP(AlgtrOCPAbstract):
         super().__init__(params, footsteps, base_refs)
 
     def get_type_str():
-        return "algtr-fddp"
+        return "algtr-prox"
