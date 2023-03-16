@@ -45,8 +45,6 @@ void exposeParams() {
       .def_readwrite("Kp_main", &Params::Kp_main)
       .def_readwrite("Kd_main", &Params::Kd_main)
       .def_readwrite("Kff_main", &Params::Kff_main)
-      .def_readwrite("osqp_w_states", &Params::osqp_w_states)
-      .def_readwrite("osqp_w_forces", &Params::osqp_w_forces)
       .def_readwrite("starting_nodes", &Params::starting_nodes)
       .def_readwrite("ending_nodes", &Params::ending_nodes)
       .def_readwrite("gait_repetitions", &Params::gait_repetitions)

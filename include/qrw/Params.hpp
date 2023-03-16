@@ -184,12 +184,6 @@ struct Params {
   double vert_time;  // Duration during which feet move only along Z when taking
                      // off and landing
 
-  // Parameters of MPC with OSQP
-  std::vector<double> osqp_w_states;  // Weights for state tracking error
-  std::vector<double> osqp_w_forces;  // Weights for force regularisation
-  double osqp_Nz_lim;  // Maximum vertical force that can be applied at contact
-                       // points
-
   //  Parameters of InvKin
   double Kp_flyingfeet;  // Proportional gain for feet position tasks
   double Kd_flyingfeet;  // Derivative gain for feet position tasks

@@ -62,9 +62,6 @@ Params::Params()
       lock_time(0.0),   // Fill with zeros, will be filled with values later
       vert_time(0.0),
 
-      osqp_w_states(12, 0.0),
-      osqp_w_forces(3, 0.0),
-      osqp_Nz_lim(0.0),    // Fill with zeros, will be filled with values later
       Kp_flyingfeet(0.0),  // Fill with zeros, will be filled with values later
       Kd_flyingfeet(0.0),  // Fill with zeros, will be filled with values later
       Kp_base_position(
@@ -276,15 +273,6 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
 
   assert_yaml_parsing(robot_node, "robot", "vert_time");
   rhs.vert_time = robot_node["vert_time"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "osqp_w_states");
-  rhs.osqp_w_states = robot_node["osqp_w_states"].as<std::vector<double>>();
-
-  assert_yaml_parsing(robot_node, "robot", "osqp_w_forces");
-  rhs.osqp_w_forces = robot_node["osqp_w_forces"].as<std::vector<double>>();
-
-  assert_yaml_parsing(robot_node, "robot", "osqp_Nz_lim");
-  rhs.osqp_Nz_lim = robot_node["osqp_Nz_lim"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "Kp_flyingfeet");
   rhs.Kp_flyingfeet = robot_node["Kp_flyingfeet"].as<double>();
