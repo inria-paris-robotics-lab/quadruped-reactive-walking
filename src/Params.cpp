@@ -295,21 +295,3 @@ void Params::convert_gait_vec() {
     gait.block(i * (Index)N_gait, 0, N_gait, 4) = gait.block(0, 0, N_gait, 4);
   }
 }
-
-// void Params::convert_v_switch() {
-//   if (v_switch_vec.size() % 6 != 0) {
-//     throw std::runtime_error(
-//         "v_switch matrix in yaml is not in the correct "
-//         "format. It should have six "
-//         "lines, containing the values switch values for "
-//         "each coordinate of the velocity.");
-//   }
-
-//   if (v_switch_vec.size() / 6 != t_switch_vec.size()) {
-//   }
-
-//   Index n_col = v_switch_vec.size() / 6;
-
-//   // Resize v_switch matrix
-//   v_switch = Eigen::Map<RowMatrix6N>(v_switch_vec.data(), 6, n_col);
-// }
