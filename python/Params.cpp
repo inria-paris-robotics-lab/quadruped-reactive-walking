@@ -2,6 +2,21 @@
 
 #include "bindings/python.hpp"
 
+struct params_pickle_suite : bp::pickle_suite {
+  static bp::tuple getinitargs(Params const &) { return bp::tuple(); }
+
+  static bp::tuple getstate(bp::object obj) {
+    const Params &p = bp::extract<Params const &>(obj)();
+    return bp::make_tuple(p.raw_str);
+  }
+
+  static void setstate(bp::object obj, bp::tuple state) {
+    Params &p = bp::extract<Params &>(obj)();
+    auto str = bp::extract<std::string>(state[0])();
+    p.initialize_from_str(str);
+  }
+};
+
 void exposeParams() {
   bp::class_<Params>("Params", bp::init<>("self"))
       .def("create_from_file", &Params::create_from_file,
@@ -18,6 +33,7 @@ void exposeParams() {
            bp::args("self", "content"),
            "Initialize Params from Python with a yaml string.\n")
 
+      .def_pickle(params_pickle_suite())
       // Read Params from Python
       .def_readonly("raw_str", &Params::raw_str)
       .def_readwrite("config_file", &Params::config_file)
