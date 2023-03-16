@@ -64,12 +64,18 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
         msg = fut.result()
         with self._result_lock:
             self.new_result = True
-            self.last_available_result.P = multiarray_to_numpy_float64(msg.P)
-            self.last_available_result.D = multiarray_to_numpy_float64(msg.D)
-            self.last_available_result.FF = multiarray_to_numpy_float64(msg.FF)
-            self.last_available_result.q_des = multiarray_to_numpy_float64(msg.q_des)
-            self.last_available_result.v_des = multiarray_to_numpy_float64(msg.v_des)
-            self.last_available_result.FF = multiarray_to_numpy_float64(msg.FF)
+            self.last_available_result.gait = multiarray_to_numpy_float64(msg.gait)
+            self.last_available_result.xs = [
+                el for el in multiarray_to_numpy_float64(msg.xs)
+            ]
+            self.last_available_result.us = [
+                el for el in multiarray_to_numpy_float64(msg.us)
+            ]
+            self.last_available_result.K = [
+                el for el in multiarray_to_numpy_float64(msg.K)
+            ]
+            self.last_available_result.solving_duration = msg.solving_duration
+            self.last_available_result.num_iters = msg.num_iters
 
     def get_latest_result(self):
         """
@@ -129,20 +135,22 @@ class ROSMPCWrapperServer:
             multiarray_to_numpy_float64(msg.base_ref),
         )
 
-        xs = multiarray_to_numpy_float64(msg.xs)
-        us = multiarray_to_numpy_float64(msg.us)
+        # xs and us needs to be a list of arrays...
+        # Todo: change that ?
+        xs = [el for el in multiarray_to_numpy_float64(msg.xs)]
+        us = [el for el in multiarray_to_numpy_float64(msg.us)]
 
         self.ocp.solve(msg.k, xs, us)
 
         result = self.ocp.get_results()
 
         return MPCSolveResponse(
-            P=numpy_to_multiarray_float64(result.P),
-            D=numpy_to_multiarray_float64(result.D),
-            FF=numpy_to_multiarray_float64(result.FF),
-            q_des=numpy_to_multiarray_float64(result.q_des),
-            v_des=numpy_to_multiarray_float64(result.v_des),
-            tau_ff=numpy_to_multiarray_float64(result.tau_ff),
+            gait=numpy_to_multiarray_float64(result[0]),
+            xs=numpy_to_multiarray_float64(np.array(result[1])),
+            us=numpy_to_multiarray_float64(np.array(result[2])),
+            K=numpy_to_multiarray_float64(np.array(result[3])),
+            solving_duration=result[4],
+            # num_iters        = result[5],
         )
 
 

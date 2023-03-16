@@ -116,11 +116,12 @@ class Controller:
 
         self.default_footstep = make_footstep(params.q_init)
 
-        if params.enable_multiprocessing:
-            from .wbmpc_wrapper_multiprocess import MultiprocessMPCWrapper as MPCWrapper
-        else:
-            from .wbmpc_wrapper_sync import SyncMPCWrapper as MPCWrapper
-        # from .wbmpc_wrapper_ros import ROSMPCWrapperClient as MPCWrapper
+        # if params.enable_multiprocessing:
+        #     from .wbmpc_wrapper_multiprocess import MultiprocessMPCWrapper as MPCWrapper
+        # else:
+        #     from .wbmpc_wrapper_sync import SyncMPCWrapper as MPCWrapper
+        # from .wbmpc_wrapper_sync import SyncMPCWrapper as MPCWrapper
+        from .wbmpc_wrapper_ros import ROSMPCWrapperClient as MPCWrapper
 
         self.mpc = MPCWrapper(
             params,
