@@ -71,15 +71,6 @@ robot:
     lock_time: 0.04  # Target lock before the touchdown [s]
     vert_time: 0.0  # Duration during which feet move only along Z when taking off and landing
 
-    # Parameters of InvKin
-    Kp_flyingfeet: 10.0  # Proportional gain for feet position tasks
-    Kd_flyingfeet: 6.3  # Derivative gain for feet position tasks
-    Kp_base_position: [10.0, 10.0, 10.0]  # Proportional gains for the base position task
-    Kd_base_position: [6.3, 6.3, 6.3]  # Derivative gains for the base position task
-    Kp_base_orientation: [10.0, 10.0, 10.0]  # Proportional gains for the base orientation task
-    Kd_base_orientation: [6.3, 6.3, 6.3]  # Derivative gains for the base orientation task
-    w_tasks: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]  # Tasks weights: [feet/base, vx, vy, vz, roll+wroll, pitch+wpitch, wyaw, contacts]
-
     # Parameters of WBC QP problem
     Q1: 0.1  # Weights for the "delta articular accelerations" optimization variables
     Q2: 10.0  # Weights for the "delta contact forces" optimization variables

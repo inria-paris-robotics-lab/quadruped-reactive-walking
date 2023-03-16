@@ -59,7 +59,6 @@ void exposeParams() {
       .def_readwrite("perfect_estimator", &Params::perfect_estimator)
       .def_readwrite("use_qualisys", &Params::use_qualisys)
       .def_readwrite("ocp", &Params::ocp)
-      .def_readwrite("w_tasks", &Params::w_tasks)
       .def_readwrite("T_gait", &Params::T_gait)
       .def_readwrite("N_gait", &Params::N_gait)
       .def_readwrite("h_ref", &Params::h_ref)

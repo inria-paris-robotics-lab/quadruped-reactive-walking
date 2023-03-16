@@ -61,17 +61,6 @@ Params::Params()
       max_height(0.0),  // Fill with zeros, will be filled with values later
       lock_time(0.0),   // Fill with zeros, will be filled with values later
       vert_time(0.0),
-
-      Kp_flyingfeet(0.0),  // Fill with zeros, will be filled with values later
-      Kd_flyingfeet(0.0),  // Fill with zeros, will be filled with values later
-      Kp_base_position(
-          3, 0.0),  // Fill with zeros, will be filled with values later
-      Kd_base_position(
-          3, 0.0),  // Fill with zeros, will be filled with values later
-
-      Kp_base_orientation(3, 0.0),
-      Kd_base_orientation(3, 0.0),
-      w_tasks(8, 0.0),
       Q1(0.0),
       Q2(0.0),
 
@@ -273,31 +262,6 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
 
   assert_yaml_parsing(robot_node, "robot", "vert_time");
   rhs.vert_time = robot_node["vert_time"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "Kp_flyingfeet");
-  rhs.Kp_flyingfeet = robot_node["Kp_flyingfeet"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "Kd_flyingfeet");
-  rhs.Kd_flyingfeet = robot_node["Kd_flyingfeet"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "Kp_base_position");
-  rhs.Kp_base_position =
-      robot_node["Kp_base_position"].as<std::vector<double>>();
-
-  assert_yaml_parsing(robot_node, "robot", "Kd_base_position");
-  rhs.Kd_base_position =
-      robot_node["Kd_base_position"].as<std::vector<double>>();
-
-  assert_yaml_parsing(robot_node, "robot", "Kp_base_orientation");
-  rhs.Kp_base_orientation =
-      robot_node["Kp_base_orientation"].as<std::vector<double>>();
-
-  assert_yaml_parsing(robot_node, "robot", "Kd_base_orientation");
-  rhs.Kd_base_orientation =
-      robot_node["Kd_base_orientation"].as<std::vector<double>>();
-
-  assert_yaml_parsing(robot_node, "robot", "w_tasks");
-  rhs.w_tasks = robot_node["w_tasks"].as<std::vector<double>>();
 
   assert_yaml_parsing(robot_node, "robot", "Q1");
   rhs.Q1 = robot_node["Q1"].as<double>();
