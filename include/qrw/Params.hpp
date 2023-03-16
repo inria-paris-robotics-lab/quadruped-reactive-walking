@@ -152,9 +152,9 @@ struct Params {
   bool closed_loop;        // true to close the MPC loop
   bool kf_enabled;  // Use complementary filter (False) or kalman filter (True)
                     // for the estimator
-  std::vector<double> Kp_main;  // Proportional gains for the PD+
-  std::vector<double> Kd_main;  // Derivative gains for the PD+
-  double Kff_main;              // Feedforward torques multiplier for the PD+
+  VectorN Kp_main;  // Proportional gains for the PD+
+  VectorN Kd_main;  // Derivative gains for the PD+
+  double Kff_main;  // Feedforward torques multiplier for the PD+
 
   // Parameters of Gait
   int starting_nodes;

@@ -41,8 +41,8 @@ Params::Params()
       interpolation_type(0),
       closed_loop(true),
       kf_enabled(false),
-      Kp_main(3, 0.0),
-      Kd_main(3, 0.0),
+      Kp_main(3),
+      Kd_main(3),
       Kff_main(0.0),
 
       starting_nodes(0),
@@ -87,6 +87,8 @@ Params::Params()
       footsteps_under_shoulders(
           12)  // Fill with zeros, will be filled with values later
 {
+  Kp_main.setZero();
+  Kd_main.setZero();
   q_init.setZero();
   footsteps_under_shoulders.setZero();
 }
@@ -226,10 +228,10 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.closed_loop = robot_node["closed_loop"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "Kp_main");
-  rhs.Kp_main = robot_node["Kp_main"].as<std::vector<double>>();
+  rhs.Kp_main = robot_node["Kp_main"].as<VectorN>();
 
   assert_yaml_parsing(robot_node, "robot", "Kd_main");
-  rhs.Kd_main = robot_node["Kd_main"].as<std::vector<double>>();
+  rhs.Kd_main = robot_node["Kd_main"].as<VectorN>();
 
   assert_yaml_parsing(robot_node, "robot", "Kff_main");
   rhs.Kff_main = robot_node["Kff_main"].as<double>();
