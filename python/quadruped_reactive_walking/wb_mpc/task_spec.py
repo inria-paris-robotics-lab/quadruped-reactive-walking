@@ -1,10 +1,11 @@
 import numpy as np
 import example_robot_data as erd
 import pinocchio as pin
+from quadruped_reactive_walking import Params
 
 
 class TaskSpecBase:
-    def __init__(self, params, frozen_names=[]):
+    def __init__(self, params: Params, frozen_names=[]):
 
         self.robot = erd.load("solo12")
         self.q0 = self.robot.q0
@@ -63,7 +64,9 @@ class TaskSpecBase:
 
 
 class TaskSpec(TaskSpecBase):
-    def __init__(self, params):
+    def __init__(self, params: Params):
+        import pprint
+
         super().__init__(params)
 
         self.useFixedBase = 0
@@ -73,8 +76,11 @@ class TaskSpec(TaskSpecBase):
             [np.full(18, np.inf), np.zeros(6), np.ones(12) * 800]
         )
 
+        task_pms = params.task
+        pprint.pp(task_pms)
+
         # Cost function weights
-        self.mu = 0.7
+        self.mu = task_pms["mu"]
 
         # if params.movement == "step":
         #     self.foot_tracking_w = 2.0 * 1e3
@@ -84,13 +90,13 @@ class TaskSpec(TaskSpecBase):
         # self.friction_cone_w = 0.0  # 1e4
         # self.control_bound_w = 0.
 
-        self.fly_high_slope = 50
-        self.fly_high_w = 5 * 1e4
-        self.ground_collision_w = 1e3
-        self.vertical_velocity_reg_w = 1e3
+        self.fly_high_slope = task_pms["fly_high_slope"]
+        self.fly_high_w = task_pms["fly_high_w"]
+        self.ground_collision_w = task_pms["ground_collision_w"]
+        self.vertical_velocity_reg_w = task_pms["vertical_velocity_reg_w"]
 
-        self.base_velocity_tracking_w = 8 * 1e5
-        self.foot_tracking_w = 0
+        self.base_velocity_tracking_w = task_pms["base_velocity_tracking_w"]
+        self.foot_tracking_w = task_pms["foot_tracking_w"]
 
         self.impact_altitude_w = 1e6
         self.impact_velocity_w = 1e4
@@ -125,7 +131,7 @@ class TaskSpec(TaskSpecBase):
 
 
 class TaskSpecFull(TaskSpecBase):
-    def __init__(self, params):
+    def __init__(self, params: Params):
         frozen_names = ["root_joint"]
 
         super().__init__(params, frozen_names)
@@ -133,7 +139,7 @@ class TaskSpecFull(TaskSpecBase):
         self.useFixedBase = 1
 
         # Cost function weights
-        self.mu = 0.7
+        self.mu = params.task["mu"]
         self.foot_tracking_w = 1e4
         self.friction_cone_w = 1e3
         self.control_bound_w = 1e3

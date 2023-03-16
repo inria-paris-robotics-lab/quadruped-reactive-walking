@@ -66,3 +66,12 @@ robot:
     solo3D: false  # Activation of the 3D environment, and corresponding planner blocks
     environment_URDF: "/short_bricks/short_bricks.urdf"
     environment_heightmap: "/short_bricks/short_bricks.bin"
+
+task:
+  mu: 0.4
+  fly_high_slope: 50.
+  fly_high_w: 50_000.
+  ground_collision_w: 1_000.
+  vertical_velocity_reg_w: 1_000.
+  base_velocity_tracking_w: 800_000.
+  foot_tracking_w: 0.
