@@ -13,7 +13,6 @@ robot:
     predefined_vel: true  # If we are using a predefined reference velocity (True) or a joystick (False)
     N_SIMULATION: 80000  # Number of simulated wbc time steps
     enable_corba_viewer: false  # Enable/disable Corba Viewer
-    enable_multiprocessing: true     # Enable/disable running the MPC in another process in parallel of the main loop
     perfect_estimator: false  # Enable/disable perfect estimator by using data directly from PyBullet
     use_qualisys: false
     ocp:
@@ -21,6 +20,9 @@ robot:
       max_iter: 1  # maximum number of solver iterations
       init_max_iters: 5  # initial max_iter
       verbose: false  # solver verbosity
+
+    asynchronous_mpc: no # Run the MPC in an asynchronous process parallel of the main loop
+    mpc_in_rosnode: no    # Run the MPC on a separate rosnode
 
     # General control parameters
     # q_init: [ 0.00208551,  0.97841023, -1.77335038,  0.0020868,   0.97951833, -1.77534163, 0.00208551,  0.97841023, -1.77335038,  0.0020868,   0.97951833, -1.77534163]

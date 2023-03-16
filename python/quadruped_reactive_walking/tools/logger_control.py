@@ -169,7 +169,7 @@ class LoggerControl:
                 self.i + self.params.N_gait * self.params.mpc_wbc_ratio
             ] = controller.v_ref[:][3:]
 
-        if not self.params.enable_multiprocessing:
+        if not self.params.asynchronous_mpc and not self.params.mpc_in_rosnode:
             self.t_ocp_update[self.i] = controller.mpc.ocp.t_update
             self.t_ocp_warm_start[self.i] = controller.mpc.ocp.t_warm_start
             self.t_ocp_solve[self.i] = controller.mpc.ocp.t_solve
@@ -193,7 +193,7 @@ class LoggerControl:
         # self.plot_target(save, filename)
         # self.plot_riccati_gains(0, save, filename)
         self.plot_controller_times(save, filename)
-        # if not self.params.enable_multiprocessing:
+        # if not self.params.asynchronous_mpc:
         #     self.plot_ocp_times()
 
     def plot_states(self, save=False, filename=TEMP_DIRNAME):

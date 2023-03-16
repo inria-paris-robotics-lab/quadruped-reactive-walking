@@ -180,15 +180,11 @@ def main(args):
     if not params.SIMULATION:
         params.enable_pyb_GUI = False
 
-    solver_kwargs = {}
-
     # Default position after calibration
     q_init = params.q_init
     solver_cls = get_ocp_from_str(args.solver)
 
-    controller = Controller(
-        params, q_init, 0.0, solver_cls, solver_kwargs=solver_kwargs
-    )
+    controller = Controller(params, q_init, 0.0, solver_cls)
     device, qc = get_device(params.SIMULATION)
 
     # viewer = meshcat_viewer.MeshcatViewer(controller.pd.robot)
@@ -271,7 +267,7 @@ def main(args):
     # ****************************************************************
     damp_controls(device, 12)
 
-    if params.enable_multiprocessing:
+    if params.asynchronous_mpc:
         print("Stopping parallel process MPC")
         controller.mpc.stop_parallel_loop()
 

@@ -22,12 +22,19 @@ from .tools.ros_tools import (
 
 class ROSMPCWrapperClient(MPCWrapperAbstract):
     """
-    Wrapper to run both types of MPC (OQSP or Crocoddyl) in a synchronous manner in the main thread.
+    Wrapper to run both types of MPC (OQSP or Crocoddyl) on a seperate node/machine using ROS as communication interface.
     """
 
     def __init__(
-        self, params, footsteps, base_refs, solver_cls: Type[OCPAbstract], **kwargs
+        self,
+        params,
+        footsteps,
+        base_refs,
+        solver_cls: Type[OCPAbstract],
+        synchronous=False,
     ):
+        self.synchronous = synchronous
+
         self._result_lock = Lock()
         self.new_result: bool = False
         self.last_available_result: Result = Result(params)
@@ -44,12 +51,16 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
         )
         assert success, "Error while initializing mpc on server"
 
-        self.solve_solver_srv = AsyncServiceProxy(
-            "qrw_wbmpc/solve", MPCSolve, callback=self._result_cb
-        )
+        self.solve_solver_srv = None
+        if self.synchronous:
+            self.solve_solver_srv = rospy.ServiceProxy("qrw_wbmpc/solve", MPCSolve)
+        else:
+            self.solve_solver_srv = AsyncServiceProxy(
+                "qrw_wbmpc/solve", MPCSolve, callback=self._result_cb
+            )
 
     def solve(self, k, x0, footstep, base_ref, xs=None, us=None):
-        self.solve_solver_srv(
+        res = self.solve_solver_srv(
             k=k,
             x0=numpy_to_multiarray_float64(x0),
             footstep=numpy_to_multiarray_float64(footstep),
@@ -57,9 +68,14 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
             xs=listof_numpy_to_multiarray_float64(xs if xs is not None else []),
             us=listof_numpy_to_multiarray_float64(us if us is not None else []),
         )
+        if self.synchronous:
+            self._parse_result(res)
 
     def _result_cb(self, fut):
         msg = fut.result()
+        self._parse_result(msg)
+
+    def _parse_result(self, msg):
         with self._result_lock:
             self.new_result = True
             self.last_available_result.gait = multiarray_to_numpy_float64(msg.gait)
@@ -77,8 +93,6 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
 
     def get_latest_result(self):
         """
-        Return the desired contact forces that have been computed by the last iteration
-        of the MPC.
         If a new result is available, return the new result.
         Otherwise return the old result again.
         """

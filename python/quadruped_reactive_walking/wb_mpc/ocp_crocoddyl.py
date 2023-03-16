@@ -24,7 +24,7 @@ class CrocOCP(OCPAbstract):
     Generate a Crocoddyl OCP for the control task.
     """
 
-    def __init__(self, params, footsteps, base_refs, **kwargs):
+    def __init__(self, params, footsteps, base_refs):
         super().__init__(params)
 
         self.state = crocoddyl.StateMultibody(self.task.model)

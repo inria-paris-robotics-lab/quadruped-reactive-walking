@@ -15,9 +15,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
     Wrapper to run both types of MPC (OQSP or Crocoddyl) asynchronously in a new process
     """
 
-    def __init__(
-        self, params, footsteps, base_refs, solver_cls: Type[OCPAbstract], **kwargs
-    ):
+    def __init__(self, params, footsteps, base_refs, solver_cls: Type[OCPAbstract]):
         self.params = params
         self.pd = TaskSpec(params)
         self.T = params.N_gait
@@ -25,7 +23,6 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.nx = self.pd.nx
         self.ndx = self.pd.ndx
         self.solver_cls = solver_cls
-        self._solver_kwargs = kwargs
 
         self.footsteps_plan = footsteps
         self.base_refs = base_refs
@@ -99,10 +96,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
 
             if k == 0:
                 loop_ocp = self.solver_cls(
-                    self.params,
-                    self.footsteps_plan,
-                    self.base_refs,
-                    **self._solver_kwargs
+                    self.params, self.footsteps_plan, self.base_refs
                 )
 
             loop_ocp.make_ocp(k, x0, footstep, base_ref)

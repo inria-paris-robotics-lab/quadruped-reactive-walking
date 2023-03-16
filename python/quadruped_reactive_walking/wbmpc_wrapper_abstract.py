@@ -26,9 +26,7 @@ class MPCWrapperAbstract:
     """
 
     @abc.abstractclassmethod
-    def __init__(
-        self, params, footsteps, base_refs, solver_cls: Type[OCPAbstract], **kwargs
-    ):
+    def __init__(self, params, footsteps, base_refs, solver_cls: Type[OCPAbstract]):
         pass
 
     @abc.abstractclassmethod

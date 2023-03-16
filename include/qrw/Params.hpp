@@ -105,13 +105,16 @@ struct Params {
                         // (True) or a joystick (False)
   int N_SIMULATION;     // Number of simulated wbc time steps
   bool enable_pyb_GUI;  // Enable/disable PyBullet GUI
-  bool enable_corba_viewer;     // Enable/disable Corba Viewer
-  bool enable_multiprocessing;  // Enable/disable running the MPC in another
-                                // process in parallel of the main loop
-  bool perfect_estimator;  // Enable/disable perfect estimator by using data
-                           // directly from PyBullet
-  bool use_qualisys;       // Enable/disable mocap
-  OCPParams ocp;           // OCP parameters
+  bool enable_corba_viewer;  // Enable/disable Corba Viewer
+                             // process in parallel of the main loop
+  bool perfect_estimator;    // Enable/disable perfect estimator by using data
+                             // directly from PyBullet
+  bool use_qualisys;         // Enable/disable mocap
+  OCPParams ocp;             // OCP parameters
+
+  bool asynchronous_mpc;  // Run the MPC in an asynchronous process parallel of
+                          // the main loop
+  bool mpc_in_rosnode;    // Run the MPC on a separate rosnode
 
   // General control parameters
   VectorN q_init;  // Initial articular positions

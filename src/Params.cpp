@@ -26,7 +26,8 @@ Params::Params()
       N_SIMULATION(0),
       enable_pyb_GUI(false),
       enable_corba_viewer(false),
-      enable_multiprocessing(false),
+      asynchronous_mpc(false),
+      mpc_in_rosnode(false),
       perfect_estimator(false),
       use_qualisys(false),
 
@@ -182,8 +183,11 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   assert_yaml_parsing(robot_node, "robot", "enable_corba_viewer");
   rhs.enable_corba_viewer = robot_node["enable_corba_viewer"].as<bool>();
 
-  assert_yaml_parsing(robot_node, "robot", "enable_multiprocessing");
-  rhs.enable_multiprocessing = robot_node["enable_multiprocessing"].as<bool>();
+  assert_yaml_parsing(robot_node, "robot", "asynchronous_mpc");
+  rhs.asynchronous_mpc = robot_node["asynchronous_mpc"].as<bool>();
+
+  assert_yaml_parsing(robot_node, "robot", "mpc_in_rosnode");
+  rhs.mpc_in_rosnode = robot_node["mpc_in_rosnode"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "perfect_estimator");
   rhs.perfect_estimator = robot_node["perfect_estimator"].as<bool>();
