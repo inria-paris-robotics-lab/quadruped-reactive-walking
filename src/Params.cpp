@@ -34,7 +34,6 @@ Params::Params()
       dt_wbc(0.0),
       dt_mpc(0.0),
       N_periods(0),
-      type_MPC(0),
       save_guess(false),
       movement(""),
       interpolate_mpc(true),
@@ -56,17 +55,6 @@ Params::Params()
       t_switch(),
       v_switch(),
       fc_v_esti(0.0),
-      k_feedback(0.0),
-
-      max_height(0.0),  // Fill with zeros, will be filled with values later
-      lock_time(0.0),   // Fill with zeros, will be filled with values later
-      vert_time(0.0),
-      Q1(0.0),
-      Q2(0.0),
-
-      Fz_max(0.0),
-      Fz_min(0.0),
-      enable_comp_forces(false),
 
       T_gait(0.0),  // Period of the gait
       h_ref(0.0),
@@ -130,6 +118,15 @@ void Params::initialize_from_str(const std::string &content) {
 }
 
 namespace YAML {
+
+bool convert<OCPParams>::decode(const Node &node, OCPParams &rhs) {
+  rhs.num_threads = node["num_threads"].as<uint>();
+  rhs.max_iter = node["max_iter"].as<uint>();
+  rhs.init_max_iters = node["init_max_iters"].as<uint>();
+  rhs.verbose = node["verbose"].as<bool>();
+  return true;
+}
+
 bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   // Retrieve robot parameters
   assert_yaml_parsing(robot_node, "robot", "config_file");
@@ -151,7 +148,7 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.PLOTTING = robot_node["PLOTTING"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "dt_wbc");
-  rhs.dt_wbc = robot_node["dt_wbc"].as<double>();
+  rhs.dt_wbc = robot_node["dt_wbc"].as<Scalar>();
 
   assert_yaml_parsing(robot_node, "robot", "env_id");
   rhs.env_id = robot_node["env_id"].as<int>();
@@ -160,19 +157,16 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   YAML::convert<VectorN>::decode(robot_node["q_init"], rhs.q_init);
 
   assert_yaml_parsing(robot_node, "robot", "h_ref");
-  rhs.h_ref = robot_node["h_ref"].as<double>();
+  rhs.h_ref = robot_node["h_ref"].as<Scalar>();
 
   assert_yaml_parsing(robot_node, "robot", "dt_mpc");
-  rhs.dt_mpc = robot_node["dt_mpc"].as<double>();
+  rhs.dt_mpc = robot_node["dt_mpc"].as<Scalar>();
 
   assert_yaml_parsing(robot_node, "robot", "N_periods");
   rhs.N_periods = robot_node["N_periods"].as<uint>();
 
   assert_yaml_parsing(robot_node, "robot", "N_SIMULATION");
   rhs.N_SIMULATION = robot_node["N_SIMULATION"].as<int>();
-
-  assert_yaml_parsing(robot_node, "robot", "type_MPC");
-  rhs.type_MPC = robot_node["type_MPC"].as<int>();
 
   assert_yaml_parsing(robot_node, "robot", "use_flat_plane");
   rhs.use_flat_plane = robot_node["use_flat_plane"].as<bool>();
@@ -220,7 +214,7 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.Kd_main = robot_node["Kd_main"].as<VectorN>();
 
   assert_yaml_parsing(robot_node, "robot", "Kff_main");
-  rhs.Kff_main = robot_node["Kff_main"].as<double>();
+  rhs.Kff_main = robot_node["Kff_main"].as<Scalar>();
 
   assert_yaml_parsing(robot_node, "robot", "starting_nodes");
   rhs.starting_nodes = robot_node["starting_nodes"].as<int>();
@@ -236,10 +230,10 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.convert_gait_vec();
 
   assert_yaml_parsing(robot_node, "robot", "gp_alpha_vel");
-  rhs.gp_alpha_vel = robot_node["gp_alpha_vel"].as<double>();
+  rhs.gp_alpha_vel = robot_node["gp_alpha_vel"].as<Scalar>();
 
   assert_yaml_parsing(robot_node, "robot", "gp_alpha_pos");
-  rhs.gp_alpha_pos = robot_node["gp_alpha_pos"].as<double>();
+  rhs.gp_alpha_pos = robot_node["gp_alpha_pos"].as<Scalar>();
 
   assert_yaml_parsing(robot_node, "robot", "t_switch");
   rhs.t_switch = robot_node["t_switch"].as<VectorN>();
@@ -249,87 +243,10 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   YAML::convert<RowMatrix6N>::decode(robot_node["v_switch"], rhs.v_switch);
 
   assert_yaml_parsing(robot_node, "robot", "fc_v_esti");
-  rhs.fc_v_esti = robot_node["fc_v_esti"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "k_feedback");
-  rhs.k_feedback = robot_node["k_feedback"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "max_height");
-  rhs.max_height = robot_node["max_height"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "lock_time");
-  rhs.lock_time = robot_node["lock_time"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "vert_time");
-  rhs.vert_time = robot_node["vert_time"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "Q1");
-  rhs.Q1 = robot_node["Q1"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "Q2");
-  rhs.Q2 = robot_node["Q2"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "Fz_max");
-  rhs.Fz_max = robot_node["Fz_max"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "Fz_min");
-  rhs.Fz_min = robot_node["Fz_min"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "enable_comp_forces");
-  rhs.enable_comp_forces = robot_node["enable_comp_forces"].as<bool>();
+  rhs.fc_v_esti = robot_node["fc_v_esti"].as<Scalar>();
 
   assert_yaml_parsing(robot_node, "robot", "solo3D");
   rhs.solo3D = robot_node["solo3D"].as<bool>();
-
-  assert_yaml_parsing(robot_node, "robot", "enable_multiprocessing_mip");
-  rhs.enable_multiprocessing_mip =
-      robot_node["enable_multiprocessing_mip"].as<bool>();
-
-  assert_yaml_parsing(robot_node, "robot", "environment_URDF");
-  rhs.environment_URDF = robot_node["environment_URDF"].as<std::string>();
-
-  assert_yaml_parsing(robot_node, "robot", "environment_heightmap");
-  rhs.environment_heightmap =
-      robot_node["environment_heightmap"].as<std::string>();
-
-  assert_yaml_parsing(robot_node, "robot", "heightmap_fit_length");
-  rhs.heightmap_fit_length = robot_node["heightmap_fit_length"].as<double>();
-
-  assert_yaml_parsing(robot_node, "robot", "heightmap_fit_size");
-  rhs.heightmap_fit_size = robot_node["heightmap_fit_size"].as<int>();
-
-  assert_yaml_parsing(robot_node, "robot", "number_steps");
-  rhs.number_steps = robot_node["number_steps"].as<int>();
-
-  assert_yaml_parsing(robot_node, "robot", "max_velocity");
-  rhs.max_velocity = robot_node["max_velocity"].as<std::vector<double>>();
-
-  assert_yaml_parsing(robot_node, "robot", "use_bezier");
-  rhs.use_bezier = robot_node["use_bezier"].as<bool>();
-
-  assert_yaml_parsing(robot_node, "robot", "use_sl1m");
-  rhs.use_sl1m = robot_node["use_sl1m"].as<bool>();
-
-  assert_yaml_parsing(robot_node, "robot", "use_heuristic");
-  rhs.use_heuristic = robot_node["use_heuristic"].as<bool>();
-
-  assert_yaml_parsing(robot_node, "robot", "bezier_x_margin_max");
-  rhs.bezier_x_margin_max = robot_node["bezier_x_margin_max"].as<float>();
-
-  assert_yaml_parsing(robot_node, "robot", "bezier_t_margin");
-  rhs.bezier_t_margin = robot_node["bezier_t_margin"].as<float>();
-
-  assert_yaml_parsing(robot_node, "robot", "bezier_z_margin");
-  rhs.bezier_z_margin = robot_node["bezier_z_margin"].as<float>();
-
-  assert_yaml_parsing(robot_node, "robot", "bezier_N_sample");
-  rhs.bezier_N_sample = robot_node["bezier_N_sample"].as<int>();
-
-  assert_yaml_parsing(robot_node, "robot", "bezier_N_sample_ineq");
-  rhs.bezier_N_sample_ineq = robot_node["bezier_N_sample_ineq"].as<int>();
-
-  assert_yaml_parsing(robot_node, "robot", "bezier_degree");
-  rhs.bezier_degree = robot_node["bezier_degree"].as<int>();
 
   if (!rhs.SIMULATION) rhs.perfect_estimator = false;
   return true;

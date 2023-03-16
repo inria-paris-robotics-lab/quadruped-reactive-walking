@@ -49,7 +49,6 @@ void exposeParams() {
       .def_readonly("mpc_wbc_ratio", &Params::mpc_wbc_ratio)
       .def_readwrite("N_periods", &Params::N_periods)
       .def_readwrite("N_SIMULATION", &Params::N_SIMULATION)
-      .def_readwrite("type_MPC", &Params::type_MPC)
       .def_readwrite("use_flat_plane", &Params::use_flat_plane)
       .def_readwrite("predefined_vel", &Params::predefined_vel)
       .def_readwrite("save_guess", &Params::save_guess)
@@ -78,24 +77,8 @@ void exposeParams() {
       .def_readwrite("T_gait", &Params::T_gait)
       .def_readwrite("N_gait", &Params::N_gait)
       .def_readwrite("h_ref", &Params::h_ref)
-      .def_readwrite("max_height", &Params::max_height)
-      .def_readwrite("lock_time", &Params::lock_time)
-      .def_readwrite("vert_time", &Params::vert_time)
       .def_readwrite("footsteps_under_shoulders",
-                     &Params::footsteps_under_shoulders)
-      .def_readwrite("enable_comp_forces", &Params::enable_comp_forces)
-      .def_readwrite("solo3D", &Params::solo3D)
-      .def_readwrite("enable_multiprocessing_mip",
-                     &Params::enable_multiprocessing_mip)
-      .def_readwrite("environment_URDF", &Params::environment_URDF)
-      .def_readwrite("environment_heightmap", &Params::environment_heightmap)
-      .def_readwrite("heightmap_fit_length", &Params::heightmap_fit_length)
-      .def_readwrite("heightmap_fit_size", &Params::heightmap_fit_size)
-      .def_readwrite("number_steps", &Params::number_steps)
-      .def_readwrite("max_velocity", &Params::max_velocity)
-      .def_readwrite("use_bezier", &Params::use_bezier)
-      .def_readwrite("use_sl1m", &Params::use_sl1m)
-      .def_readwrite("use_heuristic", &Params::max_velocity);
+                     &Params::footsteps_under_shoulders);
 
   bp::class_<OCPParams>("OCPParams", bp::no_init)
       .def_readwrite("num_threads", &OCPParams::num_threads)

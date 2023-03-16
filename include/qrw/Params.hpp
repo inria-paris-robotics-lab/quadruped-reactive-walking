@@ -50,13 +50,7 @@ struct convert<Params> {
 
 template <>
 struct convert<OCPParams> {
-  static bool decode(const Node &node, OCPParams &rhs) {
-    rhs.num_threads = node["num_threads"].as<uint>();
-    rhs.max_iter = node["max_iter"].as<uint>();
-    rhs.init_max_iters = node["init_max_iters"].as<uint>();
-    rhs.verbose = node["verbose"].as<bool>();
-    return true;
-  }
+  static bool decode(const Node &node, OCPParams &rhs);
 };
 
 }  // namespace YAML
@@ -69,35 +63,19 @@ struct Params {
       const std::string &file_path = WALK_PARAMETERS_YAML);
   static Params create_from_str(const std::string &content);
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
   /// \brief Destructor.
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
   ~Params() = default;
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
   /// \brief Initializer
-  ///
   /// \param[in] file_path File path to the yaml file
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
   void initialize_from_file(const std::string &file_path);
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
   /// \brief Initializer
-  ///
   /// \param[in] content Content of the yaml.
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
   void initialize_from_str(const std::string &content);
 
   /// \brief Convert the gait vector of the yaml into an Eigen matrix
   void convert_gait_vec();
-
-  // void convert_v_switch();
 
   Eigen::Ref<MatrixNi> get_gait() { return gait; }
   Eigen::Ref<VectorN> get_t_switch() { return t_switch; }
@@ -137,24 +115,22 @@ struct Params {
 
   // General control parameters
   VectorN q_init;  // Initial articular positions
-  double dt_wbc;   // Time step of the whole body control
-  double dt_mpc;   // Time step of the model predictive control
+  Scalar dt_wbc;   // Time step of the whole body control
+  Scalar dt_mpc;   // Time step of the model predictive control
   int mpc_wbc_ratio;
-  uint N_periods;   // Number of gait periods in the MPC prediction horizon
-  int type_MPC;     // Which MPC solver you want to use: 0 for OSQP MPC, 1, 2, 3
-                    // for Crocoddyl MPCs
-  bool save_guess;  // true to save the initial result of the mpc
-  bool verbose;     // verbosity
-  std::string movement;    // Name of the mmovemnet to perform
-  bool interpolate_mpc;    // true to interpolate the impedance quantities,
-                           // otherwise integrate
+  uint N_periods;        // Number of gait periods in the MPC prediction horizon
+  bool save_guess;       // true to save the initial result of the mpc
+  bool verbose;          // verbosity
+  std::string movement;  // Name of the mmovemnet to perform
+  bool interpolate_mpc;  // true to interpolate the impedance quantities,
+                         // otherwise integrate
   int interpolation_type;  // type of interpolation used
   bool closed_loop;        // true to close the MPC loop
   bool kf_enabled;  // Use complementary filter (False) or kalman filter (True)
                     // for the estimator
   VectorN Kp_main;  // Proportional gains for the PD+
   VectorN Kd_main;  // Derivative gains for the PD+
-  double Kff_main;  // Feedforward torques multiplier for the PD+
+  Scalar Kff_main;  // Feedforward torques multiplier for the PD+
 
   // Parameters of Gait
   int starting_nodes;
@@ -164,65 +140,24 @@ struct Params {
   VectorNi gait_vec;     // Initial gait matrix (vector)
 
   // Parameters of Joystick
-  double gp_alpha_vel;  // Coefficient of the low pass filter applied to gamepad
+  Scalar gp_alpha_vel;  // Coefficient of the low pass filter applied to gamepad
                         // velocity
-  double gp_alpha_pos;  // Coefficient of the low pass filter applied to gamepad
+  Scalar gp_alpha_pos;  // Coefficient of the low pass filter applied to gamepad
                         // position
   VectorN t_switch;      // Predefined velocity switch times matrix
   RowMatrix6N v_switch;  // Predefined velocity switch values matrix
 
   // Parameters of Estimator
-  double fc_v_esti;  // Cut frequency for the low pass that filters the
+  Scalar fc_v_esti;  // Cut frequency for the low pass that filters the
                      // estimated base velocity
 
-  // Parameters of FootstepPlanner
-  double k_feedback;  // Value of the gain for the feedback heuristic
-
-  // Parameters of FootTrajectoryGenerator
-  double max_height;  // Apex height of the swinging trajectory [m]
-  double lock_time;   // Target lock before the touchdown [s]
-  double vert_time;  // Duration during which feet move only along Z when taking
-                     // off and landing
-
-  // Parameters of WBC QP problem
-  double Q1;  // Weights for the "delta articular accelerations" optimization
-              // variables
-  double Q2;  // Weights for the "delta contact forces" optimization variables
-  double Fz_max;            // Maximum vertical contact force [N]
-  double Fz_min;            // Minimal vertical contact force [N]
-  bool enable_comp_forces;  // Enable the use of compensation forces in the QP
-                            // problem
-
-  // Parameters of MIP
   bool solo3D;  // Enable the 3D environment with corresponding planner blocks
-  bool enable_multiprocessing_mip;  // Enable/disable running the MIP in another
-                                    // process in parallel of the main loop
-  std::string environment_URDF;     // URDF path for the 3D environment
-  std::string environment_heightmap;  // Path to the heightmap
-  double heightmap_fit_length;        // Size of the heightmap around the robot
-  int heightmap_fit_size;  // Number of points used in the heightmap QP
-  int number_steps;        // Number of steps to optimize with the MIP
-  std::vector<double> max_velocity;  // Maximum velocity of the base
-  bool use_bezier;  // Use Bezier to plan trajectories, otherwise use simple 6d
-                    // polynomial curve.
-  bool use_sl1m;    // Use SL1M to select the surfaces.
-  bool use_heuristic;  // Use heuristic as SL1M cost.
-
-  float bezier_x_margin_max;  //  margin inside convex surfaces [m].
-  float bezier_t_margin;  //  100*t_margin_% of the curve around critical point.
-                          //  range: [0, 1]
-  float bezier_z_margin;  //  100*z_margin_% of the curve after the critical
-                          //  point. range: [0, 1]
-  int bezier_N_sample;    //  Number of sample in the least square optimisation
-                          //  for Bezier coeffs
-  int bezier_N_sample_ineq;  //  Number of sample while browsing the curve
-  int bezier_degree;         //  Degree of the Bezier curve
 
   // Not defined in yaml
   MatrixNi gait;                      // Initial gait matrix (Eigen)
-  double T_gait;                      // Period of the gait
+  Scalar T_gait;                      // Period of the gait
   int N_gait;                         // Number of steps in gait
-  double h_ref;                       // Reference height for the base
+  Scalar h_ref;                       // Reference height for the base
   VectorN footsteps_under_shoulders;  // Positions of footsteps to
                                       // be "under the shoulder"
 };
