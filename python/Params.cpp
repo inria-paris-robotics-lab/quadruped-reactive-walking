@@ -3,13 +3,23 @@
 #include "bindings/python.hpp"
 
 void exposeParams() {
-  bp::class_<Params>("Params", bp::no_init)
-      .def(bp::init<std::string>(
-          (bp::arg("self"), bp::arg("config_path") = WALK_PARAMETERS_YAML)))
-      .def("initialize", &Params::initialize, bp::args("self", "file_path"),
-           "Initialize Params from Python.\n")
+  bp::class_<Params>("Params", bp::init<>("self"))
+      .def("create_from_file", &Params::create_from_file,
+           (bp::arg("file_path") = WALK_PARAMETERS_YAML),
+           "Create Params from Python with yaml file.\n")
+      .staticmethod("create_from_file")
+      .def("create_from_str", &Params::create_from_str, bp::arg("content"),
+           "Create Params from Python with a yaml string.\n")
+      .staticmethod("create_from_str")
+      .def("initialize_from_file", &Params::initialize_from_file,
+           bp::args("self", "file_path"),
+           "Initialize Params from Python with yaml file.\n")
+      .def("initialize_from_str", &Params::initialize_from_file,
+           bp::args("self", "content"),
+           "Initialize Params from Python with a yaml string.\n")
 
       // Read Params from Python
+      .def_readonly("raw_str", &Params::raw_str)
       .def_readwrite("config_file", &Params::config_file)
       .def_readwrite("interface", &Params::interface)
       .def_readwrite("DEMONSTRATION", &Params::DEMONSTRATION)
@@ -53,15 +63,11 @@ void exposeParams() {
       .def_readwrite("ocp", &Params::ocp)
       .def_readwrite("w_tasks", &Params::w_tasks)
       .def_readwrite("T_gait", &Params::T_gait)
-      .def_readwrite("mass", &Params::mass)
-      .def_readwrite("I_mat", &Params::I_mat)
-      .def_readwrite("CoM_offset", &Params::CoM_offset)
+      .def_readwrite("N_gait", &Params::N_gait)
       .def_readwrite("h_ref", &Params::h_ref)
-      .def_readwrite("shoulders", &Params::shoulders)
       .def_readwrite("max_height", &Params::max_height)
       .def_readwrite("lock_time", &Params::lock_time)
       .def_readwrite("vert_time", &Params::vert_time)
-      .def_readwrite("footsteps_init", &Params::footsteps_init)
       .def_readwrite("footsteps_under_shoulders",
                      &Params::footsteps_under_shoulders)
       .def_readwrite("enable_comp_forces", &Params::enable_comp_forces)

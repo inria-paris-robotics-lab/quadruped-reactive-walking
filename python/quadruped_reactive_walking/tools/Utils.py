@@ -1,29 +1,18 @@
 from example_robot_data import load
-from quadruped_reactive_walking import Params
 import numpy as np
 import pinocchio as pin
 
 
-def init_robot(q_init, params: Params):
-    """
-    Load the solo model and initialize some parameters
-
-    Args:
-        q_init (array): the default position of the robot actuators
-        params (object): store parameters
-    """
+def make_footstep(q_init):
     # Load robot model and data
     solo = load("solo12")
     q = solo.q0.reshape((-1, 1))
-
-    # Initial angular positions of actuators
     q[7:, 0] = q_init
+
     pin.framesForwardKinematics(solo.model, solo.data, q)
 
     # Initialisation of model quantities
-    pin.centerOfMass(solo.model, solo.data, q, np.zeros((18, 1)))
     pin.updateFramePlacements(solo.model, solo.data)
-    pin.crba(solo.model, solo.data, solo.q0)
 
     LEGS = ["FL", "FR", "HL", "HR"]
 
@@ -38,25 +27,7 @@ def init_robot(q_init, params: Params):
             h_init = h
     initial_footsteps[2, :] = 0.0
 
-    # Initialisation of the position of shoulders
-    initial_shoulders = np.zeros((3, 4))
-    indexes = [solo.model.getFrameId(leg + "_SHOULDER") for leg in LEGS]
-    for i in range(4):
-        initial_shoulders[:, i] = solo.data.oMf[indexes[i]].translation
-
-    # Saving data
-    params.h_ref = 0.260748  # 0.2607495
-    params.mass = solo.data.mass[0]
-    params.I_mat = solo.data.Ycrb[1].inertia.ravel().tolist()
-    params.CoM_offset = (solo.data.com[0][:3] - q[0:3, 0]).tolist()
-    params.CoM_offset[1] = 0.0
-
-    params.T = params.gait.shape[0]
-
-    for i in range(4):
-        for j in range(3):
-            params.shoulders[3 * i + j] = initial_shoulders[j, i]
-            params.footsteps_init[3 * i + j] = initial_footsteps[j, i]
+    return initial_footsteps
 
 
 def quaternionToRPY(quat):

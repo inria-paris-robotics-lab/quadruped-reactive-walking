@@ -63,7 +63,11 @@ struct convert<OCPParams> {
 
 struct Params {
   /// \brief Constructor using a path to a configuration file.
-  Params(const std::string &file_path = WALK_PARAMETERS_YAML);
+  Params();
+
+  static Params create_from_file(
+      const std::string &file_path = WALK_PARAMETERS_YAML);
+  static Params create_from_str(const std::string &content);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ///
@@ -79,7 +83,16 @@ struct Params {
   /// \param[in] file_path File path to the yaml file
   ///
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  void initialize(const std::string &file_path);
+  void initialize_from_file(const std::string &file_path);
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  ///
+  /// \brief Initializer
+  ///
+  /// \param[in] content Content of the yaml.
+  ///
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  void initialize_from_str(const std::string &content);
 
   /// \brief Convert the gait vector of the yaml into an Eigen matrix
   void convert_gait_vec();
@@ -92,6 +105,8 @@ struct Params {
   void set_v_switch(Eigen::Ref<const RowMatrix6N> &v_switch_in) {
     v_switch = v_switch_in;
   }
+
+  std::string raw_str;
 
   // See .yaml file for meaning of parameters
   // General parameters
@@ -224,15 +239,10 @@ struct Params {
   int bezier_degree;         //  Degree of the Bezier curve
 
   // Not defined in yaml
-  MatrixNi gait;                   // Initial gait matrix (Eigen)
-  double T_gait;                   // Period of the gait
-  double mass;                     // Mass of the robot
-  std::vector<double> I_mat;       // Inertia matrix
-  std::vector<double> CoM_offset;  // Center of Mass offset
-  double h_ref;                    // Reference height for the base
-  VectorN shoulders;               // Position of shoulders in horizontal frame
-  VectorN
-      footsteps_init;  // Initial 3D position of footsteps in horizontal frame
+  MatrixNi gait;                      // Initial gait matrix (Eigen)
+  double T_gait;                      // Period of the gait
+  int N_gait;                         // Number of steps in gait
+  double h_ref;                       // Reference height for the base
   VectorN footsteps_under_shoulders;  // Positions of footsteps to
                                       // be "under the shoulder"
 };

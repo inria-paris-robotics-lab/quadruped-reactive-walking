@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.interpolate import KroghInterpolator
+from ..tools.Utils import make_footstep
 
 
 class Target:
@@ -22,7 +23,7 @@ class Target:
                 [self.velocity_lin_target, self.velocity_ang_target]
             )
         else:
-            self.initial_footsteps = params.footsteps_init.reshape((3, 4), order="F")
+            self.initial_footsteps = make_footstep(self.params.q_init)
             if params.movement == "circle":
                 self.A = np.array([0.05, 0.0, 0.04])
                 self.offset = np.array([0.05, 0, 0.05])

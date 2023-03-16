@@ -6,8 +6,8 @@ import pinocchio as pin
 import quadruped_reactive_walking as qrw
 from . import wb_mpc
 from .wb_mpc.target import Target
-from .tools.Utils import init_robot, quaternionToRPY
 from .wb_mpc.task_spec import TaskSpec
+from .tools.Utils import quaternionToRPY, make_footstep
 from .tools.Interpolator import Interpolator
 from typing import Type
 
@@ -54,7 +54,7 @@ class DummyDevice:
 def make_footsteps_and_refs(params, target):
     footsteps = []
     base_refs = []
-    for k in range(params.T * params.mpc_wbc_ratio):
+    for k in range(params.N_gait * params.mpc_wbc_ratio):
         if params.movement == "base_circle" or params.movement == "walk":
             target_base = np.zeros(6)
             target_footstep = np.zeros((3, 4))
@@ -89,7 +89,6 @@ class Controller:
         self.q_security = np.array([1.2, 2.1, 3.14] * 4)
 
         self.params = params
-        init_robot(q_init, params)
         self.pd = TaskSpec(params)
         self.rdata = self.pd.create_rdata()
 
@@ -115,10 +114,13 @@ class Controller:
             self.params, self.target
         )
 
+        self.default_footstep = make_footstep(params.q_init)
+
         if params.enable_multiprocessing:
             from .wbmpc_wrapper_multiprocess import MultiprocessMPCWrapper as MPCWrapper
         else:
             from .wbmpc_wrapper_sync import SyncMPCWrapper as MPCWrapper
+        # from .wbmpc_wrapper_ros import ROSMPCWrapperClient as MPCWrapper
 
         self.mpc = MPCWrapper(
             params,
@@ -127,7 +129,7 @@ class Controller:
             solver_cls=solver_cls,
             **solver_kwargs
         )
-        self.gait = np.array([[1, 1, 1, 1]] * (params.T + 1))
+        self.gait = np.array([[1, 1, 1, 1]] * (params.N_gait + 1))
         self.mpc_solved = False
         self.k_result = 0
         self.k_solve = 0
@@ -174,7 +176,7 @@ class Controller:
         else:
             self.target_base = np.zeros(3)
             self.target_footstep = self.target.compute(
-                self.k + self.params.T * self.params.mpc_wbc_ratio
+                self.k + self.params.N_gait * self.params.mpc_wbc_ratio
             )
 
         if self.k % self.params.mpc_wbc_ratio == 0:
@@ -363,14 +365,13 @@ class Controller:
         @param q_perfect 6D perfect position of the base in world frame
         @param v_baseVel_perfect 3D perfect linear velocity of the base in base frame
         """
-        footstep = self.params.footsteps_init
 
         if self.k < 2:
             self.estimator.initialize_IMU_Yaw()
 
         self.estimator.run(
             self.gait,
-            footstep.reshape((3, 4), order="F"),
+            self.default_footstep,
             device.imu.linear_acceleration,
             device.imu.gyroscope,
             device.imu.attitude_euler,

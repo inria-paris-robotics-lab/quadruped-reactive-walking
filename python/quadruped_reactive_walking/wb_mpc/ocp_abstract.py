@@ -29,6 +29,10 @@ class OCPAbstract(abc.ABC):
     def make_ocp(self, k, x0, footstep, base_task):
         pass
 
+    @abc.abstractstaticmethod
+    def get_type_str():
+        pass
+
     def get_active_feet(self, footstep, support_feet):
         """Get the positions for all the active feet."""
         feet_pos = ([], [])

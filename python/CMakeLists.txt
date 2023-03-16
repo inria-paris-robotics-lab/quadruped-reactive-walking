@@ -18,8 +18,13 @@ target_link_boost_python(${PY_LIB} PRIVATE)
 install(TARGETS ${PY_LIB} DESTINATION ${${PY_NAME}_INSTALL_DIR})
 
 set(${PY_NAME}_PYTHON
-    __init__.py controller.py main_solo12_control.py wbmpc_wrapper_abstract.py
-    wbmpc_wrapper_sync.py wbmpc_wrapper_multiprocess.py)
+    __init__.py
+    controller.py
+    main_solo12_control.py
+    wbmpc_wrapper_abstract.py
+    wbmpc_wrapper_sync.py
+    wbmpc_wrapper_multiprocess.py
+    wbmpc_wrapper_ros.py)
 
 set(${PY_NAME}_WB_MPC_PYTHON
     __init__.py
@@ -37,6 +42,7 @@ set(${PY_NAME}_TOOLS_PYTHON
     pybullet_sim.py
     Utils.py
     qualisys_client.py
+    ros_tools.py
     kinematics_utils.py
     meshcat_viewer.py
     Interpolator.py)

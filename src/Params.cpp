@@ -12,8 +12,9 @@ std::ostream &operator<<(std::ostream &oss, const OCPParams &p) {
   return oss;
 }
 
-Params::Params(const std::string &file_path)
-    : config_file(""),
+Params::Params()
+    : raw_str(""),
+      config_file(""),
       interface(""),
       DEMONSTRATION(false),
       SIMULATION(false),
@@ -81,20 +82,28 @@ Params::Params(const std::string &file_path)
       Fz_min(0.0),
       enable_comp_forces(false),
 
-      T_gait(0.0),         // Period of the gait
-      mass(0.0),           // Mass of the robot
-      I_mat(9, 0.0),       // Fill with zeros, will be filled with values later
-      CoM_offset(3, 0.0),  // Fill with zeros, will be filled with values later
+      T_gait(0.0),  // Period of the gait
       h_ref(0.0),
-      shoulders(12),       // Fill with zeros, will be filled with values later
-      footsteps_init(12),  // Fill with zeros, will be filled with values later
       footsteps_under_shoulders(
           12)  // Fill with zeros, will be filled with values later
 {
-  if (!file_path.empty()) initialize(expand_env(file_path));
+  q_init.setZero();
+  footsteps_under_shoulders.setZero();
 }
 
-void Params::initialize(const std::string &file_path) {
+Params Params::create_from_file(const std::string &file_path) {
+  Params params;
+  params.initialize_from_file(expand_env(file_path));
+  return params;
+}
+
+Params Params::create_from_str(const std::string &content) {
+  Params params;
+  params.initialize_from_str(content);
+  return params;
+}
+
+void Params::initialize_from_file(const std::string &file_path) {
   std::cout << "Loading params file " << file_path << std::endl;
   // Load YAML file
   assert_file_exists(file_path);
@@ -106,10 +115,30 @@ void Params::initialize(const std::string &file_path) {
   YAML::convert<Params>::decode(robot_node, *this);
   std::cout << "Loading robot config file " << config_file << std::endl;
 
-  shoulders.setZero();
-  footsteps_init.setZero();
-  footsteps_under_shoulders.setZero();
   mpc_wbc_ratio = (int)(dt_mpc / dt_wbc);
+
+  // Save the raw_str
+  YAML::Emitter emitter;
+  emitter << param;
+  raw_str.assign(emitter.c_str());
+}
+
+void Params::initialize_from_str(const std::string &content) {
+  // Load YAML file
+  YAML::Node param = YAML::Load(content);
+
+  // Check if YAML node is detected and retrieve it
+  assert_yaml_parsing(param, "[yamlstring]", "robot");
+  const YAML::Node &robot_node = param["robot"];
+  YAML::convert<Params>::decode(robot_node, *this);
+  std::cout << "Loading robot config file " << config_file << std::endl;
+
+  mpc_wbc_ratio = (int)(dt_mpc / dt_wbc);
+
+  // Save the raw_str
+  YAML::Emitter emitter;
+  emitter << param;
+  raw_str.assign(emitter.c_str());
 }
 
 namespace YAML {
@@ -141,6 +170,9 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
 
   assert_yaml_parsing(robot_node, "robot", "q_init");
   YAML::convert<VectorN>::decode(robot_node["q_init"], rhs.q_init);
+
+  assert_yaml_parsing(robot_node, "robot", "h_ref");
+  rhs.h_ref = robot_node["h_ref"].as<double>();
 
   assert_yaml_parsing(robot_node, "robot", "dt_mpc");
   rhs.dt_mpc = robot_node["dt_mpc"].as<double>();
@@ -364,7 +396,7 @@ void Params::convert_gait_vec() {
   }
 
   // Get the number of lines in the gait matrix
-  int N_gait = 0;
+  N_gait = 0;
   for (uint i = 0; i < gait_vec.size() / 5; i++) {
     N_gait += gait_vec[5 * i];
   }

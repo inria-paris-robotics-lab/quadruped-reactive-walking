@@ -68,8 +68,8 @@ class LoggerControl:
         self.v_estimate = np.zeros([size, self.pd.nv])
         self.q_filtered = np.zeros([size, self.pd.nq])
         self.v_filtered = np.zeros([size, self.pd.nv])
-        self.ocp_xs = np.zeros([size, params.T + 1, self.pd.nx])
-        self.ocp_us = np.zeros([size, params.T, self.pd.nu])
+        self.ocp_xs = np.zeros([size, params.N_gait + 1, self.pd.nx])
+        self.ocp_us = np.zeros([size, params.N_gait, self.pd.nu])
         self.ocp_K = np.zeros([size, self.pd.nu, self.pd.ndx])
         self.ocp_num_iters = np.zeros([size], dtype=int)
         self.MPC_equivalent_Kp = np.zeros([size, self.pd.nu])
@@ -147,7 +147,7 @@ class LoggerControl:
         self.t_ocp_ddp[self.i] = controller.mpc_result.solving_duration
 
         if self.i == 0:
-            for i in range(self.params.T * self.params.mpc_wbc_ratio):
+            for i in range(self.params.N_gait * self.params.mpc_wbc_ratio):
                 self.target[i] = controller.footsteps[i // self.params.mpc_wbc_ratio][
                     :, 1
                 ]
@@ -157,16 +157,16 @@ class LoggerControl:
                 self.target_base_angular[i] = controller.base_refs[
                     i // self.params.mpc_wbc_ratio
                 ][3:]
-        if self.i + self.params.T * self.params.mpc_wbc_ratio < self.log_size:
+        if self.i + self.params.N_gait * self.params.mpc_wbc_ratio < self.log_size:
             self.target[
-                self.i + self.params.T * self.params.mpc_wbc_ratio
+                self.i + self.params.N_gait * self.params.mpc_wbc_ratio
             ] = controller.target_footstep[:, 1]
             self.target_base_linear[
-                self.i + self.params.T * self.params.mpc_wbc_ratio
+                self.i + self.params.N_gait * self.params.mpc_wbc_ratio
             ] = controller.v_ref[:][:3]
 
             self.target_base_angular[
-                self.i + self.params.T * self.params.mpc_wbc_ratio
+                self.i + self.params.N_gait * self.params.mpc_wbc_ratio
             ] = controller.v_ref[:][3:]
 
         if not self.params.enable_multiprocessing:
@@ -526,15 +526,13 @@ if __name__ == "__main__":
     import os
     import argparse
     import quadruped_reactive_walking as qrw
-    from .Utils import init_robot
 
     sys.path.insert(0, os.getcwd())
 
     parser = argparse.ArgumentParser(description="Process logs.")
     parser.add_argument("--file", type=str, help="A valid log file path")
     args = parser.parse_args()
-    params = qrw.Params()
-    init_robot(params.q_init, params)
+    params = qrw.Params.create_from_file()
     pd = TaskSpec(params)
 
     today = datetime.now()

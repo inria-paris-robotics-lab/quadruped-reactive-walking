@@ -12,7 +12,7 @@ MAXITER = 1
 
 
 def createProblem():
-    params = qrw.Params()
+    params = qrw.Params.create_from_file()
     pd = TaskSpecFull(params)
     target = Target(params)
 

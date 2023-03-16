@@ -475,7 +475,9 @@ if __name__ == "__main__":
 
     from matplotlib import pyplot as plt
 
-    params = lqrw.Params()  # Object that holds all controller parameters
+    params = (
+        lqrw.Params.create_from_file()
+    )  # Object that holds all controller parameters
     params.predefined_vel = False
     joystick = Joystick(params)
     k = 0

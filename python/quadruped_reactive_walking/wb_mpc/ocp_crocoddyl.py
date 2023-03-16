@@ -58,6 +58,9 @@ class CrocOCP(OCPAbstract):
         if params.ocp.verbose:
             self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
 
+    def get_type_str():
+        return "croc"
+
     def initialize_models_from_gait(self, gait, footsteps=None, base_refs=None):
         """Create action models (problem stages) from a gait matrix and other optional data."""
         assert (footsteps is None) == (
@@ -70,9 +73,11 @@ class CrocOCP(OCPAbstract):
         for t in range(gait.shape[0]):
             support_feet = feet_ids[gait[t] == 1]
             feet_pos = (
-                self.get_active_feet(footsteps[t], support_feet) if footsteps else ()
+                self.get_active_feet(footsteps[t], support_feet)
+                if footsteps is not None
+                else ()
             )
-            base_pose = base_refs[t] if base_refs else []
+            base_pose = base_refs[t] if base_refs is not None else []
             has_switched = np.any(gait[t] != gait[t - 1])
             switch_matrix = gait[t] if has_switched else np.array([])
             switch_feet = feet_ids[switch_matrix == 1]
