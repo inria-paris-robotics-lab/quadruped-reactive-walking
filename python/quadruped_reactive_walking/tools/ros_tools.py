@@ -23,6 +23,14 @@ def multiarray_to_numpy_float64(ros_array):
     return np.array(ros_array.data).reshape(dims)
 
 
+def listof_numpy_to_multiarray_float64(list):
+    return numpy_to_multiarray_float64(np.array(list))
+
+
+def multiarray_to_listof_numpy_float64(ros_array):
+    return [el for el in multiarray_to_numpy_float64(ros_array)]
+
+
 class AsyncServiceProxy(object):
     """Asynchronous ROS service proxy
     Example 1:

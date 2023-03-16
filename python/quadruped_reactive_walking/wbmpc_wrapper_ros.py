@@ -8,13 +8,14 @@ from .wbmpc_wrapper_abstract import MPCWrapperAbstract, Result
 
 from typing import Type
 from threading import Lock
-import numpy as np
 
 import rospy
 from ros_qrw_wbmpc.srv import MPCInit, MPCInitResponse, MPCSolve, MPCSolveResponse
 from .tools.ros_tools import (
     numpy_to_multiarray_float64,
     multiarray_to_numpy_float64,
+    listof_numpy_to_multiarray_float64,
+    multiarray_to_listof_numpy_float64,
     AsyncServiceProxy,
 )
 
@@ -27,15 +28,12 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
     def __init__(
         self, params, footsteps, base_refs, solver_cls: Type[OCPAbstract], **kwargs
     ):
-        footsteps = np.array(footsteps)
-        base_refs = np.array(base_refs)
-
         self._result_lock = Lock()
         self.new_result: bool = False
         self.last_available_result: Result = Result(params)
 
-        base_refs_multiarray = numpy_to_multiarray_float64(base_refs)
-        footsteps_multiarray = numpy_to_multiarray_float64(footsteps)
+        base_refs_multiarray = listof_numpy_to_multiarray_float64(base_refs)
+        footsteps_multiarray = listof_numpy_to_multiarray_float64(footsteps)
 
         init_solver_srv = rospy.ServiceProxy("qrw_wbmpc/init", MPCInit)
         success = init_solver_srv(
@@ -56,8 +54,8 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
             x0=numpy_to_multiarray_float64(x0),
             footstep=numpy_to_multiarray_float64(footstep),
             base_ref=numpy_to_multiarray_float64(base_ref),
-            xs=numpy_to_multiarray_float64(np.array(xs if xs is not None else [])),
-            us=numpy_to_multiarray_float64(np.array(us if us is not None else [])),
+            xs=listof_numpy_to_multiarray_float64(xs if xs is not None else []),
+            us=listof_numpy_to_multiarray_float64(us if us is not None else []),
         )
 
     def _result_cb(self, fut):
@@ -135,10 +133,8 @@ class ROSMPCWrapperServer:
             multiarray_to_numpy_float64(msg.base_ref),
         )
 
-        # xs and us needs to be a list of arrays...
-        # Todo: change that ?
-        xs = [el for el in multiarray_to_numpy_float64(msg.xs)]
-        us = [el for el in multiarray_to_numpy_float64(msg.us)]
+        xs = multiarray_to_listof_numpy_float64(msg.xs)
+        us = multiarray_to_listof_numpy_float64(msg.us)
 
         self.ocp.solve(msg.k, xs, us)
 
@@ -146,9 +142,9 @@ class ROSMPCWrapperServer:
 
         return MPCSolveResponse(
             gait=numpy_to_multiarray_float64(result[0]),
-            xs=numpy_to_multiarray_float64(np.array(result[1])),
-            us=numpy_to_multiarray_float64(np.array(result[2])),
-            K=numpy_to_multiarray_float64(np.array(result[3])),
+            xs=listof_numpy_to_multiarray_float64(result[1]),
+            us=listof_numpy_to_multiarray_float64(result[2]),
+            K=listof_numpy_to_multiarray_float64(result[3]),
             solving_duration=result[4],
             # num_iters        = result[5],
         )
