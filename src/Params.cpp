@@ -90,6 +90,7 @@ void Params::initialize_from_file(const std::string &file_path) {
   const YAML::Node &robot_node = param["robot"];
   YAML::convert<Params>::decode(robot_node, *this);
   std::cout << "Loading robot config file " << config_file << std::endl;
+  task = param["task"];
 
   mpc_wbc_ratio = (int)(dt_mpc / dt_wbc);
 
@@ -108,6 +109,7 @@ void Params::initialize_from_str(const std::string &content) {
   const YAML::Node &robot_node = param["robot"];
   YAML::convert<Params>::decode(robot_node, *this);
   std::cout << "Loading robot config file " << config_file << std::endl;
+  task = param["task"];
 
   mpc_wbc_ratio = (int)(dt_mpc / dt_wbc);
 

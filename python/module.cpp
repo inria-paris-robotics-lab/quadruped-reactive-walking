@@ -1,4 +1,5 @@
 #include "bindings/python.hpp"
+#include "bindings/yaml-node.hpp"
 #include "qrw/Types.h"
 
 BOOST_PYTHON_MODULE(quadruped_reactive_walking_pywrap) {
@@ -9,6 +10,8 @@ BOOST_PYTHON_MODULE(quadruped_reactive_walking_pywrap) {
 
   eigenpy::enableEigenPySpecific<Vector6>();
   eigenpy::enableEigenPySpecific<RowMatrix6N>();
+
+  qrw::YamlNodeToPython::registration();
 
   exposeAnimators();
   exposeParams();

@@ -2,6 +2,8 @@
 
 #include "bindings/python.hpp"
 
+namespace qrw {
+
 struct params_pickle_suite : bp::pickle_suite {
   static bp::tuple getinitargs(Params const &) { return bp::tuple(); }
 
@@ -16,6 +18,10 @@ struct params_pickle_suite : bp::pickle_suite {
     p.initialize_from_str(str);
   }
 };
+
+}  // namespace qrw
+
+constexpr auto rvp_by_value = bp::return_value_policy<bp::return_by_value>();
 
 void exposeParams() {
   bp::class_<Params>("Params", bp::init<>("self"))
@@ -33,7 +39,7 @@ void exposeParams() {
            bp::args("self", "content"),
            "Initialize Params from Python with a yaml string.\n")
 
-      .def_pickle(params_pickle_suite())
+      .def_pickle(qrw::params_pickle_suite())
       // Read Params from Python
       .def_readonly("raw_str", &Params::raw_str)
       .def_readwrite("config_file", &Params::config_file)
@@ -78,7 +84,8 @@ void exposeParams() {
       .def_readwrite("N_gait", &Params::N_gait)
       .def_readwrite("h_ref", &Params::h_ref)
       .def_readwrite("footsteps_under_shoulders",
-                     &Params::footsteps_under_shoulders);
+                     &Params::footsteps_under_shoulders)
+      .add_property("task", bp::make_getter(&Params::task, rvp_by_value));
 
   bp::class_<OCPParams>("OCPParams", bp::no_init)
       .def_readwrite("num_threads", &OCPParams::num_threads)

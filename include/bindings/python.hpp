@@ -5,6 +5,8 @@
 
 namespace bp = boost::python;
 
+namespace qrw {}
+
 void exposeAnimators();
 void exposeParams();
 void exposeEstimator();

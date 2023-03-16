@@ -160,6 +160,8 @@ struct Params {
   Scalar h_ref;                       // Reference height for the base
   VectorN footsteps_under_shoulders;  // Positions of footsteps to
                                       // be "under the shoulder"
+
+  YAML::Node task;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

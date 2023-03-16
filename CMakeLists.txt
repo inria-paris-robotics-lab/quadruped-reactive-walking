@@ -65,6 +65,7 @@ endif()
 # Main Library
 set(${PROJECT_NAME}_HEADERS
     include/bindings/python.hpp
+    include/bindings/yaml-node.hpp
     include/qrw/Types.h
     include/qrw/Params.hpp
     include/qrw/yaml-eigen.hpp
