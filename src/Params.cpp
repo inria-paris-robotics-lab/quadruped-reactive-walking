@@ -26,10 +26,10 @@ Params::Params()
       N_SIMULATION(0),
       enable_pyb_GUI(false),
       enable_corba_viewer(false),
-      asynchronous_mpc(false),
-      mpc_in_rosnode(false),
       perfect_estimator(false),
       use_qualisys(false),
+      asynchronous_mpc(false),
+      mpc_in_rosnode(false),
 
       q_init(12),  // Fill with zeros, will be filled with values later
       dt_wbc(0.0),
