@@ -84,8 +84,8 @@ class Controller:
         self.q_security = np.array([1.2, 2.1, 3.14] * 4)
 
         self.params = params
-        self.pd = TaskSpec(params)
-        self.rdata = self.pd.create_rdata()
+        self.task = TaskSpec(params)
+        self.rdata = self.task.create_rdata()
 
         self.k = 0
         self.error = False
@@ -101,8 +101,8 @@ class Controller:
         self.q = np.zeros(18)
 
         self.result = Result(params)
-        self.result.q_des = self.pd.q0[7:].copy()
-        self.result.v_des = self.pd.v0[6:].copy()
+        self.result.q_des = self.task.q0[7:].copy()
+        self.result.v_des = self.task.v0[6:].copy()
 
         self.target = Target(params)
         self.footsteps, self.base_refs = make_footsteps_and_refs(
@@ -142,7 +142,7 @@ class Controller:
         self.k_result = 0
         self.k_solve = 0
         if self.params.interpolate_mpc:
-            self.interpolator = Interpolator(params, self.pd.x0)
+            self.interpolator = Interpolator(params, self.task.x0)
         try:
             filename = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
             self.xs_init = list(filename["xs"])
@@ -300,12 +300,12 @@ class Controller:
             if self.clamp(self.result.q_des[3 * i + 1], -hip_max, hip_max):
                 print("Clamping hip n " + str(i))
                 self.error = set_error
-            if self.pd.q0[7 + 3 * i + 2] >= 0.0 and self.clamp(
+            if self.task.q0[7 + 3 * i + 2] >= 0.0 and self.clamp(
                 self.result.q_des[3 * i + 2], knee_min
             ):
                 print("Clamping knee n " + str(i))
                 self.error = set_error
-            elif self.pd.q0[7 + 3 * i + 2] <= 0.0 and self.clamp(
+            elif self.task.q0[7 + 3 * i + 2] <= 0.0 and self.clamp(
                 self.result.q_des[3 * i + 2], max_value=-knee_min
             ):
                 print("Clamping knee n " + str(i))
@@ -433,11 +433,11 @@ class Controller:
         x_diff = np.concatenate(
             [
                 pin.difference(
-                    self.pd.model,
-                    self.x_estim[: self.pd.nq],
-                    self.mpc_result.xs[0][: self.pd.nq],
+                    self.task.model,
+                    self.x_estim[: self.task.nq],
+                    self.mpc_result.xs[0][: self.task.nq],
                 ),
-                self.mpc_result.xs[0][self.pd.nq :] - self.x_estim[self.pd.nq :],
+                self.mpc_result.xs[0][self.task.nq :] - self.x_estim[self.task.nq :],
             ]
         )
         tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
@@ -452,10 +452,10 @@ class Controller:
         v0 = self.v_estimate.copy()
         tau = np.concatenate([np.zeros(6), self.result.tau_ff.copy()])
 
-        a = pin.aba(self.pd.model, self.rdata, q0, v0, tau)
+        a = pin.aba(self.task.model, self.rdata, q0, v0, tau)
 
         v = v0 + a * self.params.dt_wbc
-        q = pin.integrate(self.pd.model, q0, v * self.params.dt_wbc)
+        q = pin.integrate(self.task.model, q0, v * self.params.dt_wbc)
 
         return q[7:], v[6:]
 
@@ -488,7 +488,7 @@ class Controller:
                 ]
                 axs[0, foot].legend(legend)
                 axs[0, foot].set_title(
-                    "Joint positions for " + self.pd.feet_names[foot]
+                    "Joint positions for " + self.task.feet_names[foot]
                 )
 
                 [
@@ -498,7 +498,9 @@ class Controller:
                     for joint in range(3)
                 ]
                 axs[1, foot].legend(legend)
-                axs[1, foot].set_title("Joint velocity for " + self.pd.feet_names[foot])
+                axs[1, foot].set_title(
+                    "Joint velocity for " + self.task.feet_names[foot]
+                )
 
                 [
                     axs[2, foot].plot(np.array(self.mpc_result.us)[:, 3 * foot + joint])
@@ -506,7 +508,7 @@ class Controller:
                 ]
                 axs[2, foot].legend(legend)
                 axs[2, foot].set_title(
-                    "Joint torques for foot " + self.pd.feet_names[foot]
+                    "Joint torques for foot " + self.task.feet_names[foot]
                 )
 
         plt.show()
