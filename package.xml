@@ -1,8 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <package format="3">
     <version>0.0.1</version>
+    <description>A package for reactive walking on Solo using model-predictive control.</description>
     <name>quadruped-reactive-walking</name>
+    <maintainer email="etienne.arlaud@inria.fr">Etienne Arlaud</maintainer>
+    <maintainer email="wjallet@laas.fr">Wilson Jallet</maintainer>
+    <license>tbd</license>
+
+    <build_depend>git</build_depend>
     <depend>eigenpy</depend>
     <depend>pinocchio</depend>
+    <depend>sobec</depend>
+    <depend>crocoddyl</depend>
     <depend>yaml-cpp</depend>
+
+    <buildtool_depend>cmake</buildtool_depend>
+    <export>
+        <build_type>cmake</build_type>
+    </export>
 </package>
