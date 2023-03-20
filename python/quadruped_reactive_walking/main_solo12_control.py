@@ -49,7 +49,7 @@ try:
     repo = git.Repo(search_parent_directories=True)
     sha = repo.head.object.hexsha
     msg = repo.head.object.message + "\nCommit: " + sha
-except ValueError:
+except Exception:
     msg = "\nCommit not found"
 
 
