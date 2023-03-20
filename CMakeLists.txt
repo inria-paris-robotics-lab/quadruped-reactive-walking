@@ -9,6 +9,7 @@ set(PROJECT_URL https://gitlab.laas.fr/${PROJECT_NAMESPACE}/${PROJECT_NAME})
 # JRL-cmakemodule setup
 include(cmake/base.cmake)
 include(cmake/boost.cmake)
+include(cmake/apple.cmake)
 include(CMakeDependentOption)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -45,6 +46,7 @@ set(CXX_DISABLE_WERROR True)
 compute_project_args(PROJECT_ARGS LANGUAGES CXX)
 project(${PROJECT_NAME} ${PROJECT_ARGS})
 check_minimal_cxx_standard(11 REQUIRED)
+apply_default_apple_configuration()
 
 # Project dependencies
 set(BOOST_COMPONENTS unit_test_framework)
