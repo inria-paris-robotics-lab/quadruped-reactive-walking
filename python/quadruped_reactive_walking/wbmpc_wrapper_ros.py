@@ -10,7 +10,14 @@ from typing import Type
 from threading import Lock
 
 import rospy
-from ros_qrw_wbmpc.srv import MPCInit, MPCInitResponse, MPCSolve, MPCSolveResponse
+from ros_qrw_wbmpc.srv import (
+    MPCInit,
+    MPCInitResponse,
+    MPCSolve,
+    MPCSolveResponse,
+    MPCStop,
+    MPCStopResponse,
+)
 from .tools.ros_tools import (
     numpy_to_multiarray_float64,
     multiarray_to_numpy_float64,
@@ -76,18 +83,13 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
         self._parse_result(msg)
 
     def _parse_result(self, msg):
+        assert msg.run_success, "Error while runnning solver on server"
         with self._result_lock:
             self.new_result = True
             self.last_available_result.gait = multiarray_to_numpy_float64(msg.gait)
-            self.last_available_result.xs = [
-                el for el in multiarray_to_numpy_float64(msg.xs)
-            ]
-            self.last_available_result.us = [
-                el for el in multiarray_to_numpy_float64(msg.us)
-            ]
-            self.last_available_result.K = [
-                el for el in multiarray_to_numpy_float64(msg.K)
-            ]
+            self.last_available_result.xs = multiarray_to_listof_numpy_float64(msg.xs)
+            self.last_available_result.us = multiarray_to_listof_numpy_float64(msg.us)
+            self.last_available_result.K = multiarray_to_listof_numpy_float64(msg.K)
             self.last_available_result.solving_duration = msg.solving_duration
             self.last_available_result.num_iters = msg.num_iters
 
@@ -103,8 +105,11 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
         return self.last_available_result
 
     def stop_parallel_loop(self):
-        # rospy.pub("Kill")
-        pass  # Do nothing since it is single threaded
+        stop_solver_srv = rospy.ServiceProxy("qrw_wbmpc/stop", MPCStop)
+        res = stop_solver_srv()
+        assert (
+            res.success
+        ), "Unable to stop the MPC server. (Most probably stopped already)"
 
 
 class ROSMPCWrapperServer:
@@ -116,12 +121,14 @@ class ROSMPCWrapperServer:
         self._solve_service = rospy.Service(
             "qrw_wbmpc/solve", MPCSolve, self._trigger_solve
         )
+        self._stop_service = rospy.Service(
+            "qrw_wbmpc/stop", MPCStop, self._trigger_stop
+        )
 
     def _trigger_init(self, msg):
         if self.is_init:
             return MPCInitResponse(False)
 
-        self.is_init = True
         self.params = Params.create_from_str(msg.params)
         self.pd = TaskSpec(self.params)
         self.T = self.params.N_gait
@@ -137,9 +144,13 @@ class ROSMPCWrapperServer:
 
         self.last_available_result: Result = Result(self.params)
 
+        self.is_init = True
         return MPCInitResponse(True)
 
     def _trigger_solve(self, msg):
+        if not self.is_init:
+            return MPCSolveResponse(run_success=False)
+
         self.ocp.make_ocp(
             msg.k,
             multiarray_to_numpy_float64(msg.x0),
@@ -155,13 +166,19 @@ class ROSMPCWrapperServer:
         result = self.ocp.get_results()
 
         return MPCSolveResponse(
+            run_success=True,
             gait=numpy_to_multiarray_float64(result[0]),
             xs=listof_numpy_to_multiarray_float64(result[1]),
             us=listof_numpy_to_multiarray_float64(result[2]),
             K=listof_numpy_to_multiarray_float64(result[3]),
             solving_duration=result[4],
-            # num_iters        = result[5],
         )
+
+    def _trigger_stop(self, msg):
+        if not self.is_init:
+            return MPCStopResponse(False)
+        self.is_init = False
+        return MPCStopResponse(True)
 
 
 if __name__ == "__main__":
