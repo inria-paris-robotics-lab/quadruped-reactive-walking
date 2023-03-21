@@ -259,14 +259,12 @@ class Estimator {
   Vector4 feetStatus_;               // Contact status of the four feet
   Matrix34 feetTargets_;             // Target positions of the four feet
 
-  pinocchio::Model velocityModel_,
-      positionModel_;  // Pinocchio models for frame computations and forward
-                       // kinematics
-  pinocchio::Data velocityData_,
-      positionData_;  // Pinocchio datas for frame computations and forward
-                      // kinematics
-  Vector19 q_FK_;     // Configuration vector for Forward Kinematics
-  Vector18 v_FK_;     // Velocity vector for Forward Kinematics
+  pinocchio::Model model_;  // Pinocchio models for frame computations and
+                            // forward kinematics
+  pinocchio::Data data_;  // Pinocchio datas for frame computations and forward
+                          // kinematics
+  Vector19 q_FK_;         // Configuration vector for Forward Kinematics
+  Vector18 v_FK_;         // Velocity vector for Forward Kinematics
   Vector3
       baseVelocityFK_;  // Base linear velocity estimated by Forward Kinematics
   Vector3 basePositionFK_;  // Base position estimated by Forward Kinematics

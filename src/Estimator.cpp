@@ -83,19 +83,12 @@ void Estimator::initialize(Params &params) {
   const std::string filename = std::string(
       EXAMPLE_ROBOT_DATA_MODEL_DIR "/solo_description/robots/solo12.urdf");
   pinocchio::urdf::buildModel(filename, pinocchio::JointModelFreeFlyer(),
-                              velocityModel_, false);
-  pinocchio::urdf::buildModel(filename, pinocchio::JointModelFreeFlyer(),
-                              positionModel_, false);
-  velocityData_ = pinocchio::Data(velocityModel_);
-  positionData_ = pinocchio::Data(positionModel_);
-  pinocchio::computeAllTerms(velocityModel_, velocityData_, qEstimate_,
-                             vEstimate_);
-  pinocchio::computeAllTerms(positionModel_, positionData_, qEstimate_,
-                             vEstimate_);
-  feetFrames_ << (int)positionModel_.getFrameId("FL_FOOT"),
-      (int)positionModel_.getFrameId("FR_FOOT"),
-      (int)positionModel_.getFrameId("HL_FOOT"),
-      (int)positionModel_.getFrameId("HR_FOOT");
+                              model_, false);
+  data_ = pinocchio::Data(model_);
+  pinocchio::computeAllTerms(model_, data_, qEstimate_, vEstimate_);
+  feetFrames_ << (int)model_.getFrameId("FL_FOOT"),
+      (int)model_.getFrameId("FR_FOOT"), (int)model_.getFrameId("HL_FOOT"),
+      (int)model_.getFrameId("HR_FOOT");
 }
 
 void Estimator::run(MatrixN const &gait, MatrixN const &feetTargets,
@@ -197,10 +190,9 @@ void Estimator::updateForwardKinematics() {
   q_FK_.tail(12) = qActuators_;
   v_FK_.tail(12) = vActuators_;
   q_FK_.segment(3, 4) << 0., 0., 0., 1.;
-  pinocchio::forwardKinematics(velocityModel_, velocityData_, q_FK_, v_FK_);
+  pinocchio::forwardKinematics(model_, data_, q_FK_, v_FK_);
 
   q_FK_.segment(3, 4) = IMUQuat_.coeffs();
-  pinocchio::forwardKinematics(positionModel_, positionData_, q_FK_);
 
   int nContactFeet = 0;
   Vector3 baseVelocityEstimate = Vector3::Zero();
@@ -220,12 +212,11 @@ void Estimator::updateForwardKinematics() {
 }
 
 Vector3 Estimator::computeBaseVelocityFromFoot(int footId) {
-  pinocchio::updateFramePlacement(velocityModel_, velocityData_,
-                                  (uint)feetFrames_[footId]);
-  pinocchio::SE3 contactFrame = velocityData_.oMf[(uint)feetFrames_[footId]];
+  pinocchio::updateFramePlacement(model_, data_, (uint)feetFrames_[footId]);
+  pinocchio::SE3 contactFrame = data_.oMf[(uint)feetFrames_[footId]];
   Vector3 frameVelocity =
-      pinocchio::getFrameVelocity(velocityModel_, velocityData_,
-                                  (uint)feetFrames_[footId], pinocchio::LOCAL)
+      pinocchio::getFrameVelocity(model_, data_, (uint)feetFrames_[footId],
+                                  pinocchio::LOCAL)
           .linear();
   frameVelocity(0) +=
       footRadius_ * (vActuators_(1 + 3 * footId) + vActuators_(2 + 3 * footId));
@@ -234,10 +225,8 @@ Vector3 Estimator::computeBaseVelocityFromFoot(int footId) {
 }
 
 Vector3 Estimator::computeBasePositionFromFoot(int footId) {
-  pinocchio::updateFramePlacement(positionModel_, positionData_,
-                                  (uint)feetFrames_[footId]);
-  Vector3 basePosition =
-      -positionData_.oMf[(uint)feetFrames_[footId]].translation();
+  pinocchio::updateFramePlacement(model_, data_, (uint)feetFrames_[footId]);
+  Vector3 basePosition = -data_.oMf[(uint)feetFrames_[footId]].translation();
 
   return basePosition;
 }
