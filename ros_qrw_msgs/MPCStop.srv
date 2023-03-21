@@ -1,0 +1,3 @@
+---
+# The solver has been successfully stopped
+bool success # (False most probably means that the solver was not running in the first place)

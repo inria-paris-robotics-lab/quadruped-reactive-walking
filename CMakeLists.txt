@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 
 # Project properties
 set(PROJECT_NAMESPACE gepetto)
-set(PROJECT_NAME quadruped-reactive-walking)
+set(PROJECT_NAME quadruped_reactive_walking)
 set(PROJECT_DESCRIPTION "Reactive walking control architecture for quadrupeds")
 set(PROJECT_URL https://gitlab.laas.fr/${PROJECT_NAMESPACE}/${PROJECT_NAME})
 
@@ -33,6 +33,7 @@ cmake_dependent_option(
 option(SUFFIX_SO_VERSION "Suffix library name with its version" ON)
 set(INSTALL_DOCUMENTATION OFF)
 option(BUILD_WITH_MQTT_SUPPORT "Add support for MQTT interface" OFF)
+option(BUILD_WITH_ROS_SUPPORT "Add support for running MPC on a separate rosnode" OFF)
 
 # Project configuration
 if(NOT INSTALL_PYTHON_INTERFACE_ONLY)
@@ -47,6 +48,12 @@ compute_project_args(PROJECT_ARGS LANGUAGES CXX)
 project(${PROJECT_NAME} ${PROJECT_ARGS})
 check_minimal_cxx_standard(11 REQUIRED)
 apply_default_apple_configuration()
+
+if(BUILD_WITH_ROS_SUPPORT)
+  find_package(catkin REQUIRED message_generation std_msgs)
+  add_service_files(DIRECTORY ros_qrw_msgs FILES MPCInit.srv MPCSolve.srv MPCStop.srv)
+  generate_messages(DEPENDENCIES std_msgs)
+endif()
 
 # Project dependencies
 set(BOOST_COMPONENTS unit_test_framework)

@@ -10,7 +10,7 @@ from typing import Type
 from threading import Lock
 
 import rospy
-from ros_qrw_wbmpc.srv import (
+from quadruped_reactive_walking.srv import (
     MPCInit,
     MPCInitResponse,
     MPCSolve,

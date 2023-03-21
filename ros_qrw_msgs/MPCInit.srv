@@ -1,0 +1,15 @@
+# Solver type to use
+string solver_type
+
+# Parameters of the problem
+string params
+
+# Gait
+std_msgs/Float64MultiArray footsteps
+
+# Base reference speed
+std_msgs/Float64MultiArray base_refs
+
+---
+
+bool success

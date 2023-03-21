@@ -1,0 +1,35 @@
+# Iterate
+int64 k
+
+# Initial conditions
+std_msgs/Float64MultiArray x0
+
+# Gait
+std_msgs/Float64MultiArray footstep
+
+# Base reference speed
+std_msgs/Float64MultiArray base_ref
+
+# Warm-start
+std_msgs/Float64MultiArray xs
+std_msgs/Float64MultiArray us
+
+---
+# The solver has been run successfully
+bool run_success
+
+# Gait
+std_msgs/Float64MultiArray gait
+
+# Start state used
+std_msgs/Float64MultiArray xs
+
+# Solution
+std_msgs/Float64MultiArray us
+
+# Feedback gains
+std_msgs/Float64MultiArray K
+
+# Some info about the solve
+float64 solving_duration
+int64 num_iters
