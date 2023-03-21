@@ -174,6 +174,8 @@ class AlgtrOCPProx(AlgtrOCPAbstract):
         tolerance = 1e-3  # todo: move to params
         self.prox_ddp = proxddp.SolverProxDDP(tolerance, mu_init, 0.0)
         self.prox_ddp.reg_init = 1e-8
+        self.prox_ddp.ldlt_algo_choice = proxddp.LDLT_DENSE
+        self.prox_ddp.max_refinement_steps = 0
         print(Fore.RESET)
         super().__init__(params, footsteps, base_refs)
 
