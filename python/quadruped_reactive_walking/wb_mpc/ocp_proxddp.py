@@ -84,14 +84,14 @@ class AlgtrOCPAbstract(CrocOCP):
         self.prox_ddp.run(self.my_problem, xs, us)
 
         # compute proxddp's criteria
-        ws = self.prox_ddp.getWorkspace()
+        ws = self.prox_ddp.workspace
         if hasattr(ws, "Qus_ddp"):
             Qus = ws.Qus_ddp
         else:
             Qus = [q.Qu for q in ws.q_params]
         prox_norm_2 = sum(q.dot(q) for q in Qus)
 
-        res = self.prox_ddp.getResults()
+        res = self.prox_ddp.results
         prox_norm_inf = max(res.primal_infeas, res.dual_infeas)
         self.prox_stops.append(prox_norm_inf)
         self.prox_stops_2.append(prox_norm_2)
@@ -109,12 +109,12 @@ class AlgtrOCPAbstract(CrocOCP):
 
         sm = proxddp.croc.ActionModelWrapper(action_model)
         self.my_problem.replaceStageCircular(sm)
-        ws = self.prox_ddp.getWorkspace()
+        ws = self.prox_ddp.workspace
         ws.cycle_append(sm)
 
     def get_results(self):
-        res = self.prox_ddp.getResults()
-        ws = self.prox_ddp.getWorkspace()  # noqa
+        res = self.prox_ddp.results
+        ws = self.prox_ddp.workspace  # noqa
         feedbacks = [-K.copy() for K in res.controlFeedbacks()]
         xs = res.xs.tolist()
         us = res.us.tolist()
