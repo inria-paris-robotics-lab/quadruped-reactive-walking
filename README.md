@@ -8,7 +8,6 @@ Implementation of a reactive walking controller for quadruped robots. Architectu
 
 * [Pinocchio](https://github.com/stack-of-tasks/pinocchio)
 * [Crocoddyl](https://github.com/loco-3d/crocoddyl)
-* Gepetto Viewer: `sudo apt install robotpkg-py36-qt4-gepetto-viewer-corba`
 * [example-robot-data](https://github.com/Gepetto/example-robot-data) | apt: `sudo apt install robotpkg-example-robot-data`
 * Install Scipy, Numpy, Matplotlib, IPython
 * [Sobec](https://github.com/MeMory-of-MOtion/sobec)

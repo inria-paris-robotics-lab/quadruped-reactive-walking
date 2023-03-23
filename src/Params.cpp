@@ -25,7 +25,6 @@ Params::Params()
       predefined_vel(false),
       N_SIMULATION(0),
       enable_pyb_GUI(false),
-      enable_corba_viewer(false),
       perfect_estimator(false),
       use_qualisys(false),
       asynchronous_mpc(false),
@@ -179,9 +178,6 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
 
   assert_yaml_parsing(robot_node, "robot", "enable_pyb_GUI");
   rhs.enable_pyb_GUI = robot_node["enable_pyb_GUI"].as<bool>();
-
-  assert_yaml_parsing(robot_node, "robot", "enable_corba_viewer");
-  rhs.enable_corba_viewer = robot_node["enable_corba_viewer"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "asynchronous_mpc");
   rhs.asynchronous_mpc = robot_node["asynchronous_mpc"].as<bool>();

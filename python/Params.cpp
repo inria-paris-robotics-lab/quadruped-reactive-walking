@@ -75,7 +75,6 @@ void exposeParams() {
       .def("set_v_switch", &Params::set_v_switch, bp::args("self", "v_switch"),
            "Set v_switch matrix from Python.\n")
       .def_readwrite("enable_pyb_GUI", &Params::enable_pyb_GUI)
-      .def_readwrite("enable_corba_viewer", &Params::enable_corba_viewer)
       .def_readwrite("asynchronous_mpc", &Params::asynchronous_mpc)
       .def_readwrite("mpc_in_rosnode", &Params::mpc_in_rosnode)
       .def_readwrite("perfect_estimator", &Params::perfect_estimator)

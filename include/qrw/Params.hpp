@@ -100,17 +100,15 @@ struct Params {
                        // experiment
   int env_id;  // Identifier of the environment to choose in which one the
                // simulation will happen
-  bool use_flat_plane;  // If True the ground is flat, otherwise it has bumps
-  bool predefined_vel;  // If we are using a predefined reference velocity
-                        // (True) or a joystick (False)
-  int N_SIMULATION;     // Number of simulated wbc time steps
-  bool enable_pyb_GUI;  // Enable/disable PyBullet GUI
-  bool enable_corba_viewer;  // Enable/disable Corba Viewer
-                             // process in parallel of the main loop
-  bool perfect_estimator;    // Enable/disable perfect estimator by using data
-                             // directly from PyBullet
-  bool use_qualisys;         // Enable/disable mocap
-  OCPParams ocp;             // OCP parameters
+  bool use_flat_plane;     // If True the ground is flat, otherwise it has bumps
+  bool predefined_vel;     // If we are using a predefined reference velocity
+                           // (True) or a joystick (False)
+  int N_SIMULATION;        // Number of simulated wbc time steps
+  bool enable_pyb_GUI;     // Enable/disable PyBullet GUI
+  bool perfect_estimator;  // Enable/disable perfect estimator by using data
+                           // directly from PyBullet
+  bool use_qualisys;       // Enable/disable mocap
+  OCPParams ocp;           // OCP parameters
 
   bool asynchronous_mpc;  // Run the MPC in an asynchronous process parallel of
                           // the main loop

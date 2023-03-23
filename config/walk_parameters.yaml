@@ -12,7 +12,6 @@ robot:
     use_flat_plane: true  # If True the ground is flat, otherwise it has bumps
     predefined_vel: true  # If we are using a predefined reference velocity (True) or a joystick (False)
     N_SIMULATION: 80000  # Number of simulated wbc time steps
-    enable_corba_viewer: false  # Enable/disable Corba Viewer
     perfect_estimator: false  # Enable/disable perfect estimator by using data directly from PyBullet
     use_qualisys: false
     ocp:
@@ -66,8 +65,6 @@ robot:
 
     # Parameters fro solo3D simulation
     solo3D: false  # Activation of the 3D environment, and corresponding planner blocks
-    environment_URDF: "/short_bricks/short_bricks.urdf"
-    environment_heightmap: "/short_bricks/short_bricks.bin"
 
 task:
   mu: 0.4
