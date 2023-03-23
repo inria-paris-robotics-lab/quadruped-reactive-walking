@@ -90,6 +90,7 @@ class LoggerControl:
     def sample(self, controller: Controller, device, qualisys=None):
         # Logging from the device (data coming from the robot)
         params: qrw.Params = controller.params
+        self.solver_cls = controller.mpc.ocp.__class__.get_type_str()
         self.q_mes[self.i] = device.joints.positions
         self.v_mes[self.i] = device.joints.velocities
         self.baseOrientation[self.i] = device.imu.attitude_euler
@@ -421,6 +422,7 @@ class LoggerControl:
 
         np.savez_compressed(
             name,
+            solver_cls=self.solver_cls,
             target=self.target,
             target_base_linear=self.target_base_linear,
             target_base_angular=self.target_base_angular,
@@ -473,6 +475,7 @@ class LoggerControl:
             print("No data file loaded. Need one in the constructor.")
             return
 
+        self.solver_cls = self.data["solver_cls"]
         # Load sensors arrays
         self.target = self.data["target"]
         self.target_base_linear = self.data["target_base_linear"]
