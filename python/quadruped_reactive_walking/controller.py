@@ -81,11 +81,13 @@ class Controller:
             q_init (array): initial position of actuators
             t (float): time of the simulation
         """
+        import crocoddyl
         self.q_security = np.array([1.2, 2.1, 3.14] * 4)
 
         self.params = params
         self.task = TaskSpec(params)
         self.rdata = self.task.create_rdata()
+        self.state = crocoddyl.StateMultibody(self.task.model)
 
         self.k = 0
         self.error = False
@@ -430,16 +432,7 @@ class Controller:
         """
         Compute the feedforward torque using ricatti gains
         """
-        x_diff = np.concatenate(
-            [
-                pin.difference(
-                    self.task.model,
-                    self.x_estim[: self.task.nq],
-                    self.mpc_result.xs[0][: self.task.nq],
-                ),
-                self.mpc_result.xs[0][self.task.nq :] - self.x_estim[self.task.nq :],
-            ]
-        )
+        x_diff = self.state.diff(self.x_estim, self.mpc_result.xs[0])
         tau = self.mpc_result.us[0] + np.dot(self.mpc_result.K[0], x_diff)
         return tau
 
