@@ -38,6 +38,7 @@ struct OCPParams {
   uint max_iter;
   uint init_max_iters;
   bool verbose;
+  double tol;
 };
 
 std::ostream &operator<<(std::ostream &oss, const OCPParams &p);

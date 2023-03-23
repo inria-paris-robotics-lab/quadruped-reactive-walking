@@ -151,8 +151,7 @@ class AlgtrOCPFDDP(AlgtrOCPAbstract):
         base_refs,
     ):
         print(Fore.BLUE + "[using SolverFDDP]")
-        tolerance = 1e-3  # todo: move to params
-        self.prox_ddp = proxddp.SolverFDDP(tolerance)
+        self.prox_ddp = proxddp.SolverFDDP(params.ocp.tol)
         print(Fore.RESET)
         super().__init__(params, footsteps, base_refs)
 
@@ -171,9 +170,8 @@ class AlgtrOCPProx(AlgtrOCPAbstract):
     ):
         print(Fore.GREEN + "[using SolverProxDDP]")
         mu_init = 1e-9
-        tolerance = 1e-3  # todo: move to params
-        self.prox_ddp = proxddp.SolverProxDDP(tolerance, mu_init, 0.0)
-        self.prox_ddp.reg_init = 1e-8
+        self.prox_ddp = proxddp.SolverProxDDP(params.ocp.tol, mu_init, 0.0)
+        self.prox_ddp.reg_init = 1e-9
         self.prox_ddp.ldlt_algo_choice = proxddp.LDLT_DENSE
         self.prox_ddp.max_refinement_steps = 0
         print(Fore.RESET)

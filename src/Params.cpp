@@ -126,6 +126,7 @@ bool convert<OCPParams>::decode(const Node &node, OCPParams &rhs) {
   rhs.max_iter = node["max_iter"].as<uint>();
   rhs.init_max_iters = node["init_max_iters"].as<uint>();
   rhs.verbose = node["verbose"].as<bool>();
+  rhs.tol = node["tol"].as<double>();
   return true;
 }
 
