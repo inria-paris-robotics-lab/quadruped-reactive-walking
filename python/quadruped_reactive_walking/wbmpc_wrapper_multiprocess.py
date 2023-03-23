@@ -1,4 +1,8 @@
-from multiprocessing import Process, Value, Array
+try:
+    from multiprocess import Process, Value, Array
+except ImportError:
+    from multiprocessing import Process, Value, Array
+
 
 import numpy as np
 
