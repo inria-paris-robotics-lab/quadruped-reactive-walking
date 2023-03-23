@@ -92,5 +92,6 @@ void exposeParams() {
       .def_readwrite("max_iter", &OCPParams::max_iter)
       .def_readwrite("init_max_iters", &OCPParams::init_max_iters)
       .def_readwrite("verbose", &OCPParams::verbose)
+      .def_readwrite("tol", &OCPParams::tol)
       .def(bp::self_ns::str(bp::self));
 }
