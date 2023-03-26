@@ -49,7 +49,7 @@ set(${PY_NAME}_TOOLS_PYTHON
 
 if(GENERATE_PYTHON_STUBS)
   load_stubgen()
-  generate_stubs(${CMAKE_CURRENT_BINARY_DIR} ${PY_NAME} ${PYTHON_SITELIB})
+  generate_stubs(${CMAKE_CURRENT_BINARY_DIR} ${PY_NAME} ${PYTHON_SITELIB} ${PY_LIB})
 endif(GENERATE_PYTHON_STUBS)
 
 foreach(python ${${PY_NAME}_PYTHON})
