@@ -65,8 +65,6 @@ class TaskSpecBase:
 
 class TaskSpec(TaskSpecBase):
     def __init__(self, params: Params):
-        import pprint
-
         super().__init__(params)
 
         self.useFixedBase = 0
@@ -77,7 +75,6 @@ class TaskSpec(TaskSpecBase):
         )
 
         task_pms = params.task
-        pprint.pp(task_pms)
 
         # Cost function weights
         self.mu = task_pms["mu"]
