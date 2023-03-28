@@ -13,6 +13,11 @@ from colorama import Fore
 from .ocp_crocoddyl import CrocOCP
 from quadruped_reactive_walking import Params
 import abc
+import numpy as np
+
+
+def infNorm(x):
+    return np.linalg.norm(x, ord=np.inf)
 
 
 class AlgtrOCPAbstract(CrocOCP):
@@ -53,6 +58,7 @@ class AlgtrOCPAbstract(CrocOCP):
 
         self.x_solver_errs = []
         self.u_solver_errs = []
+        self.ff_errs = []
         self.fb_errs = []
         self.prox_stops_2 = []
         self.croc_stops_2 = []
@@ -82,6 +88,10 @@ class AlgtrOCPAbstract(CrocOCP):
         maxiter = self.max_iter if k > 0 else self.init_max_iters
         self.prox_ddp.max_iters = maxiter
         self.prox_ddp.run(self.my_problem, xs, us)
+        # if COMPARE:
+        #     self.ddp.solve(xs, us, maxiter, False, 1e-9)
+        #     self.croc_iters.append(self.ddp.iter)
+        #     self.croc_stops.append(self.ddp.stop)
 
         # compute proxddp's criteria
         ws = self.prox_ddp.workspace
@@ -110,7 +120,7 @@ class AlgtrOCPAbstract(CrocOCP):
         sm = proxddp.croc.ActionModelWrapper(action_model)
         self.my_problem.replaceStageCircular(sm)
         ws = self.prox_ddp.workspace
-        ws.cycle_append(sm)
+        ws.cycleAppend(sm.createData())
 
     def get_results(self):
         res = self.prox_ddp.results
@@ -118,6 +128,16 @@ class AlgtrOCPAbstract(CrocOCP):
         feedbacks = [-K.copy() for K in res.controlFeedbacks()]
         xs = res.xs.tolist()
         us = res.us.tolist()
+        # if COMPARE:
+        #     ffwds = [-k.copy() for k in res.controlFeedforwards()]
+        #     xerr = [infNorm(self.state.diff(x1, x2)) for x1, x2 in zip(xs, self.ddp.xs)]
+        #     uerr = [infNorm(u1 - u2) for u1, u2 in zip(us, self.ddp.us)]
+        #     fberr = [infNorm(fb1 - fb2) for fb1, fb2 in zip(feedbacks, self.ddp.K)]
+        #     fferr = [infNorm(f1 - f2) for f1, f2 in zip(ffwds, self.ddp.k)]
+        #     self.x_solver_errs.extend(xerr)
+        #     self.u_solver_errs.extend(uerr)
+        #     self.ff_errs.extend(fferr)
+        #     self.fb_errs.extend(fberr)
 
         return (
             self.current_gait.copy(),
@@ -130,6 +150,7 @@ class AlgtrOCPAbstract(CrocOCP):
     def clear(self):
         self.x_solver_errs.clear()
         self.u_solver_errs.clear()
+        self.ff_errs.clear()
         self.fb_errs.clear()
 
         self.prox_stops.clear()
@@ -169,8 +190,9 @@ class AlgtrOCPProx(AlgtrOCPAbstract):
         base_refs,
     ):
         print(Fore.GREEN + "[using SolverProxDDP]")
-        mu_init = 1e-9
+        mu_init = 1e-10
         self.prox_ddp = proxddp.SolverProxDDP(params.ocp.tol, mu_init, 0.0)
+        self.prox_ddp.mu_min = 1e-12
         self.prox_ddp.reg_init = 1e-9
         self.prox_ddp.ldlt_algo_choice = proxddp.LDLT_DENSE
         self.prox_ddp.max_refinement_steps = 0
