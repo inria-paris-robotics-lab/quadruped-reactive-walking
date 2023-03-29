@@ -1,7 +1,8 @@
 import numpy as np
 import quadruped_reactive_walking as qrw
+import time
 
-from quadruped_reactive_walking.wb_mpc import AlgtrOCPProx, CrocOCP, AlgtrOCPFDDP
+from quadruped_reactive_walking.wb_mpc import AlgtrOCPProx, CrocOCP
 from quadruped_reactive_walking.controller import make_footsteps_and_refs
 from quadruped_reactive_walking.wb_mpc.task_spec import TaskSpec
 from quadruped_reactive_walking.wb_mpc.target import Target
@@ -30,7 +31,7 @@ ocp.solve(0, xs_i, us_i)
 
 
 ocp2 = AlgtrOCPProx(params, footsteps, base_refs)
-import time
+
 ts = time.time()
 n = 2000
 for i in range(n):

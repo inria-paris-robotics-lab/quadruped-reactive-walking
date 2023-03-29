@@ -13,7 +13,14 @@ DATE_STRFORMAT = "%Y_%m_%d_%H_%m_%S"
 
 
 class LoggerControl:
-    def __init__(self, params, log_size=60e3, loop_buffer=False, filename=None):
+    def __init__(
+        self,
+        params,
+        log_size=60e3,
+        loop_buffer=False,
+        filename=None,
+        solver_cls_name=None,
+    ):
         if filename is not None:
             self.data = np.load(filename, allow_pickle=True)
 
@@ -21,6 +28,7 @@ class LoggerControl:
         self.i = 0
         self.loop_buffer = loop_buffer
         self.params = params
+        self.solver_cls = solver_cls_name
 
         size = self.log_size
         self.pd = TaskSpec(params)
@@ -90,7 +98,8 @@ class LoggerControl:
     def sample(self, controller: Controller, device, qualisys=None):
         # Logging from the device (data coming from the robot)
         params: qrw.Params = controller.params
-        self.solver_cls = controller.mpc.ocp.__class__.get_type_str()
+        if self.solver_cls is None:
+            self.solver_cls = controller.mpc.ocp.__class__.get_type_str()
         self.q_mes[self.i] = device.joints.positions
         self.v_mes[self.i] = device.joints.velocities
         self.baseOrientation[self.i] = device.imu.attitude_euler
