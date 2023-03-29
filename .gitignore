@@ -16,16 +16,10 @@ MANIFEST
 *.prof
 
 # Unit test / coverage reports
-.tox/
-.nox/
 .coverage
 .coverage.*
 .cache
-nosetests.xml
 coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
 .pytest_cache/
 
 # Sphinx documentation
@@ -43,7 +37,6 @@ env/
 venv/
 ENV/
 
-.clang-format
 .vscode/
-figs/
+figs*/
 .DS_Store

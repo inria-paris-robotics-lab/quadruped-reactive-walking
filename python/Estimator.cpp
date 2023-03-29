@@ -6,25 +6,25 @@ template <typename Estimator>
 struct EstimatorVisitor : public bp::def_visitor<EstimatorVisitor<Estimator>> {
   template <class PyClassEstimator>
   void visit(PyClassEstimator& cl) const {
-    cl.def(bp::init<>(bp::arg(""), "Default constructor."))
+    cl.def(bp::init<>(bp::arg("self"), "Default constructor."))
 
-        .def("initialize", &Estimator::initialize, bp::args("params"),
+        .def("initialize", &Estimator::initialize, bp::args("self", "params"),
              "Initialize Estimator from Python.\n")
         .def("update_reference_state", &Estimator::updateReferenceState,
-             bp::args("v_ref"), "Update robot state.\n")
+             bp::args("self", "v_ref"), "Update robot state.\n")
 
-        .def("initialize_IMU_Yaw", &Estimator::initializeIMUYaw,
+        .def("initialize_IMU_Yaw", &Estimator::initializeIMUYaw, bp::args("self"),
              "Initialize yaw of the IMU.\n")
-        .def("get_q_estimate", &Estimator::getQEstimate,
+        .def("get_q_estimate", &Estimator::getQEstimate, bp::args("self"),
              "Get filtered configuration.\n")
-        .def("get_v_estimate", &Estimator::getVEstimate,
+        .def("get_v_estimate", &Estimator::getVEstimate, bp::args("self"),
              "Get filtered velocity.\n")
-        .def("get_v_security", &Estimator::getVSecurity,
+        .def("get_v_security", &Estimator::getVSecurity, bp::args("self"),
              "Get filtered velocity for security check.\n")
-        .def("get_feet_status", &Estimator::getFeetStatus, "")
-        .def("get_feet_targets", &Estimator::getFeetTargets, "")
-        .def("get_base_velocity_FK", &Estimator::getBaseVelocityFK, "")
-        .def("get_base_position_FK", &Estimator::getBasePositionFK, "")
+        .def("get_feet_status", &Estimator::getFeetStatus, bp::args("self"))
+        .def("get_feet_targets", &Estimator::getFeetTargets, bp::args("self"))
+        .def("get_base_velocity_FK", &Estimator::getBaseVelocityFK, bp::args("self"))
+        .def("get_base_position_FK", &Estimator::getBasePositionFK, bp::args("self"))
         .def("get_feet_position_barycenter",
              &Estimator::getFeetPositionBarycenter, "")
         .def("get_b_base_velocity", &Estimator::getBBaseVelocity, "")
@@ -44,12 +44,12 @@ struct EstimatorVisitor : public bp::def_visitor<EstimatorVisitor<Estimator>> {
         .def("get_v_filtered", &Estimator::getVFiltered,
              "Get filtered velocity.\n")
         .def("get_h_v_filtered", &Estimator::getHVFiltered, "")
-        .def("get_oRh", &Estimator::getoRh, "")
-        .def("get_hRb", &Estimator::gethRb, "")
-        .def("get_oTh", &Estimator::getoTh, "")
+        .def("get_oRh", &Estimator::getoRh, bp::args("self"))
+        .def("get_hRb", &Estimator::gethRb, bp::args("self"))
+        .def("get_oTh", &Estimator::getoTh, bp::args("self"))
 
         .def("run", &Estimator::run,
-             bp::args("gait", "goals", "baseLinearAcceleration",
+             bp::args("self", "gait", "goals", "baseLinearAcceleration",
                       "baseAngularVelocity", "baseOrientation", "q_mes",
                       "v_mes", "base_position", "b_base_velocity"),
              "Run Estimator from Python.\n");
