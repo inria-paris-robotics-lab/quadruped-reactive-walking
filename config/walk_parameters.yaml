@@ -19,6 +19,7 @@ robot:
       max_iter: 1  # maximum number of solver iterations
       init_max_iters: 5  # initial max_iter
       verbose: false  # solver verbosity
+      tol: 1e-4
 
     asynchronous_mpc: no # Run the MPC in an asynchronous process parallel of the main loop
     mpc_in_rosnode: no    # Run the MPC on a separate rosnode
