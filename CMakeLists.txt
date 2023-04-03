@@ -60,6 +60,10 @@ set(BOOST_COMPONENTS unit_test_framework)
 add_project_dependency(Eigen3 REQUIRED)
 add_project_dependency(example-robot-data REQUIRED)
 
+if(APPLE OR NOT UNIX)
+  set(BUILD_JOYSTICK OFF)
+endif()
+
 if(BUILD_JOYSTICK)
   add_compile_definitions(QRW_JOYSTICK_SUPPORT)
 endif(BUILD_JOYSTICK)
