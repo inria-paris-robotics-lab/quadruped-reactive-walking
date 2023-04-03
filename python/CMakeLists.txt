@@ -11,8 +11,9 @@ target_link_libraries(${PY_LIB} PUBLIC ${PROJECT_NAME} ${PYTHON_LIBRARY} eigenpy
 target_include_directories(${PY_LIB} SYSTEM PRIVATE ${PYTHON_INCLUDE_DIR})
 set_target_properties(${PY_LIB} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PY_NAME} PREFIX ""
                                            SUFFIX ${PYTHON_EXT_SUFFIX})
-if(UNIX AND NOT APPLE)
-  set_target_properties(${PY_LIB} PROPERTIES INSTALL_RPATH "\$ORIGIN/../../..")
+if(UNIX)
+  get_relative_rpath(${${PY_NAME}_INSTALL_DIR} ${PY_NAME}_INSTALL_RPATH)
+  set_target_properties(${PY_LIB} PROPERTIES INSTALL_RPATH "${${PY_NAME}_INSTALL_RPATH}")
 endif()
 target_link_boost_python(${PY_LIB} PRIVATE)
 install(TARGETS ${PY_LIB} DESTINATION ${${PY_NAME}_INSTALL_DIR})
