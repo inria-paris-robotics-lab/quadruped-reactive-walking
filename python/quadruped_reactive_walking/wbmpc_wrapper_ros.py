@@ -60,10 +60,10 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
 
         self.solve_solver_srv = None
         if self.synchronous:
-            self.solve_solver_srv = rospy.ServiceProxy("qrw_wbmpc/solve", MPCSolve)
+            self.solve_solver_srv = rospy.ServiceProxy("qrw_wbmpc/solve", MPCSolve, persistent=True)
         else:
             self.solve_solver_srv = AsyncServiceProxy(
-                "qrw_wbmpc/solve", MPCSolve, callback=self._result_cb
+                "qrw_wbmpc/solve", MPCSolve, callback=self._result_cb, persistent=True
             )
 
     def solve(self, k, x0, footstep, base_ref, xs=None, us=None):
