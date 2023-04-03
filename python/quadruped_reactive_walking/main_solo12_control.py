@@ -114,8 +114,8 @@ def check_position_error(device, controller):
         print("DIFFERENCE: ", controller.result.q_des - device.joints.positions)
         print("q_des: ", controller.result.q_des)
         print("q_mes: ", device.joints.positions)
-        return True
-    return False
+        errmsg = Fore.YELLOW + "Position error encountered; breaking." + Fore.RESET
+        raise ValueError(errmsg)
 
 
 def damp_controls(device, nb_motors):
@@ -236,11 +236,13 @@ def main(args):
             if controller.compute(device, qc):
                 break
 
-            if t <= 10 * params.dt_wbc and check_position_error(device, controller):
-                print(
-                    Fore.YELLOW + "Position error encountered; breaking." + Fore.RESET
-                )
-                break
+            if t <= 10 * params.dt_wbc:
+                try:
+                    check_position_error(device, controller)
+                except ValueError:
+                    import traceback
+                    traceback.print_exc()
+                    break
 
             device.joints.set_position_gains(controller.result.P)
             device.joints.set_velocity_gains(controller.result.D)
