@@ -299,20 +299,26 @@ class Controller:
         """
         hip_max = 120.0 * np.pi / 180.0
         knee_min = 5.0 * np.pi / 180.0
+        hip_ids = []
+        knee_ids = []
         for i in range(4):
             if self.clamp(self.result.q_des[3 * i + 1], -hip_max, hip_max):
-                print("Clamping hip n " + str(i))
+                hip_ids.append(i)
                 self.error = set_error
             if self.task.q0[7 + 3 * i + 2] >= 0.0 and self.clamp(
                 self.result.q_des[3 * i + 2], knee_min
             ):
-                print("Clamping knee n " + str(i))
+                knee_ids.append(i)
                 self.error = set_error
             elif self.task.q0[7 + 3 * i + 2] <= 0.0 and self.clamp(
                 self.result.q_des[3 * i + 2], max_value=-knee_min
             ):
-                print("Clamping knee n " + str(i))
+                knee_ids.append(i)
                 self.error = set_error
+        if len(hip_ids) > 0:
+            print("Clamping hips {}".format(hip_ids))
+        if len(knee_ids) > 0:
+            print("Clamping knees {}".format(knee_ids))
 
         clamped_tau = []
         clamped_pos = []
