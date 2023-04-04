@@ -237,16 +237,16 @@ class CrocOCP(OCPAbstract):
         control = crocoddyl.ControlParametrizationModelPolyZero(nu)
         zero_vec = np.zeros(3)
 
-        contacts = sobec.ContactModelMultiple(self.state, nu)
+        contacts = crocoddyl.ContactModelMultiple(self.state, nu)
         for i in self.task.feet_ids:
             name = self.task.model.frames[i].name + "_contact"
-            contact = sobec.ContactModel3D(
+            contact = crocoddyl.ContactModel3D(
                 self.state,
                 i,
                 zero_vec,
+                pin.LOCAL_WORLD_ALIGNED,
                 nu,
                 self.task.baumgarte_gains,
-                pin.LOCAL_WORLD_ALIGNED,
             )
             contacts.addContact(name, contact)
             contacts.changeContactStatus(name, i in support_feet)
@@ -269,7 +269,7 @@ class CrocOCP(OCPAbstract):
         )
         costs.addCost("state_limitBound", state_bound_cost, 1)
 
-        differential = sobec.DifferentialActionModelContactFwdDynamics(
+        differential = crocoddyl.DifferentialActionModelContactFwdDynamics(
             self.state, actuation, contacts, costs, 0.0, True
         )
         return crocoddyl.IntegratedActionModelEuler(
@@ -319,7 +319,7 @@ class CrocOCP(OCPAbstract):
             nc = len(model.differential.contacts.active_set)
             ref_force = np.array([0, 0, self.task.robot_weight / nc])
             ref_Force = pin.Force(ref_force, ref_force * 0)
-            forceRegResidual = sobec.ResidualModelContactForce(
+            forceRegResidual = crocoddyl.ResidualModelContactForce(
                 self.state, i, ref_Force, 3, nu
             )
             forceRegCost = crocoddyl.CostModelResidual(self.state, forceRegResidual)
