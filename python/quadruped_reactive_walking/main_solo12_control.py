@@ -238,12 +238,16 @@ def main(args):
                 break
 
             if t <= 10 * params.dt_wbc:
+                end = False
                 try:
                     check_position_error(device, controller)
                 except ValueError:
                     import traceback
 
                     traceback.print_exc()
+                    end = True
+                    break
+                if end:
                     break
 
             device.joints.set_position_gains(controller.result.P)
