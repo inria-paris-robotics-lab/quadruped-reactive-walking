@@ -40,6 +40,7 @@ def parse_args():
         required=True,
         help="Solver choice. Default: %(default)s.",
     )
+    parser.add_argument("--profile", action="store_true", help="Run profiler.")
     return parser.parse_args()
 
 
@@ -241,6 +242,7 @@ def main(args):
                     check_position_error(device, controller)
                 except ValueError:
                     import traceback
+
                     traceback.print_exc()
                     break
 
@@ -350,10 +352,12 @@ if __name__ == "__main__":
     import pstats
 
     args = parse_args()
-    profiler = cProfile.Profile()
-    profiler.enable()
+    if args.profile:
+        profiler = cProfile.Profile()
+        profiler.enable()
     main(args)
-    profiler.disable()
-    stats = pstats.Stats(profiler).strip_dirs().sort_stats("cumtime")
-    stats.dump_stats("stats.prof")
-    stats.print_stats()
+    if args.profile:
+        profiler.disable()
+        stats = pstats.Stats(profiler).strip_dirs().sort_stats("cumtime")
+        stats.dump_stats("stats.prof")
+        stats.print_stats()
