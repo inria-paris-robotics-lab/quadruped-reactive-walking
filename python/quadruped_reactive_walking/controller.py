@@ -70,6 +70,8 @@ def make_footsteps_and_refs(params, target):
 
 
 class Controller:
+    t_mpc = 0.
+
     def __init__(
         self, params: qrw.Params, q_init, t, solver_cls: Type[wb_mpc.OCPAbstract]
     ):
@@ -201,6 +203,7 @@ class Controller:
                 x = self.mpc_result.xs[1]
 
             try:
+                self.t_mpc_start = time.time()
                 self.mpc.solve(
                     self.k,
                     x,
@@ -214,7 +217,6 @@ class Controller:
                 print("MPC Problem")
 
         t_mpc = time.time()
-        self.t_mpc = t_mpc - t_measures
 
         if not self.error:
             self.mpc_result: Result = self.mpc.get_latest_result()
@@ -223,6 +225,7 @@ class Controller:
             if self.mpc_result.new_result:
                 self.mpc_solved = True
                 self.k_new = self.k
+                self.t_mpc = t_mpc - self.t_mpc_start
 
             if not self.initialized and self.params.save_guess:
                 self.save_guess()
