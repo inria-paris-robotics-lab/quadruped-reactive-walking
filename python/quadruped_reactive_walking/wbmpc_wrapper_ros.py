@@ -4,7 +4,7 @@ from .wb_mpc import get_ocp_from_str
 from .wb_mpc.ocp_abstract import OCPAbstract
 from .wb_mpc.task_spec import TaskSpec
 
-from .wbmpc_wrapper_abstract import MPCWrapperAbstract, Result
+from .wbmpc_wrapper_abstract import MPCWrapperAbstract, MPCResult
 
 from typing import Type
 from threading import Lock
@@ -44,7 +44,7 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
 
         self._result_lock = Lock()
         self.new_result: bool = False
-        self.last_available_result: Result = Result(params)
+        self.last_available_result: MPCResult = MPCResult(params)
 
         base_refs_multiarray = listof_numpy_to_multiarray_float64(base_refs)
         footsteps_multiarray = listof_numpy_to_multiarray_float64(footsteps)
@@ -144,7 +144,7 @@ class ROSMPCWrapperServer:
 
         self.ocp = self.solver_cls(self.params, footsteps, base_refs)
 
-        self.last_available_result: Result = Result(self.params)
+        self.last_available_result: MPCResult = MPCResult(self.params)
 
         rospy.loginfo("Initializing MPC.")
         self.is_init = True

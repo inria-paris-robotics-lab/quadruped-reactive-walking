@@ -11,7 +11,7 @@ from .wb_mpc.task_spec import TaskSpec
 
 from typing import Type
 
-from .wbmpc_wrapper_abstract import MPCWrapperAbstract, Result
+from .wbmpc_wrapper_abstract import MPCWrapperAbstract, MPCResult
 
 
 class MultiprocessMPCWrapper(MPCWrapperAbstract):
@@ -47,7 +47,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.out_num_iters = Value("i", 0)
         self.out_solving_time = Value("d", 0.0)
 
-        self.last_available_result: Result = Result(params)
+        self.last_available_result: MPCResult = MPCResult(params)
         self.new_result = Value("b", False)
 
     def solve(self, k, x0, footstep, base_ref, xs=None, us=None):

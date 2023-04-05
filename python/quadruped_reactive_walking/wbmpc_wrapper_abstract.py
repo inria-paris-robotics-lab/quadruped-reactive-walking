@@ -8,7 +8,7 @@ from typing import Type
 import abc
 
 
-class Result:
+class MPCResult:
     def __init__(self, params):
         pd = TaskSpec(params)
         self.gait = np.zeros((params.N_gait + 1, 4))

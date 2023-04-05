@@ -7,12 +7,13 @@ import quadruped_reactive_walking as qrw
 from . import wb_mpc
 from .wb_mpc.target import Target
 from .wb_mpc.task_spec import TaskSpec
+from .wbmpc_wrapper_abstract import MPCResult
 from .tools.Utils import quaternionToRPY, make_footstep
 from .tools.Interpolator import Interpolator
 from typing import Type
 
 
-class Result:
+class ControllerResult:
     """
     Object to store the result of the control loop
     It contains what is sent to the robot (gains, desired positions and velocities,
@@ -105,7 +106,7 @@ class Controller:
         self.estimator.initialize(params)
         self.q = np.zeros(18)
 
-        self.result = Result(params)
+        self.result = ControllerResult(params)
         self.result.q_des = self.task.q0[7:].copy()
         self.result.v_des = self.task.v0[6:].copy()
 
@@ -219,7 +220,7 @@ class Controller:
         t_mpc = time.time()
 
         if not self.error:
-            self.mpc_result: Result = self.mpc.get_latest_result()
+            self.mpc_result: MPCResult = self.mpc.get_latest_result()
             self.gait[:, :] = self.mpc_result.gait
             xs = self.mpc_result.xs
             if self.mpc_result.new_result:
@@ -357,8 +358,6 @@ class Controller:
         """
         Send default null values to the robot
         """
-        self.result.P = np.zeros(12)
-        self.result.D = 0.1 * np.ones(12)
         self.result.FF = np.zeros(12)
         self.result.q_des[:] = np.zeros(12)
         self.result.v_des[:] = np.zeros(12)

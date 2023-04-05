@@ -3,7 +3,7 @@ from .wb_mpc.task_spec import TaskSpec
 
 from typing import Type
 
-from .wbmpc_wrapper_abstract import MPCWrapperAbstract, Result
+from .wbmpc_wrapper_abstract import MPCWrapperAbstract, MPCResult
 
 
 class SyncMPCWrapper(MPCWrapperAbstract):
@@ -22,7 +22,7 @@ class SyncMPCWrapper(MPCWrapperAbstract):
 
         self.ocp = solver_cls(params, footsteps, base_refs)
 
-        self.last_available_result: Result = Result(params)
+        self.last_available_result: MPCResult = MPCResult(params)
         self.new_result = False
 
     def solve(self, k, x0, footstep, base_ref, xs=None, us=None):
