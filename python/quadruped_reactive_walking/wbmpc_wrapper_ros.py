@@ -50,13 +50,13 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
         footsteps_multiarray = listof_numpy_to_multiarray_float64(footsteps)
 
         init_solver_srv = rospy.ServiceProxy("qrw_wbmpc/init", MPCInit)
-        success = init_solver_srv(
+        res = init_solver_srv(
             solver_type=solver_cls.get_type_str(),
             params=params.raw_str,
             footsteps=footsteps_multiarray,
             base_refs=base_refs_multiarray,
         )
-        assert success, "Error while initializing mpc on server"
+        assert res.success, "Error while initializing mpc on server"
 
         self.solve_solver_srv = None
         if self.synchronous:
@@ -124,9 +124,11 @@ class ROSMPCWrapperServer:
         self._stop_service = rospy.Service(
             "qrw_wbmpc/stop", MPCStop, self._trigger_stop
         )
+        rospy.loginfo("Initializing MPC server.")
 
     def _trigger_init(self, msg):
         if self.is_init:
+            rospy.logerr("MPC already initialized.")
             return MPCInitResponse(False)
 
         self.params = Params.create_from_str(msg.params)
@@ -144,6 +146,7 @@ class ROSMPCWrapperServer:
 
         self.last_available_result: Result = Result(self.params)
 
+        rospy.loginfo("Initializing MPC.")
         self.is_init = True
         return MPCInitResponse(True)
 
@@ -176,8 +179,10 @@ class ROSMPCWrapperServer:
 
     def _trigger_stop(self, msg):
         if not self.is_init:
+            rospy.logwarn("[MPCStop] MPC was not initialized.")
             return MPCStopResponse(False)
         self.is_init = False
+        rospy.loginfo("Shutting down MPC.")
         return MPCStopResponse(True)
 
 
