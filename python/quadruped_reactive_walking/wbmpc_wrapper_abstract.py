@@ -9,12 +9,11 @@ import abc
 
 
 class MPCResult:
-    def __init__(self, params):
-        pd = TaskSpec(params)
-        self.gait = np.zeros((params.N_gait + 1, 4))
-        self.xs = list(np.zeros((params.N_gait + 1, pd.nx)))
-        self.us = list(np.zeros((params.N_gait, pd.nu)))
-        self.K = list(np.zeros([params.N_gait, pd.nu, pd.ndx]))
+    def __init__(self, N_gait, nx, nu, ndx):
+        self.gait = np.zeros((N_gait + 1, 4))
+        self.xs = list(np.zeros((N_gait + 1, nx)))
+        self.us = list(np.zeros((N_gait, nu)))
+        self.K = list(np.zeros([N_gait, nu, ndx]))
         self.solving_duration = 0.0
         self.num_iters = 0
         self.new_result = False

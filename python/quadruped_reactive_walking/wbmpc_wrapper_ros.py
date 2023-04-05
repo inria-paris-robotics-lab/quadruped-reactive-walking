@@ -44,7 +44,8 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
 
         self._result_lock = Lock()
         self.new_result: bool = False
-        self.last_available_result: MPCResult = MPCResult(params)
+        self.pd = TaskSpec(params)
+        self.last_available_result: MPCResult = MPCResult(params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx)
 
         base_refs_multiarray = listof_numpy_to_multiarray_float64(base_refs)
         footsteps_multiarray = listof_numpy_to_multiarray_float64(footsteps)
@@ -144,7 +145,7 @@ class ROSMPCWrapperServer:
 
         self.ocp = self.solver_cls(self.params, footsteps, base_refs)
 
-        self.last_available_result: MPCResult = MPCResult(self.params)
+        self.last_available_result: MPCResult = MPCResult(self.params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx)
 
         rospy.loginfo("Initializing MPC.")
         self.is_init = True
