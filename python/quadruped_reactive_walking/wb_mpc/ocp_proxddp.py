@@ -73,12 +73,14 @@ class AlgtrOCPAbstract(CrocOCP):
 
         t_update = time.time()
         self.t_update = t_update - t_start
+        nsteps = self.my_problem.num_steps
 
         if xs_init is None or us_init is None:
-            nsteps = self.my_problem.num_steps
             xs = [self.x0] * (nsteps + 1)
             us = self.problem.quasiStatic([self.x0] * nsteps)
         else:
+            assert len(xs) == nsteps + 1
+            assert len(us) == nsteps
             xs = xs_init
             us = us_init
 
@@ -88,10 +90,6 @@ class AlgtrOCPAbstract(CrocOCP):
         maxiter = self.max_iter if k > 0 else self.init_max_iters
         self.prox_ddp.max_iters = maxiter
         self.prox_ddp.run(self.my_problem, xs, us)
-        # if COMPARE:
-        #     self.ddp.solve(xs, us, maxiter, False, 1e-9)
-        #     self.croc_iters.append(self.ddp.iter)
-        #     self.croc_stops.append(self.ddp.stop)
 
         # compute proxddp's criteria
         ws = self.prox_ddp.workspace

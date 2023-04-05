@@ -164,6 +164,11 @@ class ROSMPCWrapperServer:
         xs = multiarray_to_listof_numpy_float64(msg.xs)
         us = multiarray_to_listof_numpy_float64(msg.us)
 
+        if len(xs) == 0:
+            xs = None
+        if len(us) == 0:
+            us = None
+
         self.ocp.solve(msg.k, xs, us)
 
         result = self.ocp.get_results()
