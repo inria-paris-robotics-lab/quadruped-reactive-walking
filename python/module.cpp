@@ -1,6 +1,7 @@
 #include "bindings/python.hpp"
 #include "bindings/yaml-node.hpp"
 #include "qrw/Types.h"
+#include <eigenpy/std-vector.hpp>
 
 BOOST_PYTHON_MODULE(quadruped_reactive_walking_pywrap) {
   bp::docstring_options module_docstring_options(true, true, true);
@@ -17,4 +18,5 @@ BOOST_PYTHON_MODULE(quadruped_reactive_walking_pywrap) {
   exposeParams();
   exposeEstimator();
   exposeFilter();
+  exposeMPCResult();
 }

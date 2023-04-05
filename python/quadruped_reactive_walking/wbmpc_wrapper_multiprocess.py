@@ -40,7 +40,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.in_us = Array("d", [0] * (self.T * self.nu))
         self.in_footstep = Array("d", [0] * 12)
         self.in_base_ref = Array("d", [0] * 6)
-        self.out_gait = Array("d", [0] * ((self.T + 1) * 4))
+        self.out_gait = Array("i", [0] * ((self.T + 1) * 4))
         self.out_xs = Array("d", [0] * ((self.T + 1) * self.nx))
         self.out_us = Array("d", [0] * (self.T * self.nu))
         self.out_k = Array("d", [0] * (self.T * self.nu * self.ndx))
@@ -73,7 +73,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         """
         if self.new_result.value:
             (
-                self.last_available_result.gait,
+                self.last_available_result.gait[:, :],
                 self.last_available_result.xs,
                 self.last_available_result.us,
                 self.last_available_result.K,
@@ -182,9 +182,9 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         retrieve data in the main control loop from the asynchronous MPC
         """
         with self.out_gait.get_lock():
-            np.frombuffer(self.out_gait.get_obj()).reshape((self.T + 1, 4))[
-                :, :
-            ] = np.array(gait)
+            np.frombuffer(self.out_gait.get_obj(), dtype=np.int32).reshape(
+                (self.T + 1, 4)
+            )[:, :] = np.array(gait)
 
         with self.out_xs.get_lock():
             np.frombuffer(self.out_xs.get_obj()).reshape((self.T + 1, self.nx))[
@@ -206,7 +206,9 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         Return the result of the asynchronous MPC (desired contact forces) that is
         stored in the shared memory
         """
-        gait = np.frombuffer(self.out_gait.get_obj()).reshape((self.T + 1, 4))
+        gait = np.frombuffer(self.out_gait.get_obj(), dtype=np.int32).reshape(
+            (self.T + 1, 4)
+        )
         xs = list(np.frombuffer(self.out_xs.get_obj()).reshape((self.T + 1, self.nx)))
         us = list(np.frombuffer(self.out_us.get_obj()).reshape((self.T, self.nu)))
         K = list(

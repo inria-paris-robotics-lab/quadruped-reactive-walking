@@ -81,6 +81,7 @@ set(${PROJECT_NAME}_HEADERS
     include/bindings/yaml-node.hpp
     include/qrw/Types.h
     include/qrw/Params.hpp
+    include/qrw/MPCResult.hpp
     include/qrw/yaml-eigen.hpp
     include/qrw/Animator.hpp
     include/qrw/Estimator.hpp

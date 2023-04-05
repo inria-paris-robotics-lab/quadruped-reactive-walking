@@ -11,5 +11,6 @@ void exposeAnimators();
 void exposeParams();
 void exposeEstimator();
 void exposeFilter();
+void exposeMPCResult();
 
 #endif

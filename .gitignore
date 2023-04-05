@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+compile_commands.json
+
 # Python log files
 *.npz
 

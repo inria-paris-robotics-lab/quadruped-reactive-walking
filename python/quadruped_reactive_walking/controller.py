@@ -247,8 +247,10 @@ class Controller:
             self.result.q_des = q[:]
             self.result.v_des = v[:]
 
-            self.xs_init = self.mpc_result.xs[1:] + [self.mpc_result.xs[-1]]
-            self.us_init = self.mpc_result.us[1:] + [self.mpc_result.us[-1]]
+            self.xs_init = self.mpc_result.xs[1:]
+            self.xs_init.append(self.mpc_result.xs[-1])
+            self.us_init = self.mpc_result.us[1:]
+            self.us_init.append(self.mpc_result.us[-1])
 
         t_send = time.time()
         self.t_send = t_send - t_mpc
