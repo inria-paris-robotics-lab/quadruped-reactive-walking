@@ -71,7 +71,7 @@ def make_footsteps_and_refs(params, target):
 
 
 class Controller:
-    t_mpc = 0.
+    t_mpc = 0.0
 
     def __init__(
         self, params: qrw.Params, q_init, t, solver_cls: Type[wb_mpc.OCPAbstract]

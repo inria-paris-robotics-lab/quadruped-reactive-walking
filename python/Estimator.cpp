@@ -13,8 +13,8 @@ struct EstimatorVisitor : public bp::def_visitor<EstimatorVisitor<Estimator>> {
         .def("update_reference_state", &Estimator::updateReferenceState,
              bp::args("self", "v_ref"), "Update robot state.\n")
 
-        .def("initialize_IMU_Yaw", &Estimator::initializeIMUYaw, bp::args("self"),
-             "Initialize yaw of the IMU.\n")
+        .def("initialize_IMU_Yaw", &Estimator::initializeIMUYaw,
+             bp::args("self"), "Initialize yaw of the IMU.\n")
         .def("get_q_estimate", &Estimator::getQEstimate, bp::args("self"),
              "Get filtered configuration.\n")
         .def("get_v_estimate", &Estimator::getVEstimate, bp::args("self"),
@@ -23,8 +23,10 @@ struct EstimatorVisitor : public bp::def_visitor<EstimatorVisitor<Estimator>> {
              "Get filtered velocity for security check.\n")
         .def("get_feet_status", &Estimator::getFeetStatus, bp::args("self"))
         .def("get_feet_targets", &Estimator::getFeetTargets, bp::args("self"))
-        .def("get_base_velocity_FK", &Estimator::getBaseVelocityFK, bp::args("self"))
-        .def("get_base_position_FK", &Estimator::getBasePositionFK, bp::args("self"))
+        .def("get_base_velocity_FK", &Estimator::getBaseVelocityFK,
+             bp::args("self"))
+        .def("get_base_position_FK", &Estimator::getBasePositionFK,
+             bp::args("self"))
         .def("get_feet_position_barycenter",
              &Estimator::getFeetPositionBarycenter, "")
         .def("get_b_base_velocity", &Estimator::getBBaseVelocity, "")

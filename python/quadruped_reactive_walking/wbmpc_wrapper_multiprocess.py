@@ -47,7 +47,9 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.out_num_iters = Value("i", 0)
         self.out_solving_time = Value("d", 0.0)
 
-        self.last_available_result: MPCResult = MPCResult(params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx)
+        self.last_available_result: MPCResult = MPCResult(
+            params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx
+        )
         self.new_result = Value("b", False)
 
     def solve(self, k, x0, footstep, base_ref, xs=None, us=None):

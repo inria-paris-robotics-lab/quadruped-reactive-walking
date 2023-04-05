@@ -22,7 +22,9 @@ class SyncMPCWrapper(MPCWrapperAbstract):
 
         self.ocp = solver_cls(params, footsteps, base_refs)
 
-        self.last_available_result: MPCResult = MPCResult(self.params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx)
+        self.last_available_result: MPCResult = MPCResult(
+            self.params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx
+        )
         self.new_result = False
 
     def solve(self, k, x0, footstep, base_ref, xs=None, us=None):

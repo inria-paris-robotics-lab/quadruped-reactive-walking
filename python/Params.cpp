@@ -84,7 +84,7 @@ void exposeParams() {
       .def_readonly("N_gait", &Params::N_gait)
       .def_readonly("h_ref", &Params::h_ref)
       .def_readonly("footsteps_under_shoulders",
-                     &Params::footsteps_under_shoulders)
+                    &Params::footsteps_under_shoulders)
       .add_property("task", bp::make_getter(&Params::task, rvp_by_value));
 
   bp::class_<OCPParams>("OCPParams", bp::no_init)
