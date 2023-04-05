@@ -79,8 +79,8 @@ class AlgtrOCPAbstract(CrocOCP):
             xs = [self.x0] * (nsteps + 1)
             us = self.problem.quasiStatic([self.x0] * nsteps)
         else:
-            assert len(xs) == nsteps + 1
-            assert len(us) == nsteps
+            assert len(xs_init) == nsteps + 1
+            assert len(us_init) == nsteps
             xs = xs_init
             us = us_init
 

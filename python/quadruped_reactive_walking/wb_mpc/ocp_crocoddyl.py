@@ -100,8 +100,8 @@ class CrocOCP(OCPAbstract):
             xs = [self.x0] * (self.ddp.problem.T + 1)
             us = self.ddp.problem.quasiStatic([self.x0] * self.ddp.problem.T)
         else:
-            assert len(xs) == self.ddp.problem.T + 1
-            assert len(us) == self.ddp.problem.T
+            assert len(xs_init) == self.ddp.problem.T + 1
+            assert len(us_init) == self.ddp.problem.T
             xs = xs_init
             us = us_init
 
