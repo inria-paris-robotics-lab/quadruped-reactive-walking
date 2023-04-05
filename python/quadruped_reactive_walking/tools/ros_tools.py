@@ -12,7 +12,7 @@ def numpy_to_multiarray_float64(np_array):
         )
         for i in range(np_array.ndim)
     ]
-    multiarray.data = np_array.reshape([1, -1])[0].tolist()
+    multiarray.data = np_array.ravel().tolist()
     return multiarray
 
 
@@ -20,7 +20,9 @@ def multiarray_to_numpy_float64(ros_array):
     dims = [d.size for d in ros_array.layout.dim]
     if dims == []:
         return np.array([])
-    return np.array(ros_array.data).reshape(dims)
+    out = np.empty(dims)
+    out.ravel()[:] = ros_array.data
+    return out
 
 
 def listof_numpy_to_multiarray_float64(list):
@@ -28,7 +30,7 @@ def listof_numpy_to_multiarray_float64(list):
 
 
 def multiarray_to_listof_numpy_float64(ros_array):
-    return [el for el in multiarray_to_numpy_float64(ros_array)]
+    return list(multiarray_to_numpy_float64(ros_array))
 
 
 class AsyncServiceProxy(object):
