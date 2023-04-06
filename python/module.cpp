@@ -11,6 +11,10 @@ BOOST_PYTHON_MODULE(quadruped_reactive_walking_pywrap) {
 
   eigenpy::enableEigenPySpecific<Vector6>();
   eigenpy::enableEigenPySpecific<RowMatrix6N>();
+  using StdVecVectorN = std::vector<VectorN>;
+  using StdVecMatrixN = std::vector<MatrixN>;
+  eigenpy::StdVectorPythonVisitor<StdVecVectorN, true>::expose("VectorN");
+  eigenpy::StdVectorPythonVisitor<StdVecMatrixN, true>::expose("MatrixN");
 
   qrw::YamlNodeToPython::registration();
 
