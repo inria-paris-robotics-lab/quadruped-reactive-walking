@@ -5,7 +5,7 @@
 
 static constexpr uint NUM_GAIT_COLS = 4;
 
-struct MPCResult {
+struct MPCResult {
   MatrixNi gait;
   std::vector<VectorN> xs;
   std::vector<VectorN> us;
