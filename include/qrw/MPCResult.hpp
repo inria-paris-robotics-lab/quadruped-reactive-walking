@@ -14,9 +14,14 @@ struct MPCResult {
   uint num_iters = 0;
   bool new_result = false;
 
-  MPCResult(uint Ngait, uint nx, uint nu, uint ndx)
+  MPCResult(uint Ngait, uint nx, uint nu, uint ndx, uint window_size)
       : gait(Ngait + 1, NUM_GAIT_COLS),
         xs(Ngait + 1, VectorN::Zero(nx)),
         us(Ngait, VectorN::Zero(nu)),
-        Ks(Ngait, MatrixN::Zero(nu, ndx)) {}
+        Ks(window_size, MatrixN::Zero(nu, ndx)) {
+    gait.setZero();
+  }
+
+  MPCResult(uint Ngait, uint nx, uint nu, uint ndx)
+      : MPCResult(Ngait, nx, nu, ndx, Ngait) {}
 };
