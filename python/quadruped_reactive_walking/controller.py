@@ -214,8 +214,10 @@ class Controller:
                     self.us_init,
                 )
             except ValueError:
+                import traceback
+
                 self.error = True
-                print("MPC Problem")
+                traceback.print_exc()
 
         t_mpc = time.time()
 
