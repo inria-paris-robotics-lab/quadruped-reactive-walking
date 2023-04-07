@@ -33,6 +33,8 @@ extern template struct YAML::convert<VectorN>;
 // fwd-declaration
 struct Params;
 
+enum InterpolationType : uint { CUBIC = 3 };
+
 struct OCPParams {
   uint num_threads;
   uint max_iter;
@@ -126,8 +128,8 @@ struct Params {
   std::string movement;  // Name of the mmovemnet to perform
   bool interpolate_mpc;  // true to interpolate the impedance quantities,
                          // otherwise integrate
-  int interpolation_type;  // type of interpolation used
-  bool closed_loop;        // true to close the MPC loop
+  InterpolationType interpolation_type;  // type of interpolation used
+  bool closed_loop;                      // true to close the MPC loop
   bool kf_enabled;  // Use complementary filter (False) or kalman filter (True)
                     // for the estimator
   VectorN Kp_main;  // Proportional gains for the PD+

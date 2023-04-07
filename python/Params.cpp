@@ -24,6 +24,10 @@ struct params_pickle_suite : bp::pickle_suite {
 constexpr auto rvp_by_value = bp::return_value_policy<bp::return_by_value>();
 
 void exposeParams() {
+  bp::enum_<InterpolationType>("InterpolationType")
+      .value("INTERP_CUBIC", InterpolationType::CUBIC)
+      .export_values();
+
   bp::class_<Params>("Params", bp::init<>("self"))
       .def("create_from_file", &Params::create_from_file,
            (bp::arg("file_path") = WALK_PARAMETERS_YAML),

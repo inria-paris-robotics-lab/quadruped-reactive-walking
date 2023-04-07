@@ -37,7 +37,7 @@ Params::Params()
       save_guess(false),
       movement(""),
       interpolate_mpc(true),
-      interpolation_type(0),
+      interpolation_type(InterpolationType::CUBIC),
       closed_loop(true),
       kf_enabled(false),
       Kp_main(3),
@@ -205,7 +205,8 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   rhs.interpolate_mpc = robot_node["interpolate_mpc"].as<bool>();
 
   assert_yaml_parsing(robot_node, "robot", "interpolation_type");
-  rhs.interpolation_type = robot_node["interpolation_type"].as<int>();
+  rhs.interpolation_type =
+      (InterpolationType)robot_node["interpolation_type"].as<uint>();
 
   assert_yaml_parsing(robot_node, "robot", "closed_loop");
   rhs.closed_loop = robot_node["closed_loop"].as<bool>();

@@ -236,7 +236,7 @@ class Controller:
 
             if self.params.interpolate_mpc:
                 if self.mpc_result.new_result:
-                    if self.params.interpolation_type == 3:
+                    if self.params.interpolation_type == qrw.INTERP_CUBIC:
                         self.interpolator.update(xs[0], xs[1], xs[2])
                     # self.interpolator.plot(self.params.mpc_wbc_ratio, self.params.dt_wbc)
                 t = (self.k - self.k_solve + 1) * self.params.dt_wbc
