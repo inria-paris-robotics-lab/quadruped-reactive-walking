@@ -4,6 +4,8 @@ import numpy as np
 import pinocchio as pin
 
 import quadruped_reactive_walking as qrw
+
+from crocoddyl import StateMultibody
 from . import wb_mpc
 from .wb_mpc.target import Target
 from .wb_mpc.task_spec import TaskSpec
@@ -72,6 +74,7 @@ def make_footsteps_and_refs(params, target):
 
 class Controller:
     t_mpc = 0.0
+    q_security = np.array([1.2, 2.1, 3.14] * 4)
 
     def __init__(
         self, params: qrw.Params, q_init, t, solver_cls: Type[wb_mpc.OCPAbstract]
@@ -84,14 +87,11 @@ class Controller:
             q_init (array): initial position of actuators
             t (float): time of the simulation
         """
-        import crocoddyl
-
-        self.q_security = np.array([1.2, 2.1, 3.14] * 4)
 
         self.params = params
         self.task = TaskSpec(params)
         self.rdata = self.task.create_rdata()
-        self.state = crocoddyl.StateMultibody(self.task.model)
+        self.state = StateMultibody(self.task.model)
 
         self.k = 0
         self.error = False
@@ -238,7 +238,6 @@ class Controller:
                 if self.mpc_result.new_result:
                     if self.params.interpolation_type == qrw.INTERP_CUBIC:
                         self.interpolator.update(xs[0], xs[1], xs[2])
-                    # self.interpolator.plot(self.params.mpc_wbc_ratio, self.params.dt_wbc)
                 t = (self.k - self.k_solve + 1) * self.params.dt_wbc
                 q, v = self.interpolator.interpolate(t)
             else:
