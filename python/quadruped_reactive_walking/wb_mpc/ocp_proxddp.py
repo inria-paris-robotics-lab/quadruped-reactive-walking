@@ -5,11 +5,10 @@ Author:
     Wilson Jallet
 """
 import time
+import proxddp
 import crocoddyl
 
-import proxddp
 from colorama import Fore
-
 from .ocp_crocoddyl import CrocOCP
 from quadruped_reactive_walking import Params
 import abc
@@ -50,7 +49,6 @@ class AlgtrOCPAbstract(CrocOCP):
         self.verbose = proxddp.QUIET
         if params.ocp.verbose:
             self.verbose = proxddp.VERBOSE
-            self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
 
         self.prox_ddp.verbose = self.verbose
         self.prox_ddp.max_iters = self.max_iter
@@ -124,23 +122,11 @@ class AlgtrOCPAbstract(CrocOCP):
         res = self.prox_ddp.results
         ws = self.prox_ddp.workspace  # noqa
         feedbacks = [-K.copy() for K in res.controlFeedbacks()]
-        xs = res.xs.tolist()
-        us = res.us.tolist()
-        # if COMPARE:
-        #     ffwds = [-k.copy() for k in res.controlFeedforwards()]
-        #     xerr = [infNorm(self.state.diff(x1, x2)) for x1, x2 in zip(xs, self.ddp.xs)]
-        #     uerr = [infNorm(u1 - u2) for u1, u2 in zip(us, self.ddp.us)]
-        #     fberr = [infNorm(fb1 - fb2) for fb1, fb2 in zip(feedbacks, self.ddp.K)]
-        #     fferr = [infNorm(f1 - f2) for f1, f2 in zip(ffwds, self.ddp.k)]
-        #     self.x_solver_errs.extend(xerr)
-        #     self.u_solver_errs.extend(uerr)
-        #     self.ff_errs.extend(fferr)
-        #     self.fb_errs.extend(fberr)
 
         return (
             self.current_gait.copy(),
-            xs,
-            us,
+            res.xs,
+            res.us,
             feedbacks,
             self.t_ddp,
         )

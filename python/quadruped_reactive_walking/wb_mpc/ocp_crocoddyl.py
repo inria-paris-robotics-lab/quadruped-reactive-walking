@@ -175,9 +175,9 @@ class CrocOCP(OCPAbstract):
     def get_results(self):
         return (
             self.current_gait.copy(),
-            self.ddp.xs.tolist().copy(),
-            self.ddp.us.tolist().copy(),
-            self.ddp.K.tolist().copy(),
+            self.ddp.xs,
+            self.ddp.us,
+            self.ddp.K.tolist(),
             self.t_ddp,
         )
 
