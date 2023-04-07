@@ -48,7 +48,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.out_solving_time = Value("d", 0.0)
 
         self.last_available_result: MPCResult = MPCResult(
-            params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx
+            params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx, self.WINDOW_SIZE
         )
         self.new_result = Value("b", False)
 
@@ -217,7 +217,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         num_iters = self.out_num_iters.value
         solving_time = self.out_solving_time.value
 
-        return gait, xs, us, K, solving_time, num_iters
+        return gait, xs, us, K[: self.WINDOW_SIZE], solving_time, num_iters
 
     def stop_parallel_loop(self):
         """

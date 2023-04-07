@@ -46,7 +46,7 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
         self.new_result: bool = False
         self.pd = TaskSpec(params)
         self.last_available_result: MPCResult = MPCResult(
-            params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx
+            params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx, self.WINDOW_SIZE
         )
 
         base_refs_multiarray = listof_numpy_to_multiarray_float64(base_refs)
@@ -118,6 +118,8 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
 
 
 class ROSMPCWrapperServer:
+    WINDOW_SIZE = 2
+
     def __init__(self):
         self.is_init = False
         self._init_service = rospy.Service(
@@ -150,7 +152,7 @@ class ROSMPCWrapperServer:
         self.ocp = self.solver_cls(self.params, footsteps, base_refs)
 
         self.last_available_result: MPCResult = MPCResult(
-            self.params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx
+            self.params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx, self.WINDOW_SIZE
         )
 
         rospy.loginfo("Initializing MPC.")
@@ -178,15 +180,15 @@ class ROSMPCWrapperServer:
 
         self.ocp.solve(msg.k, xs, us)
 
-        result = self.ocp.get_results()
+        gait, xs, us, Ks, solving_duration = self.ocp.get_results()
 
         return MPCSolveResponse(
             run_success=True,
-            gait=numpy_to_multiarray_float64(result[0]),
-            xs=listof_numpy_to_multiarray_float64(result[1]),
-            us=listof_numpy_to_multiarray_float64(result[2]),
-            K=listof_numpy_to_multiarray_float64(result[3]),
-            solving_duration=result[4],
+            gait=numpy_to_multiarray_float64(gait),
+            xs=listof_numpy_to_multiarray_float64(xs),
+            us=listof_numpy_to_multiarray_float64(us),
+            K=listof_numpy_to_multiarray_float64(Ks),
+            solving_duration=solving_duration,
         )
 
     def _trigger_stop(self, msg):
