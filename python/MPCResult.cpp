@@ -16,7 +16,11 @@ struct non_resizable_vec_member {
   void operator()(Class &c, const vector_type &rhs) {
     auto &lhs = c.*m_which;
     if (lhs.size() != rhs.size()) {
-      PyErr_SetString(PyExc_ValueError, "vector size is non-mutable.");
+      std::ostringstream ss;
+      ss << "vector size is non-mutable (";
+      ss << "expected " << lhs.size();
+      ss << ", got " << rhs.size() << ").";
+      PyErr_SetString(PyExc_ValueError, ss.str().c_str());
       bp::throw_error_already_set();
     }
     lhs = rhs;
