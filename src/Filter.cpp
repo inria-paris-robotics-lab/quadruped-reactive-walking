@@ -16,8 +16,8 @@ void Filter::initialize(Params &params) {
 
   a_ << 1.0, -(1.0 - b_);
 
-  x_queue_.resize(1, Vector6::Zero());
-  y_queue_.resize(a_.rows() - 1, Vector6::Zero());
+  x_queue_.resize(1UL, Vector6::Zero());
+  y_queue_.resize((std::size_t)a_.rows() - 1, Vector6::Zero());
 }
 
 VectorN Filter::filter(Vector6 const &x, bool check_modulo) {
@@ -50,7 +50,7 @@ VectorN Filter::filter(Vector6 const &x, bool check_modulo) {
   // Compute result (y/x = b/a for the transfert function)
   accum_ = b_ * x_queue_[0];
   for (int i = 1; i < a_.rows(); i++) {
-    accum_ -= a_[i] * y_queue_[i - 1];
+    accum_ -= a_[i] * y_queue_[(uint)i - 1];
   }
 
   // Store result in y queue for recursion
@@ -68,6 +68,6 @@ void Filter::handle_modulo(int a, bool dir) {
   // Add or remove 2 PI to all elements in the queues
   x_queue_[0](a, 0) += dir ? 2.0 * M_PI : -2.0 * M_PI;
   for (int i = 1; i < a_.rows(); i++) {
-    (y_queue_[i - 1])(a, 0) += dir ? 2.0 * M_PI : -2.0 * M_PI;
+    (y_queue_[(uint)i - 1])(a, 0) += dir ? 2.0 * M_PI : -2.0 * M_PI;
   }
 }
