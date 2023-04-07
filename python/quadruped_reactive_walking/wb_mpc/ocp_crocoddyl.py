@@ -39,8 +39,8 @@ class CrocOCP(OCPAbstract):
 
         params = self.params
         self.life_gait = params.gait
-        self.starting_gait = np.ones((params.starting_nodes, 4))
-        self.ending_gait = np.ones((params.ending_nodes, 4))
+        self.starting_gait = np.ones((params.starting_nodes, 4), dtype=np.int32)
+        self.ending_gait = np.ones((params.ending_nodes, 4), dtype=np.int32)
         self.current_gait = np.append(
             self.starting_gait, self.ending_gait[0].reshape(1, -1), axis=0
         )
