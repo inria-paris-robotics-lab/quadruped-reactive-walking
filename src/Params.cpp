@@ -12,6 +12,10 @@ std::ostream &operator<<(std::ostream &oss, const OCPParams &p) {
   return oss;
 }
 
+int compute_k_mpc(const Params &params) {
+  return static_cast<int>(std::round(params.dt_mpc / params.dt_wbc));
+}
+
 Params::Params()
     : raw_str(""),
       config_file(""),

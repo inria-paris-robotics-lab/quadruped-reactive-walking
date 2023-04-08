@@ -30,7 +30,7 @@ struct AnimatorBase {
   int k_mpc = 0;        // Number of WBC time step for one MPC time step
 
   VectorNi k_switch;
-  Matrix6N v_switch;
+  RowMatrix6N v_switch;
 
   /// \brief  Handle velocity switch.
   /// \param[in] k index of the current MPC loop.

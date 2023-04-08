@@ -10,7 +10,7 @@ AnimatorBase::AnimatorBase(Params &params) : params_(&params) {
 
   dt_wbc = params.dt_wbc;
   dt_mpc = params.dt_mpc;
-  k_mpc = static_cast<int>(std::round(params.dt_mpc / params.dt_wbc));
+  k_mpc = compute_k_mpc(params);
 }
 
 void AnimatorBase::update_v_ref(int k, bool) {
