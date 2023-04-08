@@ -1,6 +1,6 @@
 #include "qrw/Animator.hpp"
 
-AnimatorBase::AnimatorBase(Params &params)
+AnimatorBase::AnimatorBase(Params const& params)
     : params_(&params),
       dt_mpc(params.dt_mpc),
       dt_wbc(params.dt_wbc),

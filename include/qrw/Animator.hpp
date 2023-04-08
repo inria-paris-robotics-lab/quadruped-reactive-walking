@@ -5,7 +5,7 @@
 /// Base high-level motion controller class.
 /// Just performs polynomial interpolation.
 struct AnimatorBase {
-  AnimatorBase(Params& params);
+  AnimatorBase(Params const& params);
   virtual ~AnimatorBase() = default;
 
   /// \brief  Handle velocity switch.
@@ -22,7 +22,7 @@ struct AnimatorBase {
 
   //// Data
 
-  Params* params_;
+  Params const* params_;
 
   Vector6 A3_;  // Third order coefficient of the polynomial that generates the
                 // velocity profile

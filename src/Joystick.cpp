@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-Joystick::Joystick(Params &params)
+Joystick::Joystick(Params const& params)
     : AnimatorBase(params),
       p_gp_(Vector6::Zero()),
       v_gp_(Vector6::Zero()),
@@ -30,7 +30,7 @@ Joystick::~Joystick() {
   }
 }
 
-int Joystick::read_event(int fd, struct js_event *event) {
+int Joystick::read_event(int fd, struct js_event* event) {
   ssize_t bytes;
   bytes = read(fd, event, sizeof(*event));
   if (bytes == sizeof(*event)) return 0;

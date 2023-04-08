@@ -35,7 +35,7 @@ class Joystick : public AnimatorBase {
   /// \brief Constructor
   ///
   /// \param[in] params Object that stores parameters
-  Joystick(Params& params);
+  Joystick(Params const& params);
 
   /// \brief Destructor.
   ~Joystick() override;
