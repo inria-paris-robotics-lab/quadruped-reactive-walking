@@ -1,21 +1,20 @@
 #include "qrw/Animator.hpp"
 
-AnimatorBase::AnimatorBase(Params &params) : params_(&params) {
+AnimatorBase::AnimatorBase(Params &params)
+    : params_(&params),
+      dt_mpc(params.dt_mpc),
+      dt_wbc(params.dt_wbc),
+      v_switch(params.v_switch) {
   A2_.setZero();
   A3_.setZero();
   p_ref_.setZero();
   v_ref_.setZero();
-  k_switch.setZero();
-  v_switch.setZero();
 
-  dt_wbc = params.dt_wbc;
-  dt_mpc = params.dt_mpc;
   k_mpc = compute_k_mpc(params);
 }
 
 void AnimatorBase::update_v_ref(int k, bool) {
   if (k == 0) {
-    v_switch = params_->v_switch;
     k_switch = (params_->t_switch / dt_wbc).cast<int>();
   }
   // Polynomial interpolation to generate the velocity profile
