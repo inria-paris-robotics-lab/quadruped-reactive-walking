@@ -40,48 +40,23 @@ class Joystick : public AnimatorBase {
   /// \brief Destructor.
   ~Joystick() override;
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
-  /// \brief update the
-  ///
-  /// \param[in] k Numero of the current loop
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  void handle_v_switch(int k);
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
-  /// \brief Update the status of the joystick, either using polynomial
-  /// interpolation based on predefined profile or reading the status of the
-  /// gamepad
-  ///
-  /// \param[in] k Numero of the current loop
-  /// \param[in] gait_is_static If the Gait is in or is switching to a static
-  /// gait
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  void update_v_ref(int k, bool gait_is_static) override;
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
-  /// \brief Check if a gamepad event occured and read its data
-  ///
-  /// \param[in] fd Identifier of the gamepad object
-  /// \param[in] event Gamepad event object
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  int read_event(int fd, struct js_event* event);
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
   /// \brief Update the status of the joystick by reading the status of the
   /// gamepad
-  ///
   /// \param[in] k Numero of the current loop
   /// \param[in] gait_is_static If the Gait is in or is switching to a static
   /// gait
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
+  void update_v_ref(int k, bool gait_is_static) override;
+
+  /// \brief Check if a gamepad event occured and read its data
+  /// \param[in] fd Identifier of the gamepad object
+  /// \param[in] event Gamepad event object
+  int read_event(int fd, struct js_event* event);
+
+  /// \brief Update the status of the joystick by reading the status of the
+  /// gamepad
+  /// \param[in] k Numero of the current loop
+  /// \param[in] gait_is_static If the Gait is in or is switching to a static
+  /// gait
   void update_v_ref_gamepad(int k, bool gait_is_static);
 
   int getJoystickCode() { return joystick_code_; }
