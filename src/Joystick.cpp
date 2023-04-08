@@ -30,10 +30,6 @@ Joystick::~Joystick() {
   }
 }
 
-void Joystick::update_v_ref(int k, bool gait_is_static) {
-  update_v_ref_gamepad(k, gait_is_static);
-}
-
 int Joystick::read_event(int fd, struct js_event *event) {
   ssize_t bytes;
   bytes = read(fd, event, sizeof(*event));
@@ -42,7 +38,7 @@ int Joystick::read_event(int fd, struct js_event *event) {
   return -1;
 }
 
-void Joystick::update_v_ref_gamepad(int k, bool gait_is_static) {
+void Joystick::update_v_ref(int k, bool gait_is_static) {
   // Read information from gamepad client
   if (read_event(js, &event) == 0) {
     if (event.type == JS_EVENT_BUTTON) {

@@ -52,13 +52,6 @@ class Joystick : public AnimatorBase {
   /// \param[in] event Gamepad event object
   int read_event(int fd, struct js_event* event);
 
-  /// \brief Update the status of the joystick by reading the status of the
-  /// gamepad
-  /// \param[in] k Numero of the current loop
-  /// \param[in] gait_is_static If the Gait is in or is switching to a static
-  /// gait
-  void update_v_ref_gamepad(int k, bool gait_is_static);
-
   int getJoystickCode() { return joystick_code_; }
   bool getStop() { return stop_; }
   bool getStart() { return start_; }
