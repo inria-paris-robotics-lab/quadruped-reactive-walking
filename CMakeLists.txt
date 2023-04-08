@@ -5,6 +5,8 @@ set(PROJECT_NAMESPACE gepetto)
 set(PROJECT_NAME quadruped_reactive_walking)
 set(PROJECT_DESCRIPTION "Reactive walking control architecture for quadrupeds")
 set(PROJECT_URL https://gitlab.laas.fr/${PROJECT_NAMESPACE}/${PROJECT_NAME})
+set(CUSTOM_HEADER_DIR "qrw")
+set(PROJECT_CUSTOM_HEADER_EXTENSION "hpp")
 
 # JRL-cmakemodule setup
 include(cmake/base.cmake)
