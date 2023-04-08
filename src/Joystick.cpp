@@ -9,20 +9,6 @@ Joystick::Joystick(Params &params)
       p_gp_(Vector6::Zero()),
       v_gp_(Vector6::Zero()),
       v_ref_heavy_filter_(Vector6::Zero()) {
-  initialize(params);
-}
-
-Joystick::~Joystick() {
-  if (js != -1) {
-    close(js);
-  }
-}
-
-void Joystick::initialize(Params &params) {
-  dt_wbc = params.dt_wbc;
-  dt_mpc = params.dt_mpc;
-  k_mpc = static_cast<int>(std::round(params.dt_mpc / params.dt_wbc));
-  predefined = params.predefined_vel;
   gp_alpha_vel = params.gp_alpha_vel;
   gp_alpha_pos = 0.0;
   p_ref_.setZero();
@@ -35,6 +21,12 @@ void Joystick::initialize(Params &params) {
   js = open(device, O_RDONLY | O_NONBLOCK);
   if (js == -1) {
     perror("Could not open joystick");
+  }
+}
+
+Joystick::~Joystick() {
+  if (js != -1) {
+    close(js);
   }
 }
 
