@@ -112,8 +112,6 @@ class Joystick : public AnimatorBase {
   int joystick_code_ = 0;  // Code to trigger gait changes
   bool stop_ = false;      // Flag to stop the controller
   bool start_ = false;     // Flag to start the controller
-  bool predefined =
-      false;  // Flag to perform polynomial interpolation or read the gamepad
 
   // How much the gamepad velocity and position is filtered to avoid sharp
   // changes
