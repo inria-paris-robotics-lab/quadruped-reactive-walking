@@ -15,7 +15,7 @@
 
 #include "qrw/Animator.hpp"
 
-struct gamepad_struct {
+struct gamepad_status {
   double v_x = 0.0;    // Up/down status of left pad
   double v_y = 0.0;    // Left/right status of left pad
   double v_z = 0.0;    // Up/down status of right pad
@@ -143,10 +143,10 @@ class Joystick : public AnimatorBase {
       lock_time_L1_;  // Timestamp of the latest L1 pressing
 
   // Gamepad client variables
-  struct gamepad_struct gamepad;  // Structure that stores gamepad status
-  const char* device;             // Gamepad device object
-  int js;                         // Identifier of the gamepad object
-  struct js_event event;          // Gamepad event object
+  gamepad_status gamepad;  // Structure that stores gamepad status
+  const char* device;      // Gamepad device object
+  int js;                  // Identifier of the gamepad object
+  struct js_event event;   // Gamepad event object
 };
 
 #endif  // JOYSTICK_H_INCLUDED
