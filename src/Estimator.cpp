@@ -61,7 +61,7 @@ void Estimator::initialize(Params &params) {
   solo3D_ = params.solo3D;
 
   // Filtering estimated linear velocity
-  int k_mpc = (int)(std::round(params.dt_mpc / params.dt_wbc));
+  int k_mpc = compute_k_mpc(params);
   windowSize_ = (uint)(k_mpc * params.gait.rows() / params.N_periods);
   vx_queue_.resize(windowSize_, 0.0);  // List full of 0.0
   vy_queue_.resize(windowSize_, 0.0);  // List full of 0.0

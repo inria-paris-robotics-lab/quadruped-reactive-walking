@@ -33,6 +33,8 @@ extern template struct YAML::convert<VectorN>;
 // fwd-declaration
 struct Params;
 
+int compute_k_mpc(const Params &params);
+
 enum InterpolationType : uint { CUBIC = 3 };
 
 struct OCPParams {

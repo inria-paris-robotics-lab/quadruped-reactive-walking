@@ -4,25 +4,11 @@
 #include <stdio.h>
 #include <unistd.h>
 
-Joystick::Joystick(Params &params)
+Joystick::Joystick(Params const& params)
     : AnimatorBase(params),
       p_gp_(Vector6::Zero()),
       v_gp_(Vector6::Zero()),
       v_ref_heavy_filter_(Vector6::Zero()) {
-  initialize(params);
-}
-
-Joystick::~Joystick() {
-  if (js != -1) {
-    close(js);
-  }
-}
-
-void Joystick::initialize(Params &params) {
-  dt_wbc = params.dt_wbc;
-  dt_mpc = params.dt_mpc;
-  k_mpc = static_cast<int>(std::round(params.dt_mpc / params.dt_wbc));
-  predefined = params.predefined_vel;
   gp_alpha_vel = params.gp_alpha_vel;
   gp_alpha_pos = 0.0;
   p_ref_.setZero();
@@ -38,15 +24,13 @@ void Joystick::initialize(Params &params) {
   }
 }
 
-void Joystick::update_v_ref(int k, bool gait_is_static) {
-  if (predefined) {
-    AnimatorBase::update_v_ref(k, gait_is_static);
-  } else {
-    update_v_ref_gamepad(k, gait_is_static);
+Joystick::~Joystick() {
+  if (js != -1) {
+    close(js);
   }
 }
 
-int Joystick::read_event(int fd, struct js_event *event) {
+int Joystick::read_event(int fd, struct js_event* event) {
   ssize_t bytes;
   bytes = read(fd, event, sizeof(*event));
   if (bytes == sizeof(*event)) return 0;
@@ -54,7 +38,7 @@ int Joystick::read_event(int fd, struct js_event *event) {
   return -1;
 }
 
-void Joystick::update_v_ref_gamepad(int k, bool gait_is_static) {
+void Joystick::update_v_ref(int k, bool gait_is_static) {
   // Read information from gamepad client
   if (read_event(js, &event) == 0) {
     if (event.type == JS_EVENT_BUTTON) {

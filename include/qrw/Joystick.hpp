@@ -15,7 +15,7 @@
 
 #include "qrw/Animator.hpp"
 
-struct gamepad_struct {
+struct gamepad_status {
   double v_x = 0.0;    // Up/down status of left pad
   double v_y = 0.0;    // Left/right status of left pad
   double v_z = 0.0;    // Up/down status of right pad
@@ -35,63 +35,22 @@ class Joystick : public AnimatorBase {
   /// \brief Constructor
   ///
   /// \param[in] params Object that stores parameters
-  Joystick(Params& params);
+  Joystick(Params const& params);
 
-  /// \brief Initialize with given data
-  ///
-  /// \param[in] params Object that stores parameters
-  void initialize(Params& params);
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
   /// \brief Destructor.
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
   ~Joystick() override;
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
-  /// \brief update the
-  ///
-  /// \param[in] k Numero of the current loop
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  void handle_v_switch(int k);
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
-  /// \brief Update the status of the joystick, either using polynomial
-  /// interpolation based on predefined profile or reading the status of the
-  /// gamepad
-  ///
-  /// \param[in] k Numero of the current loop
-  /// \param[in] gait_is_static If the Gait is in or is switching to a static
-  /// gait
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  void update_v_ref(int k, bool gait_is_static) override;
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
-  /// \brief Check if a gamepad event occured and read its data
-  ///
-  /// \param[in] fd Identifier of the gamepad object
-  /// \param[in] event Gamepad event object
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  int read_event(int fd, struct js_event* event);
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  ///
   /// \brief Update the status of the joystick by reading the status of the
   /// gamepad
-  ///
   /// \param[in] k Numero of the current loop
   /// \param[in] gait_is_static If the Gait is in or is switching to a static
   /// gait
-  ///
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  void update_v_ref_gamepad(int k, bool gait_is_static);
+  void update_v_ref(int k, bool gait_is_static) override;
+
+  /// \brief Check if a gamepad event occured and read its data
+  /// \param[in] fd Identifier of the gamepad object
+  /// \param[in] event Gamepad event object
+  int read_event(int fd, struct js_event* event);
 
   int getJoystickCode() { return joystick_code_; }
   bool getStop() { return stop_; }
@@ -112,8 +71,6 @@ class Joystick : public AnimatorBase {
   int joystick_code_ = 0;  // Code to trigger gait changes
   bool stop_ = false;      // Flag to stop the controller
   bool start_ = false;     // Flag to start the controller
-  bool predefined =
-      false;  // Flag to perform polynomial interpolation or read the gamepad
 
   // How much the gamepad velocity and position is filtered to avoid sharp
   // changes
@@ -145,10 +102,10 @@ class Joystick : public AnimatorBase {
       lock_time_L1_;  // Timestamp of the latest L1 pressing
 
   // Gamepad client variables
-  struct gamepad_struct gamepad;  // Structure that stores gamepad status
-  const char* device;             // Gamepad device object
-  int js;                         // Identifier of the gamepad object
-  struct js_event event;          // Gamepad event object
+  gamepad_status gamepad;  // Structure that stores gamepad status
+  const char* device;      // Gamepad device object
+  int js;                  // Identifier of the gamepad object
+  struct js_event event;   // Gamepad event object
 };
 
 #endif  // JOYSTICK_H_INCLUDED

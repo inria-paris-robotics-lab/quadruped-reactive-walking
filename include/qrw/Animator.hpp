@@ -5,17 +5,24 @@
 /// Base high-level motion controller class.
 /// Just performs polynomial interpolation.
 struct AnimatorBase {
-  AnimatorBase(Params& params);
+  AnimatorBase(Params const& params);
   virtual ~AnimatorBase() = default;
 
+  /// \brief  Handle velocity switch.
+  /// \param[in] k index of the current MPC loop.
+  virtual void handle_v_switch(int k);
+
+  /// \brief Update the status of the animator.
+  /// \param[in] k Numero of the current loop
   virtual void update_v_ref(int k, bool gait_is_static);
 
   inline Eigen::Ref<const Vector6> get_p_ref() const { return p_ref_; }
+  /// \brief Get current velocity reference.
   inline Eigen::Ref<const Vector6> get_v_ref() const { return v_ref_; }
 
   //// Data
 
-  Params* params_;
+  Params const* params_;
 
   Vector6 A3_;  // Third order coefficient of the polynomial that generates the
                 // velocity profile
@@ -30,9 +37,5 @@ struct AnimatorBase {
   int k_mpc = 0;        // Number of WBC time step for one MPC time step
 
   VectorNi k_switch;
-  Matrix6N v_switch;
-
-  /// \brief  Handle velocity switch.
-  /// \param[in] k index of the current MPC loop.
-  void handle_v_switch(int k);
+  RowMatrix6N v_switch;
 };
