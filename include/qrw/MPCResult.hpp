@@ -6,10 +6,6 @@
 static constexpr uint NUM_GAIT_COLS = 4;
 
 struct MPCResult {
- private:
-  uint window_size = 0;
-
- public:
   MatrixNi gait;
   std::vector<VectorN> xs;
   std::vector<VectorN> us;
@@ -19,8 +15,7 @@ struct MPCResult {
   bool new_result = false;
 
   MPCResult(uint Ngait, uint nx, uint nu, uint ndx, uint window_size)
-      : window_size(window_size),
-        gait(Ngait + 1, NUM_GAIT_COLS),
+      : gait(Ngait + 1, NUM_GAIT_COLS),
         xs(window_size + 1, VectorN::Zero(nx)),
         us(window_size, VectorN::Zero(nu)),
         Ks(window_size, MatrixN::Zero(nu, ndx)) {
@@ -30,5 +25,5 @@ struct MPCResult {
   MPCResult(uint Ngait, uint nx, uint nu, uint ndx)
       : MPCResult(Ngait, nx, nu, ndx, Ngait) {}
 
-  uint get_window_size() const { return window_size; }
+  uint get_window_size() { return static_cast<uint>(us.size()); }
 };
