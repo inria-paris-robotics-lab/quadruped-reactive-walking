@@ -71,13 +71,6 @@ if(BUILD_JOYSTICK)
   add_compile_definitions(QRW_JOYSTICK_SUPPORT)
 endif(BUILD_JOYSTICK)
 
-if(BUILD_PYTHON_INTERFACE)
-  add_project_dependency(eigenpy REQUIRED)
-  string(REGEX REPLACE "-" "_" PY_NAME ${PROJECT_NAME})
-  set(${PY_NAME}_LIB "${PY_NAME}_pywrap")
-  set(${PY_NAME}_INSTALL_DIR ${PYTHON_SITELIB}/${PY_NAME})
-endif()
-
 # Main Library
 set(${PROJECT_NAME}_HEADERS
     include/qrw/Types.h
@@ -85,6 +78,7 @@ set(${PROJECT_NAME}_HEADERS
     include/qrw/MPCResult.hpp
     include/qrw/yaml-eigen.hpp
     include/qrw/Animator.hpp
+    include/qrw/Keyboard.hpp
     include/qrw/Estimator.hpp
     include/qrw/LowPassFilter.hpp
     include/qrw/ComplementaryFilter.hpp
@@ -93,8 +87,13 @@ set(${PROJECT_NAME}_HEADERS
     include/qrw/utils.hpp)
 
 set(${PROJECT_NAME}_SOURCES
-    src/Params.cpp src/Animator.cpp src/Estimator.cpp src/LowPassFilter.cpp
-    src/ComplementaryFilter.cpp src/IOCPAbstract.cpp)
+    src/Params.cpp
+    src/Animator.cpp
+    src/Estimator.cpp
+    src/LowPassFilter.cpp
+    src/ComplementaryFilter.cpp
+    src/IOCPAbstract.cpp
+    src/Keyboard.cpp)
 
 if(BUILD_JOYSTICK)
   list(APPEND ${PROJECT_NAME}_HEADERS include/qrw/Joystick.hpp)
@@ -126,6 +125,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC pinocchio::pinocchio)
 add_project_dependency(yaml-cpp CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp)
 
+find_package(Curses REQUIRED)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${CURSES_LIBRARIES})
+
 if(SUFFIX_SO_VERSION)
   set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION ${PROJECT_VERSION})
 endif()
@@ -148,6 +150,10 @@ endif()
 
 # Python Bindings
 if(BUILD_PYTHON_INTERFACE)
+  add_project_dependency(eigenpy REQUIRED)
+  string(REGEX REPLACE "-" "_" PY_NAME ${PROJECT_NAME})
+  set(${PY_NAME}_LIB "${PY_NAME}_pywrap")
+  set(${PY_NAME}_INSTALL_DIR ${PYTHON_SITELIB}/${PY_NAME})
   add_subdirectory(python)
 endif()
 

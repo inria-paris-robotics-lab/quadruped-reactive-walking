@@ -17,7 +17,8 @@ set(PY_SOURCES
     expose-mpc-interface.cpp
     expose-mpc-result.cpp
     expose-ocp-interface.cpp
-    expose-params.cpp)
+    expose-params.cpp
+    expose-keyboard.cpp)
 
 set(PY_LIB ${${PY_NAME}_LIB})
 add_library(${PY_LIB} SHARED ${PY_SOURCES} ${PY_HEADERS})

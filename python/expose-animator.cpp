@@ -15,6 +15,8 @@ void exposeAnimators() {
       bp::no_init)
       .def(AnimatorVisitor<AnimatorBase>());
 
+  exposeKeyboard();
+
 #ifdef QRW_JOYSTICK_SUPPORT
   bp::class_<Joystick>("Joystick",
                        "Animator using an external joystick peripheral.",
