@@ -11,8 +11,6 @@ class MPCWrapperAbstract:
     Wrapper to run both types of MPC (OQSP or Crocoddyl)
     """
 
-    WINDOW_SIZE = 2
-
     @abc.abstractclassmethod
     def __init__(self, params, footsteps, base_refs, solver_cls: Type[OCPAbstract]):
         pass

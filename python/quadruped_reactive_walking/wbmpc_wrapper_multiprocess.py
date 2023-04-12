@@ -12,6 +12,7 @@ from .wb_mpc.task_spec import TaskSpec
 from typing import Type
 
 from .wbmpc_wrapper_abstract import MPCWrapperAbstract, MPCResult
+from quadruped_reactive_walking import Params
 
 
 class MultiprocessMPCWrapper(MPCWrapperAbstract):
@@ -19,14 +20,17 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
     Wrapper to run both types of MPC (OQSP or Crocoddyl) asynchronously in a new process
     """
 
-    def __init__(self, params, footsteps, base_refs, solver_cls: Type[OCPAbstract]):
+    def __init__(
+        self, params: Params, footsteps, base_refs, solver_cls: Type[OCPAbstract]
+    ):
         self.params = params
         self.pd = TaskSpec(params)
-        self.T = params.N_gait
+        self.N_gait = params.N_gait
         self.nu = self.pd.nu
         self.nx = self.pd.nx
         self.ndx = self.pd.ndx
         self.solver_cls = solver_cls
+        self.WINDOW_SIZE = params.window_size
 
         self.footsteps_plan = footsteps
         self.base_refs = base_refs
@@ -36,14 +40,14 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.in_k = Value("i", 0)
         self.in_x0 = Array("d", [0] * self.nx)
         self.in_warm_start = Value("b", False)
-        self.in_xs = Array("d", [0] * ((self.T + 1) * self.nx))
-        self.in_us = Array("d", [0] * (self.T * self.nu))
+        self.in_xs = Array("d", [0] * ((self.N_gait + 1) * self.nx))
+        self.in_us = Array("d", [0] * (self.N_gait * self.nu))
         self.in_footstep = Array("d", [0] * 12)
         self.in_base_ref = Array("d", [0] * 6)
-        self.out_gait = Array("i", [0] * ((self.T + 1) * 4))
-        self.out_xs = Array("d", [0] * ((self.T + 1) * self.nx))
-        self.out_us = Array("d", [0] * (self.T * self.nu))
-        self.out_k = Array("d", [0] * (self.T * self.nu * self.ndx))
+        self.out_gait = Array("i", [0] * ((self.N_gait + 1) * 4))
+        self.out_xs = Array("d", [0] * ((self.N_gait + 1) * self.nx))
+        self.out_us = Array("d", [0] * (self.N_gait * self.nu))
+        self.out_k = Array("d", [0] * (self.WINDOW_SIZE * self.nu * self.ndx))
         self.out_num_iters = Value("i", 0)
         self.out_solving_time = Value("d", 0.0)
 
@@ -58,7 +62,8 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
                 self.last_available_result.xs = xs
                 self.last_available_result.us = us
             else:
-                self.last_available_result.xs = [x0 for _ in range(self.T + 1)]
+                winsize = self.last_available_result.window_size
+                self.last_available_result.xs = [x0 for _ in range(winsize + 1)]
             p = Process(target=self._mpc_asynchronous)
             p.start()
 
@@ -142,11 +147,11 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.in_warm_start.value = True
 
         with self.in_xs.get_lock():
-            np.frombuffer(self.in_xs.get_obj()).reshape((self.T + 1, self.nx))[
+            np.frombuffer(self.in_xs.get_obj()).reshape((self.N_gait + 1, self.nx))[
                 :, :
             ] = np.array(xs)
         with self.in_us.get_lock():
-            np.frombuffer(self.in_us.get_obj()).reshape((self.T, self.nu))[
+            np.frombuffer(self.in_us.get_obj()).reshape((self.N_gait, self.nu))[
                 :, :
             ] = np.array(us)
 
@@ -169,10 +174,12 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
 
         with self.in_xs.get_lock():
             xs = list(
-                np.frombuffer(self.in_xs.get_obj()).reshape((self.T + 1, self.nx))
+                np.frombuffer(self.in_xs.get_obj()).reshape((self.N_gait + 1, self.nx))
             )
         with self.in_us.get_lock():
-            us = list(np.frombuffer(self.in_us.get_obj()).reshape((self.T, self.nu)))
+            us = list(
+                np.frombuffer(self.in_us.get_obj()).reshape((self.N_gait, self.nu))
+            )
 
         return k, x0, footstep, base_ref, xs, us
 
@@ -183,23 +190,28 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         """
         with self.out_gait.get_lock():
             np.frombuffer(self.out_gait.get_obj(), dtype=np.int32).reshape(
-                (self.T + 1, 4)
+                (self.N_gait + 1, 4)
             )[:, :] = np.array(gait)
 
         with self.out_xs.get_lock():
-            np.frombuffer(self.out_xs.get_obj()).reshape((self.T + 1, self.nx))[
-                :, :
-            ] = np.array(xs)
+            self.x_outbuf()[:, :] = np.array(xs)
         with self.out_us.get_lock():
-            np.frombuffer(self.out_us.get_obj()).reshape((self.T, self.nu))[
-                :, :
-            ] = np.array(us)
+            self.u_outbuf()[:, :] = np.array(us)
         with self.out_k.get_lock():
-            np.frombuffer(self.out_k.get_obj()).reshape([self.T, self.nu, self.ndx])[
-                :, :, :
-            ] = np.array(K)
+            self.K_outbuf()[:, :, :] = np.array(K)
         self.out_num_iters = num_iters
         self.out_solving_time.value = solving_time
+
+    def x_outbuf(self):
+        return np.frombuffer(self.out_xs.get_obj()).reshape((self.N_gait + 1, self.nx))
+
+    def u_outbuf(self):
+        return np.frombuffer(self.out_us.get_obj()).reshape((self.N_gait, self.nu))
+
+    def K_outbuf(self):
+        return np.frombuffer(self.out_k.get_obj()).reshape(
+            [self.WINDOW_SIZE, self.nu, self.ndx]
+        )
 
     def _decompress_dataOut(self):
         """
@@ -207,17 +219,15 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         stored in the shared memory
         """
         gait = np.frombuffer(self.out_gait.get_obj(), dtype=np.int32).reshape(
-            (self.T + 1, 4)
+            (self.N_gait + 1, 4)
         )
-        xs = list(np.frombuffer(self.out_xs.get_obj()).reshape((self.T + 1, self.nx)))
-        us = list(np.frombuffer(self.out_us.get_obj()).reshape((self.T, self.nu)))
-        K = list(
-            np.frombuffer(self.out_k.get_obj()).reshape([self.T, self.nu, self.ndx])
-        )
+        xs = list(self.x_outbuf())
+        us = list(self.u_outbuf())
+        K = list(self.K_outbuf())
         num_iters = self.out_num_iters.value
         solving_time = self.out_solving_time.value
 
-        return gait, xs, us, K[: self.WINDOW_SIZE], solving_time, num_iters
+        return gait, xs, us, K, solving_time, num_iters
 
     def stop_parallel_loop(self):
         """
