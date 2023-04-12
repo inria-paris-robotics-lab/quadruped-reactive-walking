@@ -163,6 +163,7 @@ struct Params {
   MatrixNi gait;                      // Initial gait matrix (Eigen)
   Scalar T_gait;                      // Period of the gait
   int N_gait;                         // Number of steps in gait
+  uint window_size;                   // Window size
   Scalar h_ref;                       // Reference height for the base
   VectorN footsteps_under_shoulders;  // Positions of footsteps to
                                       // be "under the shoulder"

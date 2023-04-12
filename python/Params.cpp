@@ -86,6 +86,7 @@ void exposeParams() {
       .def_readonly("ocp", &Params::ocp)
       .def_readonly("T_gait", &Params::T_gait)
       .def_readonly("N_gait", &Params::N_gait)
+      .def_readonly("window_size", &Params::window_size)
       .def_readonly("h_ref", &Params::h_ref)
       .def_readonly("footsteps_under_shoulders",
                     &Params::footsteps_under_shoulders)

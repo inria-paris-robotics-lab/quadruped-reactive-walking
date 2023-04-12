@@ -166,6 +166,9 @@ bool convert<Params>::decode(const Node &robot_node, Params &rhs) {
   assert_yaml_parsing(robot_node, "robot", "h_ref");
   rhs.h_ref = robot_node["h_ref"].as<Scalar>();
 
+  assert_yaml_parsing(robot_node, "robot", "window_size");
+  rhs.window_size = robot_node["window_size"].as<uint>();
+
   assert_yaml_parsing(robot_node, "robot", "dt_mpc");
   rhs.dt_mpc = robot_node["dt_mpc"].as<Scalar>();
 
