@@ -74,20 +74,18 @@ class AlgtrOCPAbstract(CrocOCP):
         nsteps = self.my_problem.num_steps
 
         if xs_init is None or us_init is None:
-            xs = [self.x0] * (nsteps + 1)
-            us = self.problem.quasiStatic([self.x0] * nsteps)
+            xs_init = [self.x0] * (nsteps + 1)
+            us_init = self.problem.quasiStatic([self.x0] * nsteps)
         else:
             assert len(xs_init) == nsteps + 1
             assert len(us_init) == nsteps
-            xs = xs_init
-            us = us_init
 
         t_warm_start = time.time()
         self.t_warm_start = t_warm_start - t_update
 
         maxiter = self.max_iter if k > 0 else self.init_max_iters
         self.prox_ddp.max_iters = maxiter
-        self.prox_ddp.run(self.my_problem, xs, us)
+        self.prox_ddp.run(self.my_problem, xs_init, us_init)
 
         # compute proxddp's criteria
         ws = self.prox_ddp.workspace
@@ -118,15 +116,17 @@ class AlgtrOCPAbstract(CrocOCP):
         ws = self.prox_ddp.workspace
         ws.cycleAppend(sm.createData())
 
-    def get_results(self):
+    def get_results(self, window_size=None):
         res = self.prox_ddp.results
-        ws = self.prox_ddp.workspace  # noqa
-        feedbacks = [-K.copy() for K in res.controlFeedbacks()]
+        if window_size is None:
+            window_size = len(res.us)
+        feedbacks = res.controlFeedbacks()[:window_size]
+        feedbacks = [-K for K in res]
 
         return (
             self.current_gait.copy(),
-            res.xs,
-            res.us,
+            res.xs[:],
+            res.us[:],
             feedbacks,
             self.t_ddp,
         )

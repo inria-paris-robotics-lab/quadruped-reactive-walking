@@ -180,7 +180,7 @@ class ROSMPCWrapperServer:
 
         self.ocp.solve(msg.k, xs, us)
 
-        gait, xs, us, Ks, solving_duration = self.ocp.get_results()
+        gait, xs, us, Ks, solving_duration = self.ocp.get_results(self.WINDOW_SIZE)
 
         return MPCSolveResponse(
             run_success=True,

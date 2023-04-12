@@ -98,18 +98,16 @@ class CrocOCP(OCPAbstract):
         self.t_update = t_update - t_start
 
         if xs_init is None or us_init is None:
-            xs = [self.x0] * (self.ddp.problem.T + 1)
-            us = self.ddp.problem.quasiStatic([self.x0] * self.ddp.problem.T)
+            xs_init = [self.x0] * (self.ddp.problem.T + 1)
+            us_init = self.ddp.problem.quasiStatic([self.x0] * self.ddp.problem.T)
         else:
             assert len(xs_init) == self.ddp.problem.T + 1
             assert len(us_init) == self.ddp.problem.T
-            xs = xs_init
-            us = us_init
 
         t_warm_start = time()
         self.t_warm_start = t_warm_start - t_update
 
-        self.ddp.solve(xs, us, self.max_iter if k > 0 else self.init_max_iters, False)
+        self.ddp.solve(xs_init, us_init, self.max_iter if k > 0 else self.init_max_iters, False)
 
         t_ddp = time()
         self.t_ddp = t_ddp - t_warm_start
@@ -172,12 +170,14 @@ class CrocOCP(OCPAbstract):
         d = m.createData()
         self.problem.circularAppend(m, d)
 
-    def get_results(self):
+    def get_results(self, window_size=None):
+        if window_size is None:
+            window_size = len(self.ddp.us)
         return (
-            self.current_gait.copy(),
-            self.ddp.xs,
-            self.ddp.us,
-            self.ddp.K.tolist(),
+            self.current_gait,
+            self.ddp.xs[:],
+            self.ddp.us[:],
+            self.ddp.K[:window_size],
             self.t_ddp,
         )
 

@@ -22,7 +22,7 @@ class OCPAbstract(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_results(self) -> tuple:
+    def get_results(self, window_size=None) -> tuple:
         pass
 
     @abc.abstractmethod

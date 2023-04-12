@@ -30,11 +30,11 @@ class SyncMPCWrapper(MPCWrapperAbstract):
     def solve(self, k, x0, footstep, base_ref, xs=None, us=None):
         self.ocp.make_ocp(k, x0, footstep, base_ref)
         self.ocp.solve(k, xs, us)
-        gait, xs, us, K, solving_duration = self.ocp.get_results()
+        gait, xs, us, K, solving_duration = self.ocp.get_results(self.WINDOW_SIZE)
         self.last_available_result.gait = gait
         self.last_available_result.xs = xs
         self.last_available_result.us = us
-        self.last_available_result.K = K[: self.WINDOW_SIZE]
+        self.last_available_result.K = K
         self.last_available_result.solving_duration = solving_duration
         self.new_result = True
 

@@ -76,8 +76,10 @@ class LoggerControl:
         self.v_estimate = np.zeros([size, self.pd.nv])
         self.q_filtered = np.zeros([size, self.pd.nq])
         self.v_filtered = np.zeros([size, self.pd.nv])
+        # MPC_WINDOW = params.window_size
         self.ocp_xs = np.zeros([size, params.N_gait + 1, self.pd.nx])
         self.ocp_us = np.zeros([size, params.N_gait, self.pd.nu])
+        # "spot" feedback gain
         self.ocp_K = np.zeros([size, self.pd.nu, self.pd.ndx])
         self.ocp_num_iters = np.zeros([size], dtype=int)
         self.MPC_equivalent_Kp = np.zeros([size, self.pd.nu])

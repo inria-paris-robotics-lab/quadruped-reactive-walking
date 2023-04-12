@@ -107,7 +107,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
 
             loop_ocp.make_ocp(k, x0, footstep, base_ref)
             loop_ocp.solve(k, xs, us)
-            gait, xs, us, K, solving_time = loop_ocp.get_results()
+            gait, xs, us, K, solving_time = loop_ocp.get_results(self.WINDOW_SIZE)
             self._compress_dataOut(gait, xs, us, K, loop_ocp.num_iters, solving_time)
             self.new_result.value = True
 
