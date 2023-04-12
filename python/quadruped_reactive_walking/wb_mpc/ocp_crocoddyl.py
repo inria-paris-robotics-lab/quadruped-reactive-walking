@@ -107,7 +107,9 @@ class CrocOCP(OCPAbstract):
         t_warm_start = time()
         self.t_warm_start = t_warm_start - t_update
 
-        self.ddp.solve(xs_init, us_init, self.max_iter if k > 0 else self.init_max_iters, False)
+        self.ddp.solve(
+            xs_init, us_init, self.max_iter if k > 0 else self.init_max_iters, False
+        )
 
         t_ddp = time()
         self.t_ddp = t_ddp - t_warm_start
