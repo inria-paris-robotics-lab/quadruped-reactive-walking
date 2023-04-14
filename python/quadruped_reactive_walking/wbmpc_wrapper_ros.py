@@ -178,7 +178,7 @@ class ROSMPCWrapperServer:
         if len(us) == 0:
             us = None
 
-        self.ocp.solve(msg.k, xs, us)
+        self.ocp.solve(msg.k)
 
         gait, xs, us, Ks, solving_duration = self.ocp.get_results(self.WINDOW_SIZE)
 
