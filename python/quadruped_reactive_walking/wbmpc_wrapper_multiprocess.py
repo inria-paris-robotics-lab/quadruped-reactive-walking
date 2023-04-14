@@ -45,8 +45,8 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.in_footstep = Array("d", [0] * 12)
         self.in_base_ref = Array("d", [0] * 6)
         self.out_gait = Array("i", [0] * ((self.N_gait + 1) * 4))
-        self.out_xs = Array("d", [0] * ((self.N_gait + 1) * self.nx))
-        self.out_us = Array("d", [0] * (self.N_gait * self.nu))
+        self.out_xs = Array("d", [0] * ((self.WINDOW_SIZE + 1) * self.nx))
+        self.out_us = Array("d", [0] * (self.WINDOW_SIZE * self.nu))
         self.out_k = Array("d", [0] * (self.WINDOW_SIZE * self.nu * self.ndx))
         self.out_num_iters = Value("i", 0)
         self.out_solving_time = Value("d", 0.0)
@@ -202,10 +202,12 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.out_solving_time.value = solving_time
 
     def x_outbuf(self):
-        return np.frombuffer(self.out_xs.get_obj()).reshape((self.N_gait + 1, self.nx))
+        return np.frombuffer(self.out_xs.get_obj()).reshape(
+            (self.WINDOW_SIZE + 1, self.nx)
+        )
 
     def u_outbuf(self):
-        return np.frombuffer(self.out_us.get_obj()).reshape((self.N_gait, self.nu))
+        return np.frombuffer(self.out_us.get_obj()).reshape((self.WINDOW_SIZE, self.nu))
 
     def K_outbuf(self):
         return np.frombuffer(self.out_k.get_obj()).reshape(

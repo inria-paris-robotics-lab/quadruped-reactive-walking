@@ -116,8 +116,8 @@ class AlgtrOCPAbstract(CrocOCP):
 
         return (
             self.current_gait.copy(),
-            res.xs[:],
-            res.us[:],
+            res.xs[: window_size + 1],
+            res.us[:window_size],
             feedbacks,
             self.t_ddp,
         )

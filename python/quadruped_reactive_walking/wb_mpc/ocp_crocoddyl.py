@@ -170,8 +170,8 @@ class CrocOCP(OCPAbstract):
             window_size = len(self.ddp.us)
         return (
             self.current_gait,
-            self.ddp.xs[:],
-            self.ddp.us[:],
+            self.ddp.xs[: window_size + 1],
+            self.ddp.us[:window_size],
             self.ddp.K[:window_size].tolist(),
             self.t_ddp,
         )

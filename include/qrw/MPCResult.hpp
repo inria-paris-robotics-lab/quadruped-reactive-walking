@@ -16,8 +16,8 @@ struct MPCResult {
 
   MPCResult(uint Ngait, uint nx, uint nu, uint ndx, uint window_size)
       : gait(Ngait + 1, NUM_GAIT_COLS),
-        xs(Ngait + 1, VectorN::Zero(nx)),
-        us(Ngait, VectorN::Zero(nu)),
+        xs(window_size + 1, VectorN::Zero(nx)),
+        us(window_size, VectorN::Zero(nu)),
         Ks(window_size, MatrixN::Zero(nu, ndx)) {
     gait.setZero();
   }
