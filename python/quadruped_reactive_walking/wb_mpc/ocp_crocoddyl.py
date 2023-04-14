@@ -79,24 +79,25 @@ class CrocOCP(OCPAbstract):
 
         return running_models, terminal_model
 
-    def solve(self, k, xs_init=None, us_init=None):
+    def solve(self, k):
         t_start = time()
 
         t_update = time()
         self.t_update = t_update - t_start
 
-        if xs_init is None or us_init is None:
-            xs_init = [self.x0] * (self.ddp.problem.T + 1)
-            us_init = self.ddp.problem.quasiStatic([self.x0] * self.ddp.problem.T)
-        else:
-            assert len(xs_init) == self.ddp.problem.T + 1
-            assert len(us_init) == self.ddp.problem.T
+        if self.xs_init is None or self.us_init is None:
+            self._xs_init = [self.x0] * (self.ddp.problem.T + 1)
+            self._us_init = self.ddp.problem.quasiStatic([self.x0] * self.ddp.problem.T)
+        self._check_ws_dim()
 
         t_warm_start = time()
         self.t_warm_start = t_warm_start - t_update
 
         self.ddp.solve(
-            xs_init, us_init, self.max_iter if k > 0 else self.init_max_iters, False
+            self.xs_init,
+            self.us_init,
+            self.max_iter if k > 0 else self.init_max_iters,
+            False,
         )
 
         t_ddp = time()
@@ -155,20 +156,23 @@ class CrocOCP(OCPAbstract):
         feet_pos = self.get_active_feet(footsteps, support_feet)
         self._update_model(model, feet_pos, base_pose, support_feet)
         self.circular_append(model)
-        self.cycle_warm_start()
+        if k > 0:
+            self.cycle_warm_start()
 
     def circular_append(self, m):
         d = m.createData()
         self.problem.circularAppend(m, d)
 
     def get_results(self, window_size=None):
+        self.xs_init[:] = self.ddp.xs
+        self.us_init[:] = self.ddp.us
         if window_size is None:
             window_size = len(self.ddp.us)
         return (
             self.current_gait,
             self.ddp.xs[:],
             self.ddp.us[:],
-            self.ddp.K[:window_size],
+            self.ddp.K[:window_size].tolist(),
             self.t_ddp,
         )
 

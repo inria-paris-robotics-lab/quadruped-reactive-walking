@@ -48,7 +48,10 @@ class OCPAbstract(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def solve(self, k, xs_init, us_init):
+    def solve(self, k):
+        """
+        Solve the current instance of the OCP.
+        """
         pass
 
     @abc.abstractmethod
