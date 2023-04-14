@@ -2,6 +2,7 @@ import abc
 
 from .task_spec import TaskSpec
 import quadruped_reactive_walking as qrw
+from ..tools.utils import no_copy_roll_insert
 
 
 class OCPAbstract(abc.ABC):
@@ -12,6 +13,26 @@ class OCPAbstract(abc.ABC):
         self.params = params
         self.max_iter = 1000 if params.save_guess else params.ocp.max_iter
         self.init_max_iters = params.ocp.init_max_iters
+
+        # Warm starts. To be stored internally.
+        # Should not be set from the outside
+        self._xs_init = None
+        self._us_init = None
+
+    @property
+    def xs_init(self):
+        return self._xs_init
+
+    @property
+    def us_init(self):
+        return self._us_init
+
+    def cycle_warm_start(self):
+        xT = self.xs_init[-1]
+        no_copy_roll_insert(self.xs_init, xT)
+
+        uT = self.us_init[-1]
+        no_copy_roll_insert(self.us_init, uT)
 
     @abc.abstractmethod
     def initialize_models_from_gait(self, gait, footsteps=None, base_refs=None):

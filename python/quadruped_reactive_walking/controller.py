@@ -235,23 +235,9 @@ class Controller:
 
             # Compute feedforward torque
             # self.result.FF_weight = self.params.Kff_main * np.ones(12)
+            self.result.tau_ff[:] = self.compute_torque()
 
-            if self.params.interpolate_mpc:
-                if self.mpc_result.new_result:
-                    if self.params.interpolation_type == qrw.INTERP_CUBIC:
-                        self.interpolator.update(xs[0], xs[1], xs[2])
-                t = (self.k - self.k_solve + 1) * self.params.dt_wbc
-                q, v = self.interpolator.interpolate(t)
-            else:
-                q, v = self.integrate_x()
-
-            self.result.q_des = q[:]
-            self.result.v_des = v[:]
-
-            self.xs_init = self.mpc_result.xs[1:]
-            self.xs_init.append(self.mpc_result.xs[-1])
-            self.us_init = self.mpc_result.us[1:]
-            self.us_init.append(self.mpc_result.us[-1])
+            self.interpolate_solution(xs)
 
         t_send = time.time()
         self.t_send = t_send - t_mpc
@@ -267,6 +253,20 @@ class Controller:
         self.initialized = True
 
         return self.error
+
+    def interpolate_solution(self, xs):
+        if self.params.interpolate_mpc:
+            # Use interpolation
+            if self.mpc_result.new_result:
+                if self.params.interpolation_type == qrw.INTERP_CUBIC:
+                    self.interpolator.update(xs[0], xs[1], xs[2])
+            t = (self.k - self.k_solve + 1) * self.params.dt_wbc
+            q, v = self.interpolator.interpolate(t)
+        else:
+            # use integration
+            q, v = self.integrate_x()
+        self.result.q_des[:] = q
+        self.result.v_des[:] = v
 
     def security_check(self):
         """
