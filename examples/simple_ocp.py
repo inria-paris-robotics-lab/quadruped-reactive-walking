@@ -9,7 +9,6 @@ from quadruped_reactive_walking.wb_mpc.target import Target
 
 params = qrw.Params.create_from_file()
 params.ocp: qrw.OCPParams
-params.ocp.init_max_iters = 1
 task = TaskSpec(params)
 
 print(task)
@@ -27,7 +26,9 @@ nsteps = ocp.ddp.problem.T
 xs_i = [x0] * (nsteps + 1)
 us_i = ocp.problem.quasiStatic(xs_i[:nsteps])
 
-ocp.solve(0, xs_i, us_i)
+ocp._xs_init = xs_i
+ocp._us_init = us_i
+ocp.solve(0)
 
 
 ocp2 = AlgtrOCPProx(params, footsteps, base_refs)
@@ -35,7 +36,7 @@ ocp2 = AlgtrOCPProx(params, footsteps, base_refs)
 ts = time.time()
 n = 2000
 for i in range(n):
-    ocp2.solve(0, xs_i, us_i)
+    ocp2.solve(0)
 elapsed = time.time() - ts
 print("Elapsed time: {}".format(elapsed))
 print("Avg. time   : {}".format(elapsed / n))

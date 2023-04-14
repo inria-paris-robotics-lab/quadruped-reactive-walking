@@ -150,14 +150,14 @@ class Controller:
         self.k_solve = 0
         if self.params.interpolate_mpc:
             self.interpolator = Interpolator(params, self.task.x0)
+        # self.xs_init = None
+        # self.us_init = None
         try:
-            filename = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
-            self.xs_init = list(filename["xs"])
-            self.us_init = list(filename["us"])
+            # filename = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
+            # self.xs_init = list(filename["xs"])
+            # self.us_init = list(filename["us"])
             print("Initial guess loaded.\n")
         except Exception:
-            self.xs_init = None
-            self.us_init = None
             print("No initial guess found.\n")
 
         self.filter_q = qrw.Filter()
@@ -211,8 +211,8 @@ class Controller:
                     x,
                     self.target_footstep.copy(),
                     self.target_base.copy(),
-                    self.xs_init,
-                    self.us_init,
+                    # self.xs_init,
+                    # self.us_init,
                 )
             except ValueError:
                 import traceback

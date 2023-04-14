@@ -40,8 +40,8 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.in_k = Value("i", 0)
         self.in_x0 = Array("d", [0] * self.nx)
         self.in_warm_start = Value("b", False)
-        self.in_xs = Array("d", [0] * ((self.N_gait + 1) * self.nx))
-        self.in_us = Array("d", [0] * (self.N_gait * self.nu))
+        # self.in_xs = Array("d", [0] * ((self.N_gait + 1) * self.nx))
+        # self.in_us = Array("d", [0] * (self.N_gait * self.nu))
         self.in_footstep = Array("d", [0] * 12)
         self.in_base_ref = Array("d", [0] * 6)
         self.out_gait = Array("i", [0] * ((self.N_gait + 1) * 4))
@@ -56,18 +56,17 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         )
         self.new_result = Value("b", False)
 
-    def solve(self, k, x0, footstep, base_ref, xs=None, us=None):
+    def solve(self, k, x0, footstep, base_ref):
         if k == 0:
-            if xs is not None:
-                self.last_available_result.xs = xs
-                self.last_available_result.us = us
-            else:
-                winsize = self.last_available_result.window_size
-                self.last_available_result.xs = [x0 for _ in range(winsize + 1)]
+            # if xs is not None:
+            #     self.last_available_result.xs = xs
+            #     self.last_available_result.us = us
+            # else:
+            #     self.last_available_result.xs = [x0 for _ in range(self.WINDOW_SIZE + 1)]
             p = Process(target=self._mpc_asynchronous)
             p.start()
 
-        self.add_new_data(k, x0, footstep, base_ref, xs, us)
+        self.add_new_data(k, x0, footstep, base_ref)
 
     def get_latest_result(self):
         """
@@ -111,22 +110,22 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
                 )
 
             loop_ocp.make_ocp(k, x0, footstep, base_ref)
-            loop_ocp.solve(k, xs, us)
+            loop_ocp.solve(k)
             gait, xs, us, K, solving_time = loop_ocp.get_results(self.WINDOW_SIZE)
             self._compress_dataOut(gait, xs, us, K, loop_ocp.num_iters, solving_time)
             self.new_result.value = True
 
-    def add_new_data(self, k, x0, footstep, base_ref, xs, us):
+    def add_new_data(self, k, x0, footstep, base_ref):
         """
         Compress data in a C-type structure that belongs to the shared memory to send
         data from the main control loop to the asynchronous MPC and notify the process
         that there is a new data
         """
 
-        self._compress_dataIn(k, x0, footstep, base_ref, xs, us)
+        self._compress_dataIn(k, x0, footstep, base_ref)
         self.new_data.value = True
 
-    def _compress_dataIn(self, k, x0, footstep, base_ref, xs, us):
+    def _compress_dataIn(self, k, x0, footstep, base_ref):
         """
         Decompress data from a C-type structure that belongs to the shared memory to
         retrieve data from the main control loop in the asynchronous MPC
@@ -141,19 +140,19 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         with self.in_base_ref.get_lock():
             np.frombuffer(self.in_base_ref.get_obj())[:] = base_ref
 
-        if xs is None or us is None:
-            self.in_warm_start.value = False
-            return
-        self.in_warm_start.value = True
+        # if xs is None or us is None:
+        #     self.in_warm_start.value = False
+        #     return
+        # self.in_warm_start.value = True
 
-        with self.in_xs.get_lock():
-            np.frombuffer(self.in_xs.get_obj()).reshape((self.N_gait + 1, self.nx))[
-                :, :
-            ] = np.array(xs)
-        with self.in_us.get_lock():
-            np.frombuffer(self.in_us.get_obj()).reshape((self.N_gait, self.nu))[
-                :, :
-            ] = np.array(us)
+        # with self.in_xs.get_lock():
+        #     np.frombuffer(self.in_xs.get_obj()).reshape((self.N_gait + 1, self.nx))[
+        #         :, :
+        #     ] = np.array(xs)
+        # with self.in_us.get_lock():
+        #     np.frombuffer(self.in_us.get_obj()).reshape((self.N_gait, self.nu))[
+        #         :, :
+        #     ] = np.array(us)
 
     def _decompress_dataIn(self):
         """
@@ -172,16 +171,16 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         if not self.in_warm_start.value:
             return k, x0, footstep, base_ref, None, None
 
-        with self.in_xs.get_lock():
-            xs = list(
-                np.frombuffer(self.in_xs.get_obj()).reshape((self.N_gait + 1, self.nx))
-            )
-        with self.in_us.get_lock():
-            us = list(
-                np.frombuffer(self.in_us.get_obj()).reshape((self.N_gait, self.nu))
-            )
+        # with self.in_xs.get_lock():
+        #     xs = list(
+        #         np.frombuffer(self.in_xs.get_obj()).reshape((self.N_gait + 1, self.nx))
+        #     )
+        # with self.in_us.get_lock():
+        #     us = list(
+        #         np.frombuffer(self.in_us.get_obj()).reshape((self.N_gait, self.nu))
+        #     )
 
-        return k, x0, footstep, base_ref, xs, us
+        return k, x0, footstep, base_ref  # , xs, us
 
     def _compress_dataOut(self, gait, xs, us, K, num_iters, solving_time):
         """
