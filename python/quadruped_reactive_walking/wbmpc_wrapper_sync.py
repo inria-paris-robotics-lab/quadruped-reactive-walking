@@ -4,6 +4,7 @@ from .wb_mpc.task_spec import TaskSpec
 from typing import Type
 
 from .wbmpc_wrapper_abstract import MPCWrapperAbstract, MPCResult
+from quadruped_reactive_walking import Params
 
 
 class SyncMPCWrapper(MPCWrapperAbstract):
@@ -11,9 +12,12 @@ class SyncMPCWrapper(MPCWrapperAbstract):
     Wrapper to run both types of MPC (OQSP or Crocoddyl) in a synchronous manner in the main thread.
     """
 
-    def __init__(self, params, footsteps, base_refs, solver_cls: Type[OCPAbstract]):
+    def __init__(
+        self, params: Params, footsteps, base_refs, solver_cls: Type[OCPAbstract]
+    ):
         self.params = params
         self.pd = TaskSpec(params)
+        self.WINDOW_SIZE = params.window_size
         self.T = params.N_gait
         self.nu = self.pd.nu
         self.nx = self.pd.nx
@@ -27,9 +31,10 @@ class SyncMPCWrapper(MPCWrapperAbstract):
         )
         self.new_result = False
 
-    def solve(self, k, x0, footstep, base_ref, xs=None, us=None):
+    def solve(self, k, x0, footstep, base_ref):
         self.ocp.make_ocp(k, x0, footstep, base_ref)
-        self.ocp.solve(k, xs, us)
+        self.ocp.solve(k)
+
         gait, xs, us, K, solving_duration = self.ocp.get_results(self.WINDOW_SIZE)
         self.last_available_result.gait = gait
         self.last_available_result.xs = xs

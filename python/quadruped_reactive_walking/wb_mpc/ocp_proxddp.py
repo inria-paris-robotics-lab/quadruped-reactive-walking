@@ -63,7 +63,7 @@ class AlgtrOCPAbstract(CrocOCP):
         self.prox_iters = []
         self.croc_iters = []
 
-    def solve(self, k, xs_init=None, us_init=None):
+    def solve(self, k):
         t_start = time.time()
         self.my_problem.x0_init = self.x0
 
@@ -71,19 +71,17 @@ class AlgtrOCPAbstract(CrocOCP):
         self.t_update = t_update - t_start
         nsteps = self.my_problem.num_steps
 
-        if xs_init is None or us_init is None:
-            xs_init = [self.x0] * (nsteps + 1)
-            us_init = self.problem.quasiStatic([self.x0] * nsteps)
-        else:
-            assert len(xs_init) == nsteps + 1
-            assert len(us_init) == nsteps
+        if self.xs_init is None or self.us_init is None:
+            self._xs_init = [self.x0] * (nsteps + 1)
+            self._us_init = self.problem.quasiStatic([self.x0] * nsteps)
+        self._check_ws_dim()
 
         t_warm_start = time.time()
         self.t_warm_start = t_warm_start - t_update
 
         maxiter = self.max_iter if k > 0 else self.init_max_iters
         self.prox_ddp.max_iters = maxiter
-        self.prox_ddp.run(self.my_problem, xs_init, us_init)
+        self.prox_ddp.run(self.my_problem, self.xs_init, self.us_init)
 
         # compute proxddp's criteria
         res = self.prox_ddp.results
@@ -108,15 +106,18 @@ class AlgtrOCPAbstract(CrocOCP):
 
     def get_results(self, window_size=None):
         res = self.prox_ddp.results
+        self.xs_init[:] = res.xs
+        self.us_init[:] = res.us
         if window_size is None:
             window_size = len(res.us)
         feedbacks = res.controlFeedbacks()[:window_size]
-        feedbacks = [-K for K in feedbacks]
+        # flip sign because controller expects Crocoddyl's convention
+        feedbacks = [-K.copy() for K in feedbacks]
 
         return (
             self.current_gait.copy(),
-            res.xs[:],
-            res.us[:],
+            res.xs[: window_size + 1],
+            res.us[:window_size],
             feedbacks,
             self.t_ddp,
         )

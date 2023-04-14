@@ -10,7 +10,7 @@ from . import wb_mpc
 from .wb_mpc.target import Target
 from .wb_mpc.task_spec import TaskSpec
 from .wbmpc_wrapper_abstract import MPCResult
-from .tools.Utils import quaternionToRPY, make_footstep
+from .tools.utils import quaternionToRPY, make_footstep
 from .tools.Interpolator import Interpolator
 from typing import Type
 
@@ -25,7 +25,7 @@ class ControllerResult:
     def __init__(self, params):
         self.P = np.array(params.Kp_main.tolist() * 4)
         self.D = np.array(params.Kd_main.tolist() * 4)
-        self.FF = params.Kff_main * np.ones(12)
+        self.FF_weight = params.Kff_main * np.ones(12)
         self.q_des = np.zeros(12)
         self.v_des = np.zeros(12)
         self.tau_ff = np.zeros(12)
@@ -105,6 +105,7 @@ class Controller:
         self.estimator = qrw.Estimator()
         self.estimator.initialize(params)
         self.q = np.zeros(18)
+        self.mpc_result: MPCResult = None
 
         self.result = ControllerResult(params)
         self.result.q_des = self.task.q0[7:].copy()
@@ -149,14 +150,14 @@ class Controller:
         self.k_solve = 0
         if self.params.interpolate_mpc:
             self.interpolator = Interpolator(params, self.task.x0)
+        # self.xs_init = None
+        # self.us_init = None
         try:
-            filename = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
-            self.xs_init = list(filename["xs"])
-            self.us_init = list(filename["us"])
+            # filename = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
+            # self.xs_init = list(filename["xs"])
+            # self.us_init = list(filename["us"])
             print("Initial guess loaded.\n")
         except Exception:
-            self.xs_init = None
-            self.us_init = None
             print("No initial guess found.\n")
 
         self.filter_q = qrw.Filter()
@@ -210,8 +211,8 @@ class Controller:
                     x,
                     self.target_footstep.copy(),
                     self.target_base.copy(),
-                    self.xs_init,
-                    self.us_init,
+                    # self.xs_init,
+                    # self.us_init,
                 )
             except ValueError:
                 import traceback
@@ -233,25 +234,11 @@ class Controller:
             if not self.initialized and self.params.save_guess:
                 self.save_guess()
 
-            self.result.FF = self.params.Kff_main * np.ones(12)
-            self.result.tau_ff = self.compute_torque()[:]
+            # Compute feedforward torque
+            # self.result.FF_weight = self.params.Kff_main * np.ones(12)
+            self.result.tau_ff[:] = self.compute_torque()
 
-            if self.params.interpolate_mpc:
-                if self.mpc_result.new_result:
-                    if self.params.interpolation_type == qrw.INTERP_CUBIC:
-                        self.interpolator.update(xs[0], xs[1], xs[2])
-                t = (self.k - self.k_solve + 1) * self.params.dt_wbc
-                q, v = self.interpolator.interpolate(t)
-            else:
-                q, v = self.integrate_x()
-
-            self.result.q_des = q[:]
-            self.result.v_des = v[:]
-
-            self.xs_init = self.mpc_result.xs[1:]
-            self.xs_init.append(self.mpc_result.xs[-1])
-            self.us_init = self.mpc_result.us[1:]
-            self.us_init.append(self.mpc_result.us[-1])
+            self.interpolate_solution(xs)
 
         t_send = time.time()
         self.t_send = t_send - t_mpc
@@ -267,6 +254,20 @@ class Controller:
         self.initialized = True
 
         return self.error
+
+    def interpolate_solution(self, xs):
+        if self.params.interpolate_mpc:
+            # Use interpolation
+            if self.mpc_result.new_result:
+                if self.params.interpolation_type == qrw.INTERP_CUBIC:
+                    self.interpolator.update(xs[0], xs[1], xs[2])
+            t = (self.k - self.k_solve + 1) * self.params.dt_wbc
+            q, v = self.interpolator.interpolate(t)
+        else:
+            # use integration
+            q, v = self.integrate_x()
+        self.result.q_des[:] = q
+        self.result.v_des[:] = v
 
     def security_check(self):
         """
@@ -284,10 +285,10 @@ class Controller:
                 print(self.v_estimate[6:])
                 print(np.abs(self.v_estimate[6:]) > 100.0)
                 self.error = True
-            elif (np.abs(self.result.FF) > 5.0).any():
+            elif (np.abs(self.result.FF_weight) > 5.0).any():
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")
-                print(self.result.FF)
-                print(np.abs(self.result.FF) > 5.0)
+                print(self.result.FF_weight)
+                print(np.abs(self.result.FF_weight) > 5.0)
                 self.error = True
 
     def clamp(self, num, min_value=None, max_value=None):
@@ -361,10 +362,10 @@ class Controller:
         """
         Send default null values to the robot
         """
-        self.result.FF = np.zeros(12)
-        self.result.q_des[:] = np.zeros(12)
-        self.result.v_des[:] = np.zeros(12)
-        self.result.tau_ff[:] = np.zeros(12)
+        self.result.FF_weight[:] = 0.0
+        self.result.q_des[:] = 0.0
+        self.result.v_des[:] = 0.0
+        self.result.tau_ff[:] = 0.0
 
     def save_guess(self, filename="/tmp/init_guess.npy"):
         """
@@ -420,7 +421,7 @@ class Controller:
         # bp_m = np.array([e for tup in device.baseState for e in tup])
         # bv_m = np.array([e for tup in device.baseVel for e in tup])
         self.q[:3] = self.q_estimate[:3]
-        self.q[3:6] = quaternionToRPY(self.q_estimate[3:7]).ravel()
+        self.q[3:6] = quaternionToRPY(self.q_estimate[3:7])
         self.q[6:] = self.q_estimate[7:]
 
         self.v = self.estimator.get_v_reference()
@@ -455,7 +456,7 @@ class Controller:
         """
         q0 = self.q_estimate.copy()
         v0 = self.v_estimate.copy()
-        tau = np.concatenate([np.zeros(6), self.result.tau_ff.copy()])
+        tau = np.concatenate([np.zeros(6), self.result.tau_ff])
 
         a = pin.aba(self.task.model, self.rdata, q0, v0, tau)
 
@@ -464,56 +465,44 @@ class Controller:
 
         return q[7:], v[6:]
 
-    def plot_mpc(self, base=False, joints=True):
-        import matplotlib.pyplot as plt
 
-        if base:
-            legend = ["X", "Y", "Z"]
-            _, axs = plt.subplots(2)
-            [axs[0].plot(np.array(self.mpc_result.xs)[:, axis]) for axis in range(3)]
-            axs[0].legend(legend)
-            axs[0].set_title("Base position")
+def plot_mpc(task, mpc_result: MPCResult, base=False, joints=True):
+    import matplotlib.pyplot as plt
+
+    if base:
+        legend = ["X", "Y", "Z"]
+        _, axs = plt.subplots(2)
+        [axs[0].plot(np.array(mpc_result.xs)[:, axis]) for axis in range(3)]
+        axs[0].legend(legend)
+        axs[0].set_title("Base position")
+
+        [axs[1].plot(np.array(mpc_result.xs)[:, 19 + axis]) for axis in range(3)]
+        axs[1].legend(legend)
+        axs[1].set_title("Base velocity")
+
+    if joints:
+        legend = ["Hip", "Shoulder", "Knee"]
+        _, axs = plt.subplots(3, 4, sharex=True)
+        for foot in range(4):
+            [
+                axs[0, foot].plot(np.array(mpc_result.xs)[:, 7 + 3 * foot + joint])
+                for joint in range(3)
+            ]
+            axs[0, foot].legend(legend)
+            axs[0, foot].set_title("Joint positions for " + task.feet_names[foot])
 
             [
-                axs[1].plot(np.array(self.mpc_result.xs)[:, 19 + axis])
-                for axis in range(3)
+                axs[1, foot].plot(np.array(mpc_result.xs)[:, 19 + 6 + 3 * foot + joint])
+                for joint in range(3)
             ]
-            axs[1].legend(legend)
-            axs[1].set_title("Base velocity")
+            axs[1, foot].legend(legend)
+            axs[1, foot].set_title("Joint velocity for " + task.feet_names[foot])
 
-        if joints:
-            legend = ["Hip", "Shoulder", "Knee"]
-            _, axs = plt.subplots(3, 4, sharex=True)
-            for foot in range(4):
-                [
-                    axs[0, foot].plot(
-                        np.array(self.mpc_result.xs)[:, 7 + 3 * foot + joint]
-                    )
-                    for joint in range(3)
-                ]
-                axs[0, foot].legend(legend)
-                axs[0, foot].set_title(
-                    "Joint positions for " + self.task.feet_names[foot]
-                )
+            [
+                axs[2, foot].plot(np.array(mpc_result.us)[:, 3 * foot + joint])
+                for joint in range(3)
+            ]
+            axs[2, foot].legend(legend)
+            axs[2, foot].set_title("Joint torques for foot " + task.feet_names[foot])
 
-                [
-                    axs[1, foot].plot(
-                        np.array(self.mpc_result.xs)[:, 19 + 6 + 3 * foot + joint]
-                    )
-                    for joint in range(3)
-                ]
-                axs[1, foot].legend(legend)
-                axs[1, foot].set_title(
-                    "Joint velocity for " + self.task.feet_names[foot]
-                )
-
-                [
-                    axs[2, foot].plot(np.array(self.mpc_result.us)[:, 3 * foot + joint])
-                    for joint in range(3)
-                ]
-                axs[2, foot].legend(legend)
-                axs[2, foot].set_title(
-                    "Joint torques for foot " + self.task.feet_names[foot]
-                )
-
-        plt.show()
+    plt.show()

@@ -20,7 +20,7 @@ class MPCWrapperAbstract:
         pass
 
     @abc.abstractclassmethod
-    def get_latest_result(self):
+    def get_latest_result(self) -> MPCResult:
         pass
 
     @abc.abstractclassmethod

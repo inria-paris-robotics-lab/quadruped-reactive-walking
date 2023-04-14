@@ -191,7 +191,7 @@ class LoggerControl:
         self.wbc_D[self.i] = controller.result.D
         self.wbc_q_des[self.i] = controller.result.q_des
         self.wbc_v_des[self.i] = controller.result.v_des
-        self.wbc_FF[self.i] = controller.result.FF
+        self.wbc_FF[self.i] = controller.result.FF_weight
         self.wbc_tau_ff[self.i] = controller.result.tau_ff
 
         # Logging timestamp

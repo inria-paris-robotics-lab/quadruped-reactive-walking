@@ -255,7 +255,7 @@ def main(args):
             device.joints.set_desired_positions(controller.result.q_des)
             device.joints.set_desired_velocities(controller.result.v_des)
             device.joints.set_torques(
-                controller.result.FF * controller.result.tau_ff.ravel()
+                controller.result.FF_weight * controller.result.tau_ff.ravel()
             )
             device.send_command_and_wait_end_of_cycle(params.dt_wbc)
 
