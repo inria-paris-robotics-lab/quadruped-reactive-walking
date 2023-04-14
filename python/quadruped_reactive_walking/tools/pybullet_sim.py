@@ -8,7 +8,7 @@ import pinocchio as pin
 from example_robot_data.path import EXAMPLE_ROBOT_DATA_MODEL_DIR
 
 
-VIDEO_CONFIG = {"width": 720, "height": 480, "fov": 75, "record": True, "fps": 30}
+VIDEO_CONFIG = {"width": 720, "height": 480, "fov": 75, "record": False, "fps": 30}
 DEFAULT_CAM_YAW = 45
 DEFAULT_CAM_PITCH = -39.9
 DEFAULT_CAM_ROLL = 0
