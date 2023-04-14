@@ -25,7 +25,7 @@ class ControllerResult:
     def __init__(self, params):
         self.P = np.array(params.Kp_main.tolist() * 4)
         self.D = np.array(params.Kd_main.tolist() * 4)
-        self.FF = params.Kff_main * np.ones(12)
+        self.FF_weight = params.Kff_main * np.ones(12)
         self.q_des = np.zeros(12)
         self.v_des = np.zeros(12)
         self.tau_ff = np.zeros(12)
@@ -233,8 +233,8 @@ class Controller:
             if not self.initialized and self.params.save_guess:
                 self.save_guess()
 
-            self.result.FF = self.params.Kff_main * np.ones(12)
-            self.result.tau_ff = self.compute_torque()[:]
+            # Compute feedforward torque
+            # self.result.FF_weight = self.params.Kff_main * np.ones(12)
 
             if self.params.interpolate_mpc:
                 if self.mpc_result.new_result:
@@ -284,10 +284,10 @@ class Controller:
                 print(self.v_estimate[6:])
                 print(np.abs(self.v_estimate[6:]) > 100.0)
                 self.error = True
-            elif (np.abs(self.result.FF) > 5.0).any():
+            elif (np.abs(self.result.FF_weight) > 5.0).any():
                 print("-- FEEDFORWARD TORQUES TOO HIGH ERROR --")
-                print(self.result.FF)
-                print(np.abs(self.result.FF) > 5.0)
+                print(self.result.FF_weight)
+                print(np.abs(self.result.FF_weight) > 5.0)
                 self.error = True
 
     def clamp(self, num, min_value=None, max_value=None):
@@ -361,10 +361,10 @@ class Controller:
         """
         Send default null values to the robot
         """
-        self.result.FF = np.zeros(12)
-        self.result.q_des[:] = np.zeros(12)
-        self.result.v_des[:] = np.zeros(12)
-        self.result.tau_ff[:] = np.zeros(12)
+        self.result.FF_weight[:] = 0.0
+        self.result.q_des[:] = 0.0
+        self.result.v_des[:] = 0.0
+        self.result.tau_ff[:] = 0.0
 
     def save_guess(self, filename="/tmp/init_guess.npy"):
         """
