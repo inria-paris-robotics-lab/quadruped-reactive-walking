@@ -105,6 +105,7 @@ class Controller:
         self.estimator = qrw.Estimator()
         self.estimator.initialize(params)
         self.q = np.zeros(18)
+        self.mpc_result: MPCResult = None
 
         self.result = ControllerResult(params)
         self.result.q_des = self.task.q0[7:].copy()
