@@ -8,7 +8,12 @@ import pinocchio as pin
 from example_robot_data.path import EXAMPLE_ROBOT_DATA_MODEL_DIR
 
 
-VIDEO_CONFIG = {"width": 1280, "height": 720, "fov": 75, "record": False}
+VIDEO_CONFIG = {"width": 720, "height": 480, "fov": 75, "record": True, "fps": 30}
+DEFAULT_CAM_YAW = 45
+DEFAULT_CAM_PITCH = -39.9
+DEFAULT_CAM_ROLL = 0
+DEFAULT_CAM_DIST = 1.0
+UPAXISINDEX = 2
 
 
 class PybulletWrapper:
@@ -27,15 +32,26 @@ class PybulletWrapper:
     def __init__(self, q_init, env_id, use_flat_plane, enable_pyb_GUI, dt=0.001):
         self.applied_force = np.zeros(3)
         self.enable_gui = enable_pyb_GUI
+        GUI_OPTIONS = "--width={} --height={}".format(
+            VIDEO_CONFIG["width"], VIDEO_CONFIG["height"]
+        )
+        GUI_OPTIONS += " --window_backend=2 --render_device=0"
 
         # Start the client for PyBullet
         if self.enable_gui:
-            pyb.connect(pyb.GUI)
+            pyb.connect(pyb.GUI, options=GUI_OPTIONS)
             pyb.configureDebugVisualizer(pyb.COV_ENABLE_GUI, 0)
-            pyb.configureDebugVisualizer(pyb.COV_ENABLE_SHADOWS, 0)
+            pyb.configureDebugVisualizer(pyb.COV_ENABLE_SHADOWS, 1)
 
         else:
+            import pkgutil
+
+            egl = pkgutil.get_loader("eglRenderer")
             pyb.connect(pyb.DIRECT)
+            if egl:
+                pyb.loadPlugin(egl.get_filename(), "_eglRendererPlugin")
+            else:
+                pyb.loadPlugin("eglRendererPlugin")
 
         # Load horizontal plane
         pyb.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -348,31 +364,33 @@ class PybulletWrapper:
         # Set time step for the simulation
         pyb.setTimeStep(dt)
 
+        self.init_cam_target_pos = [0.0, 0.0, robotStartPos[2] - 0.2]
+
         if self.enable_gui:
             # Change camera position
             pyb.resetDebugVisualizerCamera(
-                cameraDistance=0.6,
-                cameraYaw=45,
-                cameraPitch=-39.9,
-                cameraTargetPosition=[0.0, 0.0, robotStartPos[2] - 0.2],
+                cameraDistance=DEFAULT_CAM_DIST,
+                cameraYaw=DEFAULT_CAM_YAW,
+                cameraPitch=DEFAULT_CAM_PITCH,
+                cameraTargetPosition=self.init_cam_target_pos,
             )
 
     def get_image(self):
         width = VIDEO_CONFIG["width"]
         height = VIDEO_CONFIG["height"]
-        aspect = width / height
+        aspect = float(width) / height
         fov = VIDEO_CONFIG["fov"]
         near = 0.02
         far = 10
         proj_matrix = pyb.computeProjectionMatrixFOV(fov, aspect, near, far)
-        renderer = pyb.ER_BULLET_HARDWARE_OPENGL
         lightDirection = [0.0, 0.0, 4.0]
         _, _, rgb, depthimg, _ = pyb.getCameraImage(
             width,
             height,
+            viewMatrix=self.view_matrix,
             projectionMatrix=proj_matrix,
             lightDirection=lightDirection,
-            renderer=renderer,
+            renderer=pyb.ER_BULLET_HARDWARE_OPENGL,
         )
         return rgb
 
@@ -434,16 +452,36 @@ class PybulletWrapper:
 
         if self.enable_gui:
             self.set_debug_camera(q)
+        else:
+            self.compute_view_mat(q)
+
+    def compute_view_mat(self, q):
+        oMb_tmp = pin.XYZQUATToSE3(q)
+        rpy = pin.rpy.matrixToRpy(oMb_tmp.rotation)
+        rpy = np.rad2deg(rpy)
+        roll, pitch, yaw = rpy
+
+        # Update the PyBullet camera on the robot position to do as if it was attached to the robot
+        cam_target_pos = oMb_tmp.translation
+        cam_target_pos[2] = 0.0
+        self.view_matrix = pyb.computeViewMatrixFromYawPitchRoll(
+            cam_target_pos,
+            DEFAULT_CAM_DIST,
+            DEFAULT_CAM_YAW,
+            DEFAULT_CAM_PITCH,
+            DEFAULT_CAM_ROLL,
+            UPAXISINDEX,
+        )
 
     def set_debug_camera(self, q):
         # Get the orientation of the robot to change the orientation of the camera with the rotation of the robot
         oMb_tmp = pin.XYZQUATToSE3(q)
-        rpy = pin.rpy.matrixToRpy(oMb_tmp.rotation)
-        rpy = np.rad2deg(rpy)
+        # rpy = pin.rpy.matrixToRpy(oMb_tmp.rotation)
+        # rpy = np.rad2deg(rpy)
 
         # Update the PyBullet camera on the robot position to do as if it was attached to the robot
-        cam_pos = oMb_tmp.translation
-        cam_pos[2] = 0.0
+        cam_target_pos = oMb_tmp.translation
+        cam_target_pos[2] = 0.0
         [
             _w,
             _h,
@@ -458,17 +496,22 @@ class PybulletWrapper:
             cam_dist,
             _old_cam_tgt,
         ] = pyb.getDebugVisualizerCamera()
+        self.view_matrix = _vmat
+        # keep same pitch and yaw
         pyb.resetDebugVisualizerCamera(
             cameraDistance=cam_dist,
             cameraYaw=_yaw,
             cameraPitch=_pitch,
-            cameraTargetPosition=cam_pos,
+            cameraTargetPosition=cam_target_pos,
         )
 
-    def update_debug_camera(self):
+    def updateCameraView(self):
         base_state = pyb.getBasePositionAndOrientation(self.robotId)
         q = np.concatenate(base_state)
-        self.set_debug_camera(q)
+        if self.enable_gui:
+            self.set_debug_camera(q)
+        else:
+            self.compute_view_mat(q)
 
     def retrieve_pyb_data(self):
         """
@@ -718,11 +761,12 @@ class PyBulletSimulator:
         self.tau_ff = np.zeros(12)
         self.g = np.array([[0.0], [0.0], [-9.81]])
 
-        self.video_fps = 30
-        self.video_rate_factor = 2
+        self.video_fps = VIDEO_CONFIG["fps"]
+        self.video_rate_factor = 1
         self.video_record_every = self.video_fps / self.video_rate_factor
 
         self.record_video = VIDEO_CONFIG["record"]
+        self.video_frames = []
 
     def Init(self, q, env_id, use_flat_plane, enable_pyb_GUI, dt):
         """
@@ -741,14 +785,6 @@ class PyBulletSimulator:
         self.joints.positions[:] = q
         self.dt = dt
         self.time_loop = time.time()
-
-        if self.record_video:
-            import imageio
-
-            vid_kwargs = dict(fps=self.video_fps)
-            self.video_buffer = imageio.get_writer("sim_video.mp4", **vid_kwargs)
-        else:
-            self.video_buffer = None
 
     def cross3(self, left, right):
         """
@@ -849,11 +885,10 @@ class PyBulletSimulator:
         )
 
         pyb.stepSimulation()
-        if self.pyb_sim.enable_gui:
-            self.pyb_sim.update_debug_camera()
+        self.pyb_sim.updateCameraView()
         if self.record_video and self.cpt % self.video_record_every == 0:
             img = self.pyb_sim.get_image()
-            self.video_buffer.append_data(img)
+            self.video_frames.append(img)
 
         if WaitEndOfCycle:
             while (time.time() - self.time_loop) < self.dt:
@@ -880,6 +915,11 @@ class PyBulletSimulator:
         """
         Stop the simulation environment
         """
-        if self.video_buffer is not None:
-            self.video_buffer.close()
+        if self.record_video:
+            import imageio
+
+            vid_kwargs = dict(fps=self.video_fps)
+            print("Rendering video frames...")
+            imageio.mimwrite("sim_video.mp4", self.video_frames, **vid_kwargs)
+        self.video_frames.clear()
         pyb.disconnect()
