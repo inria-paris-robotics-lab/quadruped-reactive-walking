@@ -76,9 +76,9 @@ class LoggerControl:
         self.v_estimate = np.zeros([size, self.pd.nv])
         self.q_filtered = np.zeros([size, self.pd.nq])
         self.v_filtered = np.zeros([size, self.pd.nv])
-        # MPC_WINDOW = params.window_size
-        self.ocp_xs = np.zeros([size, params.N_gait + 1, self.pd.nx])
-        self.ocp_us = np.zeros([size, params.N_gait, self.pd.nu])
+        MPC_WINDOW = params.window_size
+        self.ocp_xs = np.zeros([size, MPC_WINDOW + 1, self.pd.nx])
+        self.ocp_us = np.zeros([size, MPC_WINDOW, self.pd.nu])
         # "spot" feedback gain
         self.ocp_K = np.zeros([size, self.pd.nu, self.pd.ndx])
         self.ocp_num_iters = np.zeros([size], dtype=int)
@@ -396,11 +396,11 @@ class LoggerControl:
             label="MPC (OCP solve)",
         )
         plt.axhline(
-            y=self.params.dt_wbc,
+            y=self.params.dt_mpc,
             color="darkorange",
             linestyle="-",
-            lw=1.0,
-            label="wbc $\\Delta t$",
+            lw=1.2,
+            label="mpc $\\Delta t$",
         )
         plt.legend()
         plt.xlabel("Clock  [s]")

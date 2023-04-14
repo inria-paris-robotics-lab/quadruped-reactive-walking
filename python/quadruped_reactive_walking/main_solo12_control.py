@@ -290,7 +290,7 @@ def main(args):
     if device.is_timeout:
         print("Masterboard timeout detected.")
 
-    if params.LOGGING:
+    if params.LOGGING or params.PLOTTING:
         date_str = datetime.now().strftime(DATE_STRFORMAT)
         log_path = TEMP_DIRNAME / "logs" / date_str
         log_path.mkdir(parents=True, exist_ok=True)
