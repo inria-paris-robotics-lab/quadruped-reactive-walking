@@ -150,11 +150,11 @@ def damp_controls(device, nb_motors):
         t += params.dt_wbc
 
 
-def get_device(is_simulation: bool) -> tuple:
+def get_device(is_simulation: bool, record_video=False) -> tuple:
     if is_simulation:
         from .tools.pybullet_sim import PyBulletSimulator
 
-        device = PyBulletSimulator()
+        device = PyBulletSimulator(record_video=record_video)
         qc = None
     else:
         import libodri_control_interface_pywrap as oci

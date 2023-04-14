@@ -8,7 +8,7 @@ import pinocchio as pin
 from example_robot_data.path import EXAMPLE_ROBOT_DATA_MODEL_DIR
 
 
-VIDEO_CONFIG = {"width": 720, "height": 480, "fov": 75, "record": False, "fps": 30}
+VIDEO_CONFIG = {"width": 720, "height": 480, "fov": 75, "fps": 30}
 DEFAULT_CAM_YAW = 45
 DEFAULT_CAM_PITCH = -39.9
 DEFAULT_CAM_ROLL = 0
@@ -737,7 +737,7 @@ class PyBulletSimulator:
     simulation by having the same interface in both cases (calling the same functions/variables)
     """
 
-    def __init__(self):
+    def __init__(self, record_video=False):
         self.cpt = 0
         self.nb_motors = 12
         self.jointTorques = np.zeros(self.nb_motors)
@@ -765,7 +765,7 @@ class PyBulletSimulator:
         self.video_rate_factor = 1
         self.video_record_every = self.video_fps / self.video_rate_factor
 
-        self.record_video = VIDEO_CONFIG["record"]
+        self.record_video = record_video
         self.video_frames = []
 
     def Init(self, q, env_id, use_flat_plane, enable_pyb_GUI, dt):
