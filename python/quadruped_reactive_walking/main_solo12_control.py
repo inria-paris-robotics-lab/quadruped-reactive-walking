@@ -343,7 +343,7 @@ def main(args):
 
             plt.show()
 
-    if params.SIMULATION and params.enable_pyb_GUI:
+    if params.SIMULATION:
         device.Stop()
 
     print("End of script")
