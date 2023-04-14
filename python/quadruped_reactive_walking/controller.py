@@ -420,7 +420,7 @@ class Controller:
         # bp_m = np.array([e for tup in device.baseState for e in tup])
         # bv_m = np.array([e for tup in device.baseVel for e in tup])
         self.q[:3] = self.q_estimate[:3]
-        self.q[3:6] = quaternionToRPY(self.q_estimate[3:7]).ravel()
+        self.q[3:6] = quaternionToRPY(self.q_estimate[3:7])
         self.q[6:] = self.q_estimate[7:]
 
         self.v = self.estimator.get_v_reference()
