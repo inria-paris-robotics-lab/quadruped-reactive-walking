@@ -58,8 +58,6 @@ class AlgtrOCPAbstract(CrocOCP):
         self.u_solver_errs = []
         self.ff_errs = []
         self.fb_errs = []
-        self.prox_stops_2 = []
-        self.croc_stops_2 = []
         self.prox_stops = []
         self.croc_stops = []
         self.prox_iters = []
@@ -88,17 +86,9 @@ class AlgtrOCPAbstract(CrocOCP):
         self.prox_ddp.run(self.my_problem, xs_init, us_init)
 
         # compute proxddp's criteria
-        ws = self.prox_ddp.workspace
-        if hasattr(ws, "Qus_ddp"):
-            Qus = ws.Qus_ddp
-        else:
-            Qus = [q.Qu for q in ws.q_params]
-        prox_norm_2 = sum(q.dot(q) for q in Qus)
-
         res = self.prox_ddp.results
         prox_norm_inf = max(res.primal_infeas, res.dual_infeas)
         self.prox_stops.append(prox_norm_inf)
-        self.prox_stops_2.append(prox_norm_2)
         self.prox_iters.append(res.num_iters)
 
         t_ddp = time.time()
@@ -121,7 +111,7 @@ class AlgtrOCPAbstract(CrocOCP):
         if window_size is None:
             window_size = len(res.us)
         feedbacks = res.controlFeedbacks()[:window_size]
-        feedbacks = [-K for K in res]
+        feedbacks = [-K for K in feedbacks]
 
         return (
             self.current_gait.copy(),
@@ -138,11 +128,9 @@ class AlgtrOCPAbstract(CrocOCP):
         self.fb_errs.clear()
 
         self.prox_stops.clear()
-        self.prox_stops_2.clear()
         self.prox_iters.clear()
 
         self.croc_stops.clear()
-        self.croc_stops_2.clear()
         self.croc_iters.clear()
 
 
