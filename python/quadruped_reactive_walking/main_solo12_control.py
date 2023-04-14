@@ -188,8 +188,6 @@ def main(args):
     controller = Controller(params, q_init, 0.0, solver_cls)
     device, qc = get_device(params.SIMULATION)
 
-    # viewer = meshcat_viewer.MeshcatViewer(controller.pd.robot)
-
     if params.LOGGING or params.PLOTTING:
         logger = LoggerControl(
             params, log_size=params.N_SIMULATION, solver_cls_name=args.solver
