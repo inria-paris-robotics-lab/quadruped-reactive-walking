@@ -42,7 +42,7 @@ set(${PY_NAME}_TOOLS_PYTHON
     __init__.py
     logger_control.py
     pybullet_sim.py
-    Utils.py
+    utils.py
     qualisys_client.py
     ros_tools.py
     kinematics_utils.py

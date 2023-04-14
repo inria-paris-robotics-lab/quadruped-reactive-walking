@@ -1,6 +1,7 @@
 from example_robot_data import load
 import numpy as np
 import pinocchio as pin
+import copy
 
 
 def make_footstep(q_init):
@@ -62,3 +63,16 @@ def quaternionToRPY(quat):
         rotateZ = np.arctan2(rotateZa0, rotateZa1)
 
     return np.array([[rotateX], [rotateY], [rotateZ]])
+
+
+def no_copy_roll_insert(x, a):
+    """ "No copy left roll along the 0-th axis. Works on lists and numpy arrays."""
+    tail = x[1:]
+    x[:-1] = tail
+    x[-1] = a
+
+
+def no_copy_roll(x):
+    """No copy (except for the head) left roll along the 0-th axis."""
+    tmp = copy.copy(x[0])
+    no_copy_roll_insert(x, tmp)

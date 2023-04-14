@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.interpolate import KroghInterpolator
-from ..tools.Utils import make_footstep
+from ..tools.utils import make_footstep
 
 
 class Target:

@@ -10,7 +10,7 @@ from . import wb_mpc
 from .wb_mpc.target import Target
 from .wb_mpc.task_spec import TaskSpec
 from .wbmpc_wrapper_abstract import MPCResult
-from .tools.Utils import quaternionToRPY, make_footstep
+from .tools.utils import quaternionToRPY, make_footstep
 from .tools.Interpolator import Interpolator
 from typing import Type
 

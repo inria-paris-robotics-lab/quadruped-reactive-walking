@@ -2,22 +2,10 @@ import crocoddyl
 import sobec
 import pinocchio as pin
 import numpy as np
-import copy
 from time import time
 from .ocp_abstract import OCPAbstract
 from typing import Optional
-
-
-def no_copy_roll_insert(x, a):
-    tail = x[1:]
-    x[:-1] = tail
-    x[-1] = a
-
-
-def no_copy_roll(x):
-    """No copy (except for the head) left roll along the 0-th axis."""
-    tmp = copy.copy(x[0])
-    no_copy_roll_insert(x, tmp)
+from ..tools.utils import no_copy_roll, no_copy_roll_insert
 
 
 class CrocOCP(OCPAbstract):
