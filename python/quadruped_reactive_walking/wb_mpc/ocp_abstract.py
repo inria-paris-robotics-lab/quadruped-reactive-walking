@@ -34,6 +34,15 @@ class OCPAbstract(abc.ABC):
         uT = self.us_init[-1]
         no_copy_roll_insert(self.us_init, uT)
 
+    def _check_ws_dim(self):
+        """
+        Check size of warmstart buffers.
+        Must be called in solve()
+        """
+        N = self.params.N_gait
+        assert len(self.xs_init) == N + 1
+        assert len(self.us_init) == N
+
     @abc.abstractmethod
     def initialize_models_from_gait(self, gait, footsteps=None, base_refs=None):
         pass
