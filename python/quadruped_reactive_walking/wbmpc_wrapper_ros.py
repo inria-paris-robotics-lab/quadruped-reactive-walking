@@ -8,6 +8,7 @@ from .wbmpc_wrapper_abstract import MPCWrapperAbstract, MPCResult
 
 from typing import Type
 from threading import Lock
+import numpy as np
 
 import rospy
 from quadruped_reactive_walking.srv import (
@@ -78,8 +79,6 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
             x0=numpy_to_multiarray_float64(x0),
             footstep=numpy_to_multiarray_float64(footstep),
             base_ref=numpy_to_multiarray_float64(base_ref),
-            xs=listof_numpy_to_multiarray_float64(xs if xs is not None else []),
-            us=listof_numpy_to_multiarray_float64(us if us is not None else []),
         )
         if self.synchronous:
             self._parse_result(res)
@@ -92,7 +91,9 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
         assert msg.run_success, "Error while runnning solver on server"
         with self._result_lock:
             self.new_result = True
-            self.last_available_result.gait = multiarray_to_numpy_float64(msg.gait)
+            self.last_available_result.gait = multiarray_to_numpy_float64(
+                msg.gait
+            ).astype(np.int32)
             self.last_available_result.xs = multiarray_to_listof_numpy_float64(msg.xs)
             self.last_available_result.us = multiarray_to_listof_numpy_float64(msg.us)
             self.last_available_result.K = multiarray_to_listof_numpy_float64(msg.K)
@@ -119,7 +120,6 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
 
 
 class ROSMPCWrapperServer:
-
     def __init__(self):
         self.is_init = False
         self._init_service = rospy.Service(
@@ -170,14 +170,6 @@ class ROSMPCWrapperServer:
             multiarray_to_numpy_float64(msg.footstep),
             multiarray_to_numpy_float64(msg.base_ref),
         )
-
-        xs = multiarray_to_listof_numpy_float64(msg.xs)
-        us = multiarray_to_listof_numpy_float64(msg.us)
-
-        if len(xs) == 0:
-            xs = None
-        if len(us) == 0:
-            us = None
 
         self.ocp.solve(msg.k)
 
