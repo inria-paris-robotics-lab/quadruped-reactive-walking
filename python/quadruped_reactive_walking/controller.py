@@ -10,7 +10,7 @@ from . import wb_mpc
 from .wb_mpc.target import Target
 from .wb_mpc.task_spec import TaskSpec
 from .wbmpc_wrapper_abstract import MPCResult
-from .tools.utils import quaternionToRPY, make_footstep
+from .tools.utils import quaternionToRPY, make_initial_footstep
 from .tools.Interpolator import Interpolator
 from typing import Type
 
@@ -54,7 +54,13 @@ class DummyDevice:
             self.velocities = np.zeros(12)
 
 
-def make_footsteps_and_refs(params, target):
+def make_footsteps_and_refs(params, target: Target):
+    """
+    Build a list of both footstep position and base pose references.
+    Footsteps is a list of 3,4-matrices
+    Base_refs is a list of 6-vectors (not sure???)
+    TODO: clear up dim of base_ref
+    """
     footsteps = []
     base_refs = []
     for k in range(params.N_gait * params.mpc_wbc_ratio):
@@ -62,8 +68,8 @@ def make_footsteps_and_refs(params, target):
             target_base = np.zeros(6)
             target_footstep = np.zeros((3, 4))
         else:
+            target_base = np.array([0.0, 0.0, params.h_ref, 0.0, 0.0, 0.0])
             target_footstep = target.compute(k).copy()
-            target_base = np.array([0.0, 0.0, params.h_ref])
 
         if k % params.mpc_wbc_ratio == 0:
             base_refs.append(target_base.copy())
@@ -116,7 +122,7 @@ class Controller:
             self.params, self.target
         )
 
-        self.default_footstep = make_footstep(params.q_init)
+        self.default_footstep = make_initial_footstep(params.q_init)
 
         self.mpc = None
         if params.mpc_in_rosnode:
@@ -207,12 +213,7 @@ class Controller:
             try:
                 self.t_mpc_start = time.time()
                 self.mpc.solve(
-                    self.k,
-                    x,
-                    self.target_footstep.copy(),
-                    self.target_base.copy(),
-                    # self.xs_init,
-                    # self.us_init,
+                    self.k, x, self.target_footstep.copy(), self.target_base.copy()
                 )
             except ValueError:
                 import traceback

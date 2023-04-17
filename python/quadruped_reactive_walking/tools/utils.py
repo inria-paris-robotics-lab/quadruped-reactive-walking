@@ -4,7 +4,7 @@ import pinocchio as pin
 import copy
 
 
-def make_footstep(q_init):
+def make_initial_footstep(q_init):
     # Load robot model and data
     solo = load("solo12")
     q = solo.q0.reshape((-1, 1))
