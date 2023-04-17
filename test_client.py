@@ -38,7 +38,7 @@ class TestServer:
         self.res = MPCResult(p.N_gait, 37, 12, 36, p.window_size)
 
     def _trigger_solve(self, msg):
-        return fake_out_data()
+        return fake_out_data(self.res)
         # return MPCSolveResponse(run_success=True)
 
 
