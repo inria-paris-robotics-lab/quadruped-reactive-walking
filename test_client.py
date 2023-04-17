@@ -6,18 +6,21 @@ from quadruped_reactive_walking.srv import (
 )
 
 
-class TestClient():
+class TestClient:
     """
     Wrapper to run both types of MPC (OQSP or Crocoddyl) on a seperate node/machine using ROS as communication interface.
     """
 
     def __init__(
-            self,
-        ):
-        self.solve_solver_srv = rospy.ServiceProxy("qrw_wbmpc/test", MPCSolve, persistent=True)
+        self,
+    ):
+        self.solve_solver_srv = rospy.ServiceProxy(
+            "qrw_wbmpc/test", MPCSolve, persistent=True
+        )
 
     def solve(self):
-        res = self.solve_solver_srv(MPCSolveRequest())
+        self.solve_solver_srv(MPCSolveRequest())
+
 
 class TestServer:
     def __init__(self):
@@ -27,6 +30,7 @@ class TestServer:
 
     def _trigger_solve(self, msg):
         return MPCSolveResponse(run_success=False)
+
 
 if __name__ == "__main__":
     rospy.init_node("qrw_wbmpc")
