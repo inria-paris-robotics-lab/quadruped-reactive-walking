@@ -34,13 +34,14 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
 
     def __init__(
         self,
-        params,
+        params: Params,
         footsteps,
         base_refs,
         solver_cls: Type[OCPAbstract],
         synchronous=False,
     ):
         self.synchronous = synchronous
+        self.WINDOW_SIZE = params.window_size
 
         self._result_lock = Lock()
         self.new_result: bool = False
@@ -118,7 +119,6 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
 
 
 class ROSMPCWrapperServer:
-    WINDOW_SIZE = 2
 
     def __init__(self):
         self.is_init = False
@@ -139,6 +139,7 @@ class ROSMPCWrapperServer:
             return MPCInitResponse(False)
 
         self.params = Params.create_from_str(msg.params)
+        self.WINDOW_SIZE = self.params.window_size
         self.pd = TaskSpec(self.params)
         self.T = self.params.N_gait
         self.nu = self.pd.nu
