@@ -169,18 +169,18 @@ struct Params {
                                       // be "under the shoulder"
 
   YAML::Node task;
+  YAML::Node sim;
+
+ private:
+  void initialize_common(const YAML::Node &robot_node);
 };
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-///
 /// \brief Check if a parameter exists in a given yaml file (bofore we try
 /// retrieving its value)
 ///
 /// \param[in] yaml_node Name of the yaml file
 /// \param[in] parent_node_name Name of the parent node
 /// \param[in] child_node_name Name of the child node
-///
-////////////////////////////////////////////////////////////////////////////////////////////////
 #define assert_yaml_parsing(yaml_node, parent_node_name, child_node_name)    \
   if (!yaml_node[child_node_name]) {                                         \
     std::ostringstream oss;                                                  \
@@ -192,13 +192,9 @@ struct Params {
   }                                                                          \
   assert(true)
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-///
 /// \brief Check if a file exists (before we try loading it)
 ///
 /// \param[in] filename File path to check
-///
-////////////////////////////////////////////////////////////////////////////////////////////////
 #define assert_file_exists(filename)                                \
   std::ifstream f(filename.c_str());                                \
   if (!f.good()) {                                                  \

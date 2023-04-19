@@ -83,6 +83,21 @@ Params Params::create_from_str(const std::string &content) {
   return params;
 }
 
+void Params::initialize_common(const YAML::Node &node) {
+  const YAML::Node &robot_node = node["robot"];
+  YAML::convert<Params>::decode(robot_node, *this);
+  std::cout << "Loading robot config file " << config_file << std::endl;
+  task = node["task"];
+  sim = node["sim"];
+
+  mpc_wbc_ratio = (int)(dt_mpc / dt_wbc);
+
+  // Save the raw_str
+  YAML::Emitter emitter;
+  emitter << node;
+  raw_str.assign(emitter.c_str());
+}
+
 void Params::initialize_from_file(const std::string &file_path) {
   std::cout << "Loading params file " << file_path << std::endl;
   // Load YAML file
@@ -91,17 +106,7 @@ void Params::initialize_from_file(const std::string &file_path) {
 
   // Check if YAML node is detected and retrieve it
   assert_yaml_parsing(param, file_path, "robot");
-  const YAML::Node &robot_node = param["robot"];
-  YAML::convert<Params>::decode(robot_node, *this);
-  std::cout << "Loading robot config file " << config_file << std::endl;
-  task = param["task"];
-
-  mpc_wbc_ratio = (int)(dt_mpc / dt_wbc);
-
-  // Save the raw_str
-  YAML::Emitter emitter;
-  emitter << param;
-  raw_str.assign(emitter.c_str());
+  initialize_common(param);
 }
 
 void Params::initialize_from_str(const std::string &content) {
@@ -110,17 +115,7 @@ void Params::initialize_from_str(const std::string &content) {
 
   // Check if YAML node is detected and retrieve it
   assert_yaml_parsing(param, "[yamlstring]", "robot");
-  const YAML::Node &robot_node = param["robot"];
-  YAML::convert<Params>::decode(robot_node, *this);
-  std::cout << "Loading robot config file " << config_file << std::endl;
-  task = param["task"];
-
-  mpc_wbc_ratio = (int)(dt_mpc / dt_wbc);
-
-  // Save the raw_str
-  YAML::Emitter emitter;
-  emitter << param;
-  raw_str.assign(emitter.c_str());
+  initialize_common(param);
 }
 
 namespace YAML {
