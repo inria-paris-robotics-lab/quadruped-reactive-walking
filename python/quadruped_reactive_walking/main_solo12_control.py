@@ -181,12 +181,14 @@ def main(args):
     if not params.SIMULATION:
         params.enable_pyb_GUI = False
 
+    sim_params = params.sim
+
     # Default position after calibration
     q_init = params.q_init
     solver_cls = get_ocp_from_str(args.solver)
 
     controller = Controller(params, q_init, 0.0, solver_cls)
-    device, qc = get_device(params.SIMULATION)
+    device, qc = get_device(params.SIMULATION, sim_params["record_video"])
 
     if params.LOGGING or params.PLOTTING:
         logger = LoggerControl(
