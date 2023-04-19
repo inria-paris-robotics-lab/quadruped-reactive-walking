@@ -5,12 +5,16 @@ import quadruped_reactive_walking as qrw
 from ..tools.utils import no_copy_roll_insert
 
 
-class OCPAbstract(abc.ABC):
+class _OCPMeta(type(qrw.IOCPAbstract), abc.ABCMeta):
+    pass
+
+
+class OCPAbstract(qrw.IOCPAbstract, metaclass=_OCPMeta):
     num_iters: int
 
     def __init__(self, params: qrw.Params):
+        super().__init__(params)
         self.task = TaskSpec(params)
-        self.params = params
         self.max_iter = 1000 if params.save_guess else params.ocp.max_iter
         self.init_max_iters = params.ocp.init_max_iters
 

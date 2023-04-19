@@ -2,8 +2,14 @@ if(GENERATE_PYTHON_STUBS)
   include(${PROJECT_SOURCE_DIR}/cmake/stubs.cmake)
 endif(GENERATE_PYTHON_STUBS)
 
-set(${PY_NAME}_SOURCES module.cpp Animator.cpp Params.cpp MPCResult.cpp Estimator.cpp
-                       Filter.cpp)
+set(${PY_NAME}_SOURCES
+    module.cpp
+    Animator.cpp
+    Params.cpp
+    MPCResult.cpp
+    Estimator.cpp
+    Filter.cpp
+    expose-ocp-interface.cpp)
 
 set(PY_LIB ${${PY_NAME}_LIB})
 message(STATUS "PY_LIB = ${PY_LIB}")

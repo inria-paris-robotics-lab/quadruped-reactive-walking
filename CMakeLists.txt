@@ -89,10 +89,12 @@ set(${PROJECT_NAME}_HEADERS
     include/qrw/Estimator.hpp
     include/qrw/Filter.hpp
     include/qrw/ComplementaryFilter.hpp
+    include/qrw/IOCPAbstract.hpp
     include/qrw/utils.hpp)
 
-set(${PROJECT_NAME}_SOURCES src/Params.cpp src/Animator.cpp src/Estimator.cpp
-                            src/Filter.cpp src/ComplementaryFilter.cpp)
+set(${PROJECT_NAME}_SOURCES
+    src/Params.cpp src/Animator.cpp src/Estimator.cpp src/Filter.cpp
+    src/ComplementaryFilter.cpp src/IOCPAbstract.cpp)
 
 if(BUILD_JOYSTICK)
   list(APPEND ${PROJECT_NAME}_HEADERS include/qrw/Joystick.hpp)

@@ -5,7 +5,9 @@
 
 namespace bp = boost::python;
 
-namespace qrw {}
+namespace qrw {
+void exposeSolverInterface();
+}
 
 void exposeAnimators();
 void exposeParams();
