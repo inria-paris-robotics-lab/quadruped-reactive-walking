@@ -19,7 +19,7 @@ from .wbmpc_wrapper_abstract import MPCWrapperAbstract
 from quadruped_reactive_walking import Params, MPCResult
 
 
-def create_shared_ndarray_from_other(a: np.ndarray, shm: SharedMemory):
+def create_shared_ndarray(shape, dtype, shm: SharedMemory):
     """
     Create a ndarray using a shared memory buffer, using another array's shape and dtype.
 
@@ -27,11 +27,7 @@ def create_shared_ndarray_from_other(a: np.ndarray, shm: SharedMemory):
     >>> create_shared_ndarray_from_other(a, SharedMemory(*args))
     The shared memory object will be garbage collected.
     """
-    shape = a.shape
-    dtype = a.dtype
-    out = np.ndarray(shape, dtype, buffer=shm.buf)
-    out[:] = a
-    return out
+    return np.ndarray(shape, dtype, buffer=shm.buf)
 
 
 class MultiprocessMPCWrapper(MPCWrapperAbstract):
@@ -54,14 +50,6 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.footsteps_plan = footsteps
         self.base_refs = base_refs
 
-        self.x0 = np.zeros(self.nx)
-        self.gait = np.zeros((self.N_gait + 1, 4), dtype=np.int32)
-        self.xs = np.zeros((self.WINDOW_SIZE + 1, self.nx))
-        self.us = np.zeros((self.WINDOW_SIZE, self.nu))
-        self.Ks = np.zeros((self.WINDOW_SIZE, self.nu, self.ndx))
-        self.footstep_buf = np.zeros((3, 4))
-        self.base_ref_buf = np.zeros(6)
-
         # Shared memory used for multiprocessing
         self.smm = SharedMemoryManager()
         self.smm.start()
@@ -80,21 +68,28 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
 
         self._shms = set()
         self.mutex = Lock()
-        self.x0_shared = self.create_shared_ndarray(self.x0)
-        self.gait_shared = self.create_shared_ndarray(self.gait)
-        self.xs_shared = self.create_shared_ndarray(self.xs)
-        self.us_shared = self.create_shared_ndarray(self.us)
-        self.Ks_shared = self.create_shared_ndarray(self.Ks)
-        self.footstep_shared = self.create_shared_ndarray(self.footstep_buf)
-        self.base_ref_shared = self.create_shared_ndarray(self.base_ref_buf)
+
+        self.x0_shared = self.create_shared_ndarray(self.nx)
+        self.gait_shared = self.create_shared_ndarray((self.N_gait + 1, 4), np.int32)
+        self.xs_shared = self.create_shared_ndarray((self.WINDOW_SIZE + 1, self.nx))
+        self.us_shared = self.create_shared_ndarray((self.WINDOW_SIZE, self.nu))
+        self.Ks_shared = self.create_shared_ndarray(
+            (self.WINDOW_SIZE, self.nu, self.ndx)
+        )
+        self.footstep_shared = self.create_shared_ndarray((3, 4))
+        self.base_ref_shared = self.create_shared_ndarray(6)
+
         self.p = Process(target=self._mpc_asynchronous)
         self.p.start()
 
-    def create_shared_ndarray(self, other: np.ndarray):
-        """Use current smm to create a shared array from another."""
-        shm = self.smm.SharedMemory(other.nbytes)
+    def create_shared_ndarray(self, shape, dtype=np.float64):
+        """Use current smm to create a shared array."""
+        dtype = np.dtype(dtype)
+        itemsize = dtype.itemsize
+        nbytes = np.prod(shape) * itemsize
+        shm = self.smm.SharedMemory(nbytes)
         self._shms.add(shm)
-        return create_shared_ndarray_from_other(other, shm)
+        return create_shared_ndarray(shape, dtype, shm)
 
     def solve(self, k, x0, footstep, base_ref):
         self._compress_dataIn(k, x0, footstep, base_ref)
