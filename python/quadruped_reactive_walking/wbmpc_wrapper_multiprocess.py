@@ -54,12 +54,11 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         )
         self.new_result = Value("b", False)
 
+        self.p = Process(target=self._mpc_asynchronous)
+        self.p.start()
     def solve(self, k, x0, footstep, base_ref):
-        if k == 0:
-            p = Process(target=self._mpc_asynchronous)
-            p.start()
-
-        self.add_new_data(k, x0, footstep, base_ref)
+        self._compress_dataIn(k, x0, footstep, base_ref)
+        self.new_data.value = True
 
     def get_latest_result(self):
         """
@@ -107,16 +106,6 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
             gait, xs, us, K, solving_time = loop_ocp.get_results(self.WINDOW_SIZE)
             self._compress_dataOut(gait, xs, us, K, loop_ocp.num_iters, solving_time)
             self.new_result.value = True
-
-    def add_new_data(self, k, x0, footstep, base_ref):
-        """
-        Compress data in a C-type structure that belongs to the shared memory to send
-        data from the main control loop to the asynchronous MPC and notify the process
-        that there is a new data
-        """
-
-        self._compress_dataIn(k, x0, footstep, base_ref)
-        self.new_data.value = True
 
     def _compress_dataIn(self, k, x0, footstep, base_ref):
         """
@@ -203,3 +192,4 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         """
 
         self.running.value = False
+        self.p.join()
