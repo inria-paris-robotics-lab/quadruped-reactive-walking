@@ -3,6 +3,11 @@ import numpy as np
 import pinocchio as pin
 import copy
 
+try:
+    from multiprocess.shared_memory import SharedMemory
+except ImportError:
+    from multiprocessing.shared_memory import SharedMemory
+
 
 def make_initial_footstep(q_init):
     # Load robot model and data
@@ -53,3 +58,14 @@ def no_copy_roll(x):
     """No copy (except for the head) left roll along the 0-th axis."""
     tmp = copy.copy(x[0])
     no_copy_roll_insert(x, tmp)
+
+
+def create_shared_ndarray(shape, dtype, shm: SharedMemory):
+    """
+    Create a ndarray using a shared memory buffer, using another array's shape and dtype.
+
+    DO NOT call this with an unbound SharedMemory object, i.e.
+    >>> create_shared_ndarray_from_other(a, SharedMemory(*args))
+    The shared memory object will be garbage collected.
+    """
+    return np.ndarray(shape, dtype, buffer=shm.buf)

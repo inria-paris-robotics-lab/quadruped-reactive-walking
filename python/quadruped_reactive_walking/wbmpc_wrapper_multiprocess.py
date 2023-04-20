@@ -1,10 +1,8 @@
 try:
     from multiprocess import Process, Value, Lock
-    from multiprocess.shared_memory import SharedMemory
     from multiprocess.managers import SharedMemoryManager
 except ImportError:
     from multiprocessing import Process, Value, Lock
-    from multiprocessing.shared_memory import SharedMemory
     from multiprocessing.managers import SharedMemoryManager
 
 
@@ -12,22 +10,12 @@ import numpy as np
 
 from .wb_mpc.ocp_abstract import OCPAbstract
 from .wb_mpc.task_spec import TaskSpec
+from .tools.utils import create_shared_ndarray
 
 from typing import Type
 
 from .wbmpc_wrapper_abstract import MPCWrapperAbstract
 from quadruped_reactive_walking import Params, MPCResult
-
-
-def create_shared_ndarray(shape, dtype, shm: SharedMemory):
-    """
-    Create a ndarray using a shared memory buffer, using another array's shape and dtype.
-
-    DO NOT call this with an unbound SharedMemory object, i.e.
-    >>> create_shared_ndarray_from_other(a, SharedMemory(*args))
-    The shared memory object will be garbage collected.
-    """
-    return np.ndarray(shape, dtype, buffer=shm.buf)
 
 
 class MultiprocessMPCWrapper(MPCWrapperAbstract):
