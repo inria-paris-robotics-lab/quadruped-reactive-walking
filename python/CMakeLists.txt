@@ -32,6 +32,7 @@ set(${PY_NAME}_PYTHON
     wbmpc_wrapper_abstract.py
     wbmpc_wrapper_sync.py
     wbmpc_wrapper_multiprocess.py
+    wbmpc_wrapper_ros_mp.py
     wbmpc_wrapper_ros.py)
 
 set(${PY_NAME}_WB_MPC_PYTHON

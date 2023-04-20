@@ -89,25 +89,23 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
 
     def _parse_result(self, msg):
         assert msg.run_success, "Error while runnning solver on server"
-        with self._result_lock:
-            self.new_result = True
-            self.last_available_result.gait = multiarray_to_numpy_float64(
-                msg.gait
-            ).astype(np.int32)
-            self.last_available_result.xs = multiarray_to_listof_numpy_float64(msg.xs)
-            self.last_available_result.us = multiarray_to_listof_numpy_float64(msg.us)
-            self.last_available_result.K = multiarray_to_listof_numpy_float64(msg.K)
-            self.last_available_result.solving_duration = msg.solving_duration
-            self.last_available_result.num_iters = msg.num_iters
+        self.new_result = True
+        self.last_available_result.gait = multiarray_to_numpy_float64(msg.gait).astype(
+            np.int32
+        )
+        self.last_available_result.xs = multiarray_to_listof_numpy_float64(msg.xs)
+        self.last_available_result.us = multiarray_to_listof_numpy_float64(msg.us)
+        self.last_available_result.K = multiarray_to_listof_numpy_float64(msg.K)
+        self.last_available_result.solving_duration = msg.solving_duration
+        self.last_available_result.num_iters = msg.num_iters
 
     def get_latest_result(self):
         """
         If a new result is available, return the new result.
         Otherwise return the old result again.
         """
-        with self._result_lock:
-            self.last_available_result.new_result = self.new_result
-            self.new_result = False
+        self.last_available_result.new_result = self.new_result
+        self.new_result = False
 
         return self.last_available_result
 

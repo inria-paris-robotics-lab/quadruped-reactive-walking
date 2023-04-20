@@ -126,14 +126,10 @@ class Controller:
 
         self.mpc = None
         if params.mpc_in_rosnode:
-            from .wbmpc_wrapper_ros import ROSMPCWrapperClient
+            from .wbmpc_wrapper_ros_mp import ROSMPMPCWrapperClient
 
-            self.mpc = ROSMPCWrapperClient(
-                params,
-                self.footsteps,
-                self.base_refs,
-                solver_cls,
-                synchronous=not params.asynchronous_mpc,
+            self.mpc = ROSMPMPCWrapperClient(
+                params, self.footsteps, self.base_refs, solver_cls
             )
         else:
             if params.asynchronous_mpc:
