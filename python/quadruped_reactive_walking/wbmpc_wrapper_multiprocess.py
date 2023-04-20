@@ -40,8 +40,6 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.in_k = Value("i", 0)
         self.in_x0 = Array("d", [0] * self.nx)
         self.in_warm_start = Value("b", False)
-        # self.in_xs = Array("d", [0] * ((self.N_gait + 1) * self.nx))
-        # self.in_us = Array("d", [0] * (self.N_gait * self.nu))
         self.in_footstep = Array("d", [0] * 12)
         self.in_base_ref = Array("d", [0] * 6)
         self.out_gait = Array("i", [0] * ((self.N_gait + 1) * 4))
@@ -58,11 +56,6 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
 
     def solve(self, k, x0, footstep, base_ref):
         if k == 0:
-            # if xs is not None:
-            #     self.last_available_result.xs = xs
-            #     self.last_available_result.us = us
-            # else:
-            #     self.last_available_result.xs = [x0 for _ in range(self.WINDOW_SIZE + 1)]
             p = Process(target=self._mpc_asynchronous)
             p.start()
 
@@ -140,20 +133,6 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         with self.in_base_ref.get_lock():
             np.frombuffer(self.in_base_ref.get_obj())[:] = base_ref
 
-        # if xs is None or us is None:
-        #     self.in_warm_start.value = False
-        #     return
-        # self.in_warm_start.value = True
-
-        # with self.in_xs.get_lock():
-        #     np.frombuffer(self.in_xs.get_obj()).reshape((self.N_gait + 1, self.nx))[
-        #         :, :
-        #     ] = np.array(xs)
-        # with self.in_us.get_lock():
-        #     np.frombuffer(self.in_us.get_obj()).reshape((self.N_gait, self.nu))[
-        #         :, :
-        #     ] = np.array(us)
-
     def _decompress_dataIn(self):
         """
         Decompress data from a C-type structure that belongs to the shared memory to
@@ -170,15 +149,6 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
 
         if not self.in_warm_start.value:
             return k, x0, footstep, base_ref, None, None
-
-        # with self.in_xs.get_lock():
-        #     xs = list(
-        #         np.frombuffer(self.in_xs.get_obj()).reshape((self.N_gait + 1, self.nx))
-        #     )
-        # with self.in_us.get_lock():
-        #     us = list(
-        #         np.frombuffer(self.in_us.get_obj()).reshape((self.N_gait, self.nu))
-        #     )
 
         return k, x0, footstep, base_ref  # , xs, us
 
