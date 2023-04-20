@@ -4,6 +4,8 @@ Implementation of a reactive walking controller for quadruped robots. Architectu
 
 ## Dependencies
 
+This package requires Python 3.8 and above and a C++14 compliant compiler.
+
 ### Common dependencies
 
 * [Pinocchio](https://github.com/stack-of-tasks/pinocchio)
@@ -31,16 +33,17 @@ cd build && make install
 
 ## Run the simulation
 
-* Run `python -m quadruped_reactive_walking.main_solo12_control` while being in the `scripts` folder
-* Sometimes the parallel process that runs the MPC does not terminate properly so it will keep running in the background forever, you can manually end all python processes with `pkill -9 python3`
+* After installing the package, run `python -m quadruped_reactive_walking.main_solo12_control`
 
 ## Tune the simulation
 
 * In `main_solo12_control.py`, you can change some of the parameters defined at the beginning of the `control_loop` function or by passing command-line arguments.
 * To see which CLI arguments are available, run
+
   ```bash
   python -m quadruped_reactive_walking.main_solo12_control --help
   ```
+
 * Set `env_id` to 1 to load obstacles and stairs.
 * Set `use_flat_plane` to False to load a ground with lots of small bumps.
 * If you have a gamepad you can control the robot with two joysticks by turning `predefined_vel` to False in `main_solo12_control.py`. Velocity limits with the joystick are defined in `Joystick.py` by `self.VxScale` (maximul lateral velocity), `self.VyScale` (maximum forward velocity) and `self.vYawScale` (maximum yaw velocity).
