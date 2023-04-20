@@ -1,9 +1,9 @@
 try:
-    from multiprocess import Process, Value
+    from multiprocess import Process, Value, Lock
     from multiprocess.shared_memory import SharedMemory
     from multiprocess.managers import SharedMemoryManager
 except ImportError:
-    from multiprocessing import Process, Value
+    from multiprocessing import Process, Value, Lock
     from multiprocessing.shared_memory import SharedMemory
     from multiprocessing.managers import SharedMemoryManager
 
@@ -79,6 +79,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.new_result = Value("b", False)
 
         self._shms = set()
+        self.mutex = Lock()
         self.x0_shared = self.create_shared_ndarray(self.x0)
         self.gait_shared = self.create_shared_ndarray(self.gait)
         self.xs_shared = self.create_shared_ndarray(self.xs)
@@ -152,22 +153,22 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         retrieve data from the main control loop in the asynchronous MPC
             dataIn (Array): shared C-type structure that contains the input data
         """
-        with self.in_k.get_lock():
+        with self.mutex:
             self.in_k.value = k
-        self.x0_shared[:] = x0
-        self.footstep_shared[:] = footstep
-        self.base_ref_shared[:] = base_ref
+            self.x0_shared[:] = x0
+            self.footstep_shared[:] = footstep
+            self.base_ref_shared[:] = base_ref
 
     def _decompress_dataIn(self):
         """
         Decompress data from a C-type structure that belongs to the shared memory to
         retrieve data from the main control loop in the asynchronous MPC
         """
-        with self.in_k.get_lock():
+        with self.mutex:
             k = self.in_k.value
-        x0 = self.x0_shared.copy()
-        footstep = self.footstep_shared.copy()
-        base_ref = self.base_ref_shared.copy()
+            x0 = self.x0_shared.copy()
+            footstep = self.footstep_shared.copy()
+            base_ref = self.base_ref_shared.copy()
 
         return k, x0, footstep, base_ref
 
@@ -177,12 +178,13 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         retrieve data in the main control loop from the asynchronous MPC
         """
 
-        self.gait_shared[:] = np.array(gait)
-        self.xs_shared[:] = np.array(xs)
-        self.us_shared[:] = np.array(us)
-        self.Ks_shared[:] = np.array(K)
-        self.out_num_iters = num_iters
-        self.out_solving_time.value = solving_time
+        with self.mutex:
+            self.gait_shared[:] = np.array(gait)
+            self.xs_shared[:] = np.array(xs)
+            self.us_shared[:] = np.array(us)
+            self.Ks_shared[:] = np.array(K)
+            self.out_num_iters = num_iters
+            self.out_solving_time.value = solving_time
 
     def _decompress_dataOut(self):
         """
