@@ -34,7 +34,7 @@ class ROSMPMPCWrapperClient(MPCWrapperAbstract):
         self.footsteps_plan = footsteps
         self.base_refs = base_refs
 
-        self.client = ROSMPCWrapperClient(
+        self.ros_client = ROSMPCWrapperClient(
             params, footsteps, base_refs, solver_cls, synchronous=True
         )
 
@@ -106,8 +106,8 @@ class ROSMPMPCWrapperClient(MPCWrapperAbstract):
             self.new_data.value = False
 
             k, x0, footstep, base_ref, xs, us = self._decompress_dataIn()
-            self.client.solve(k, x0, footstep, base_ref, xs, us)
-            res = self.client.get_latest_result()
+            self.ros_client.solve(k, x0, footstep, base_ref, xs, us)
+            res = self.ros_client.get_latest_result()
             self._compress_dataOut(
                 res.gait, res.xs, res.us, res.K, res.num_iters, res.solving_duration
             )
