@@ -17,7 +17,6 @@ class SyncMPCWrapper(MPCWrapperAbstract):
     ):
         self.params = params
         self.pd = TaskSpec(params)
-        self.WINDOW_SIZE = params.window_size
         self.T = params.N_gait
         self.nu = self.pd.nu
         self.nx = self.pd.nx

@@ -41,8 +41,8 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
         solver_cls: Type[OCPAbstract],
         synchronous=False,
     ):
+        self.params = params
         self.synchronous = synchronous
-        self.WINDOW_SIZE = params.window_size
 
         self._result_lock = Lock()
         self.new_result: bool = False
