@@ -79,7 +79,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         return create_shared_ndarray(shape, dtype, shm)
 
     def solve(self, k, x0, footstep, base_ref):
-        self._compress_dataIn(k, x0, footstep, base_ref)
+        self._put_shared_data_in(k, x0, footstep, base_ref)
         self.new_data.value = True
 
     def get_latest_result(self):
@@ -97,7 +97,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
                 self.last_available_result.K,
                 self.last_available_result.solving_duration,
                 self.last_available_result.num_iters,
-            ) = self._decompress_dataOut()
+            ) = self._get_shared_data_out()
 
             self.last_available_result.new_result = True
             self.new_result.value = False
@@ -116,7 +116,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
 
             self.new_data.value = False
 
-            k, x0, footstep, base_ref = self._decompress_dataIn()
+            k, x0, footstep, base_ref = self._get_shared_data_in()
 
             if k == 0:
                 loop_ocp = self.solver_cls(
@@ -126,14 +126,12 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
             loop_ocp.make_ocp(k, x0, footstep, base_ref)
             loop_ocp.solve(k)
             gait, xs, us, K, solving_time = loop_ocp.get_results(self.WINDOW_SIZE)
-            self._compress_dataOut(gait, xs, us, K, loop_ocp.num_iters, solving_time)
+            self._put_shared_data_out(gait, xs, us, K, loop_ocp.num_iters, solving_time)
             self.new_result.value = True
 
-    def _compress_dataIn(self, k, x0, footstep, base_ref):
+    def _put_shared_data_in(self, k, x0, footstep, base_ref):
         """
-        Decompress data from a C-type structure that belongs to the shared memory to
-        retrieve data from the main control loop in the asynchronous MPC
-            dataIn (Array): shared C-type structure that contains the input data
+        Put data in shared memory (input to the asynchronous MPC).
         """
         with self.mutex:
             self.in_k.value = k
@@ -141,10 +139,9 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
             self.footstep_shared[:] = footstep
             self.base_ref_shared[:] = base_ref
 
-    def _decompress_dataIn(self):
+    def _get_shared_data_in(self):
         """
-        Decompress data from a C-type structure that belongs to the shared memory to
-        retrieve data from the main control loop in the asynchronous MPC
+        Retrieve the input data for the MPC from the shared memory buffers.
         """
         with self.mutex:
             k = self.in_k.value
@@ -152,13 +149,10 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
             footstep = self.footstep_shared.copy()
             base_ref = self.base_ref_shared.copy()
 
-        return k, x0, footstep, base_ref
+            return k, x0, footstep, base_ref
 
-    def _compress_dataOut(self, gait, xs, us, K, num_iters, solving_time):
-        """
-        Compress data to a C-type structure that belongs to the shared memory to
-        retrieve data in the main control loop from the asynchronous MPC
-        """
+    def _put_shared_data_out(self, gait, xs, us, K, num_iters, solving_time):
+        """Put data in shared memory (output of the asynchronous MPC to be retrieved)."""
 
         with self.mutex:
             self.gait_shared[:] = np.array(gait)
@@ -168,11 +162,8 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
             self.out_num_iters = num_iters
             self.out_solving_time.value = solving_time
 
-    def _decompress_dataOut(self):
-        """
-        Return the result of the asynchronous MPC (desired contact forces) that is
-        stored in the shared memory
-        """
+    def _get_shared_data_out(self):
+        """Retrieve the MPC output data from the shared memory buffers."""
         gait = self.gait_shared
         xs = list(self.xs_shared)
         us = list(self.us_shared)
