@@ -95,7 +95,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
 
             self.new_data.value = False
 
-            k, x0, footstep, base_ref, xs, us = self._decompress_dataIn()
+            k, x0, footstep, base_ref = self._decompress_dataIn()
 
             if k == 0:
                 loop_ocp = self.solver_cls(
@@ -147,10 +147,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         with self.in_base_ref.get_lock():
             base_ref = np.frombuffer(self.in_base_ref.get_obj()).reshape(6)
 
-        if not self.in_warm_start.value:
-            return k, x0, footstep, base_ref, None, None
-
-        return k, x0, footstep, base_ref  # , xs, us
+        return k, x0, footstep, base_ref
 
     def _compress_dataOut(self, gait, xs, us, K, num_iters, solving_time):
         """
