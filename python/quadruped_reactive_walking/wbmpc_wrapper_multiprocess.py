@@ -1,7 +1,11 @@
 try:
-    from multiprocess import Process, Value, Array
+    from multiprocess import Process, Value
+    from multiprocess.shared_memory import SharedMemory
+    from multiprocess.managers import SharedMemoryManager
 except ImportError:
-    from multiprocessing import Process, Value, Array
+    from multiprocessing import Process, Value
+    from multiprocessing.shared_memory import SharedMemory
+    from multiprocessing.managers import SharedMemoryManager
 
 
 import numpy as np
@@ -11,8 +15,23 @@ from .wb_mpc.task_spec import TaskSpec
 
 from typing import Type
 
-from .wbmpc_wrapper_abstract import MPCWrapperAbstract, MPCResult
-from quadruped_reactive_walking import Params
+from .wbmpc_wrapper_abstract import MPCWrapperAbstract
+from quadruped_reactive_walking import Params, MPCResult
+
+
+def create_shared_ndarray_from_other(a: np.ndarray, shm: SharedMemory):
+    """
+    Create a ndarray using a shared memory buffer, using another array's shape and dtype.
+
+    DO NOT call this with an unbound SharedMemory object, i.e.
+    >>> create_shared_ndarray_from_other(a, SharedMemory(*args))
+    The shared memory object will be garbage collected.
+    """
+    shape = a.shape
+    dtype = a.dtype
+    out = np.ndarray(shape, dtype, buffer=shm.buf)
+    out[:] = a
+    return out
 
 
 class MultiprocessMPCWrapper(MPCWrapperAbstract):
@@ -35,17 +54,22 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.footsteps_plan = footsteps
         self.base_refs = base_refs
 
+        self.x0 = np.zeros(self.nx)
+        self.gait = np.zeros((self.N_gait + 1, 4), dtype=np.int32)
+        self.xs = np.zeros((self.WINDOW_SIZE + 1, self.nx))
+        self.us = np.zeros((self.WINDOW_SIZE, self.nu))
+        self.Ks = np.zeros((self.WINDOW_SIZE, self.nu, self.ndx))
+        self.footstep_buf = np.zeros((3, 4))
+        self.base_ref_buf = np.zeros(6)
+
+        # Shared memory used for multiprocessing
+        self.smm = SharedMemoryManager()
+        self.smm.start()
+
         self.new_data = Value("b", False)
         self.running = Value("b", True)
         self.in_k = Value("i", 0)
-        self.in_x0 = Array("d", [0] * self.nx)
         self.in_warm_start = Value("b", False)
-        self.in_footstep = Array("d", [0] * 12)
-        self.in_base_ref = Array("d", [0] * 6)
-        self.out_gait = Array("i", [0] * ((self.N_gait + 1) * 4))
-        self.out_xs = Array("d", [0] * ((self.WINDOW_SIZE + 1) * self.nx))
-        self.out_us = Array("d", [0] * (self.WINDOW_SIZE * self.nu))
-        self.out_k = Array("d", [0] * (self.WINDOW_SIZE * self.nu * self.ndx))
         self.out_num_iters = Value("i", 0)
         self.out_solving_time = Value("d", 0.0)
 
@@ -54,8 +78,23 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         )
         self.new_result = Value("b", False)
 
+        self._shms = set()
+        self.x0_shared = self.create_shared_ndarray(self.x0)
+        self.gait_shared = self.create_shared_ndarray(self.gait)
+        self.xs_shared = self.create_shared_ndarray(self.xs)
+        self.us_shared = self.create_shared_ndarray(self.us)
+        self.Ks_shared = self.create_shared_ndarray(self.Ks)
+        self.footstep_shared = self.create_shared_ndarray(self.footstep_buf)
+        self.base_ref_shared = self.create_shared_ndarray(self.base_ref_buf)
         self.p = Process(target=self._mpc_asynchronous)
         self.p.start()
+
+    def create_shared_ndarray(self, other: np.ndarray):
+        """Use current smm to create a shared array from another."""
+        shm = self.smm.SharedMemory(other.nbytes)
+        self._shms.add(shm)
+        return create_shared_ndarray_from_other(other, shm)
+
     def solve(self, k, x0, footstep, base_ref):
         self._compress_dataIn(k, x0, footstep, base_ref)
         self.new_data.value = True
@@ -115,12 +154,9 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         """
         with self.in_k.get_lock():
             self.in_k.value = k
-        with self.in_x0.get_lock():
-            np.frombuffer(self.in_x0.get_obj()).reshape(self.nx)[:] = x0
-        with self.in_footstep.get_lock():
-            np.frombuffer(self.in_footstep.get_obj()).reshape((3, 4))[:, :] = footstep
-        with self.in_base_ref.get_lock():
-            np.frombuffer(self.in_base_ref.get_obj())[:] = base_ref
+        self.x0_shared[:] = x0
+        self.footstep_shared[:] = footstep
+        self.base_ref_shared[:] = base_ref
 
     def _decompress_dataIn(self):
         """
@@ -129,12 +165,9 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         """
         with self.in_k.get_lock():
             k = self.in_k.value
-        with self.in_x0.get_lock():
-            x0 = np.frombuffer(self.in_x0.get_obj()).reshape(self.nx)
-        with self.in_footstep.get_lock():
-            footstep = np.frombuffer(self.in_footstep.get_obj()).reshape((3, 4))
-        with self.in_base_ref.get_lock():
-            base_ref = np.frombuffer(self.in_base_ref.get_obj()).reshape(6)
+        x0 = self.x0_shared.copy()
+        footstep = self.footstep_shared.copy()
+        base_ref = self.base_ref_shared.copy()
 
         return k, x0, footstep, base_ref
 
@@ -143,44 +176,23 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         Compress data to a C-type structure that belongs to the shared memory to
         retrieve data in the main control loop from the asynchronous MPC
         """
-        with self.out_gait.get_lock():
-            np.frombuffer(self.out_gait.get_obj(), dtype=np.int32).reshape(
-                (self.N_gait + 1, 4)
-            )[:, :] = np.array(gait)
 
-        with self.out_xs.get_lock():
-            self.x_outbuf()[:, :] = np.array(xs)
-        with self.out_us.get_lock():
-            self.u_outbuf()[:, :] = np.array(us)
-        with self.out_k.get_lock():
-            self.K_outbuf()[:, :, :] = np.array(K)
+        self.gait_shared[:] = np.array(gait)
+        self.xs_shared[:] = np.array(xs)
+        self.us_shared[:] = np.array(us)
+        self.Ks_shared[:] = np.array(K)
         self.out_num_iters = num_iters
         self.out_solving_time.value = solving_time
-
-    def x_outbuf(self):
-        return np.frombuffer(self.out_xs.get_obj()).reshape(
-            (self.WINDOW_SIZE + 1, self.nx)
-        )
-
-    def u_outbuf(self):
-        return np.frombuffer(self.out_us.get_obj()).reshape((self.WINDOW_SIZE, self.nu))
-
-    def K_outbuf(self):
-        return np.frombuffer(self.out_k.get_obj()).reshape(
-            [self.WINDOW_SIZE, self.nu, self.ndx]
-        )
 
     def _decompress_dataOut(self):
         """
         Return the result of the asynchronous MPC (desired contact forces) that is
         stored in the shared memory
         """
-        gait = np.frombuffer(self.out_gait.get_obj(), dtype=np.int32).reshape(
-            (self.N_gait + 1, 4)
-        )
-        xs = list(self.x_outbuf())
-        us = list(self.u_outbuf())
-        K = list(self.K_outbuf())
+        gait = self.gait_shared
+        xs = list(self.xs_shared)
+        us = list(self.us_shared)
+        K = list(self.Ks_shared)
         num_iters = self.out_num_iters.value
         solving_time = self.out_solving_time.value
 
@@ -193,3 +205,4 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
 
         self.running.value = False
         self.p.join()
+        self.smm.shutdown()
