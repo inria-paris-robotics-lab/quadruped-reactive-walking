@@ -76,3 +76,6 @@ class AsyncServiceProxy(object):
             fut.add_done_callback(self.callback)
 
         return fut
+
+    def __del__(self):
+        self.executor.shutdown()
