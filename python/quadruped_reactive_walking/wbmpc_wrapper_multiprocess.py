@@ -45,7 +45,6 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.nx = self.pd.nx
         self.ndx = self.pd.ndx
         self.solver_cls = solver_cls
-        self.WINDOW_SIZE = params.window_size
 
         self.footsteps_plan = footsteps
         self.base_refs = base_refs

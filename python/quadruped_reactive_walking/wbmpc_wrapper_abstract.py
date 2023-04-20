@@ -15,6 +15,10 @@ class MPCWrapperAbstract:
     def __init__(self, params, footsteps, base_refs, solver_cls: Type[OCPAbstract]):
         pass
 
+    @property
+    def WINDOW_SIZE(self):
+        return self.params.window_size
+
     @abc.abstractclassmethod
     def solve(self, k, x0, footstep, base_ref, xs=None, us=None):
         pass
