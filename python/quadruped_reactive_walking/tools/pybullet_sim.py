@@ -8,11 +8,11 @@ import pinocchio as pin
 from example_robot_data.path import EXAMPLE_ROBOT_DATA_MODEL_DIR
 
 
-VIDEO_CONFIG = {"width": 720, "height": 480, "fov": 75, "fps": 30}
+VIDEO_CONFIG = {"width": 960, "height": 720, "fov": 75, "fps": 30}
 DEFAULT_CAM_YAW = 45
 DEFAULT_CAM_PITCH = -39.9
 DEFAULT_CAM_ROLL = 0
-DEFAULT_CAM_DIST = 1.0
+DEFAULT_CAM_DIST = 0.7
 UPAXISINDEX = 2
 
 
@@ -35,7 +35,6 @@ class PybulletWrapper:
         GUI_OPTIONS = "--width={} --height={}".format(
             VIDEO_CONFIG["width"], VIDEO_CONFIG["height"]
         )
-        GUI_OPTIONS += " --window_backend=2 --render_device=0"
 
         # Start the client for PyBullet
         if self.enable_gui:
