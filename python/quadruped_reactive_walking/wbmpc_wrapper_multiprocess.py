@@ -1,8 +1,8 @@
 try:
-    from multiprocess import Process, Value, Lock
+    from multiprocess import Process, Value, RLock
     from multiprocess.managers import SharedMemoryManager
 except ImportError:
-    from multiprocessing import Process, Value, Lock
+    from multiprocessing import Process, Value, RLock
     from multiprocessing.managers import SharedMemoryManager
 
 
@@ -37,24 +37,24 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.footsteps_plan = footsteps
         self.base_refs = base_refs
 
+        self.last_available_result: MPCResult = MPCResult(
+            params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx, self.WINDOW_SIZE
+        )
+
         # Shared memory used for multiprocessing
         self.smm = SharedMemoryManager()
         self.smm.start()
 
         self.new_data = Value("b", False)
         self.running = Value("b", True)
-        self.in_k = Value("i", 0)
-        self.in_warm_start = Value("b", False)
-        self.out_num_iters = Value("i", 0)
-        self.out_solving_time = Value("d", 0.0)
-
-        self.last_available_result: MPCResult = MPCResult(
-            params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx, self.WINDOW_SIZE
-        )
+        self.in_k = Value("i", 0, lock=False)
+        self.in_warm_start = Value("b", False, lock=False)
+        self.out_num_iters = Value("i", 0, lock=False)
+        self.out_solving_time = Value("d", 0.0, lock=False)
         self.new_result = Value("b", False)
 
         self._shms = set()
-        self.mutex = Lock()
+        self.mutex = RLock()
 
         self.x0_shared = self.create_shared_ndarray(self.nx)
         self.gait_shared = self.create_shared_ndarray((self.N_gait + 1, 4), np.int32)
@@ -110,13 +110,18 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         """
         Parallel process with an infinite loop that run the asynchronous MPC
         """
+        # Thread-local data
+        x0 = np.zeros_like(self.x0_shared)
+        footstep = np.zeros_like(self.footstep_shared)
+        base_ref = np.zeros_like(self.base_ref_shared)
         while self.running.value:
             if not self.new_data.value:
                 continue
 
             self.new_data.value = False
 
-            k, x0, footstep, base_ref = self._get_shared_data_in()
+            with self.mutex:
+                k, x0[:], footstep[:], base_ref[:] = self._get_shared_data_in()
 
             if k == 0:
                 loop_ocp = self.solver_cls(
@@ -143,22 +148,20 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         """
         Retrieve the input data for the MPC from the shared memory buffers.
         """
-        with self.mutex:
-            k = self.in_k.value
-            x0 = self.x0_shared.copy()
-            footstep = self.footstep_shared.copy()
-            base_ref = self.base_ref_shared.copy()
-
-            return k, x0, footstep, base_ref
+        k = self.in_k.value
+        x0 = self.x0_shared
+        footstep = self.footstep_shared
+        base_ref = self.base_ref_shared
+        return k, x0, footstep, base_ref
 
     def _put_shared_data_out(self, gait, xs, us, K, num_iters, solving_time):
         """Put data in shared memory (output of the asynchronous MPC to be retrieved)."""
 
         with self.mutex:
-            self.gait_shared[:] = np.array(gait)
-            self.xs_shared[:] = np.array(xs)
-            self.us_shared[:] = np.array(us)
-            self.Ks_shared[:] = np.array(K)
+            self.gait_shared[:] = gait
+            self.xs_shared[:] = np.stack(xs)
+            self.us_shared[:] = np.stack(us)
+            self.Ks_shared[:] = np.stack(K)
             self.out_num_iters = num_iters
             self.out_solving_time.value = solving_time
 
