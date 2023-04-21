@@ -144,9 +144,8 @@ class AlgtrOCPFDDP(AlgtrOCPAbstract):
         footsteps,
         base_refs,
     ):
-        print(Fore.BLUE + "[using SolverFDDP]")
+        print(Fore.BLUE + "[using SolverFDDP]" + Fore.RESET)
         self.prox_ddp = proxddp.SolverFDDP(params.ocp.tol)
-        print(Fore.RESET)
         super().__init__(params, footsteps, base_refs)
 
     def get_type_str():
@@ -162,14 +161,13 @@ class AlgtrOCPProx(AlgtrOCPAbstract):
         footsteps,
         base_refs,
     ):
-        print(Fore.GREEN + "[using SolverProxDDP]")
+        print(Fore.GREEN + "[using SolverProxDDP]" + Fore.RESET)
         mu_init = 1e-10
         self.prox_ddp = proxddp.SolverProxDDP(params.ocp.tol, mu_init, 0.0)
         self.prox_ddp.mu_min = 1e-12
         self.prox_ddp.reg_init = 1e-9
         self.prox_ddp.ldlt_algo_choice = proxddp.LDLT_DENSE
         self.prox_ddp.max_refinement_steps = 0
-        print(Fore.RESET)
         super().__init__(params, footsteps, base_refs)
 
     def get_type_str():
