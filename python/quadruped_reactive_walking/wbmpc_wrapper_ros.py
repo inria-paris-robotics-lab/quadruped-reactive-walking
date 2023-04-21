@@ -115,6 +115,7 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
         assert (
             res.success
         ), "Unable to stop the MPC server. (Most probably stopped already)"
+        print("Stopped MPC server.")
 
 
 class ROSMPCWrapperServer:
