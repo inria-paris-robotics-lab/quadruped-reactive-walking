@@ -178,8 +178,6 @@ def main(args):
     Args:
         des_vel_analysis (string)
     """
-    if not params.SIMULATION:
-        params.enable_pyb_GUI = False
 
     sim_params = params.sim
 
@@ -277,9 +275,7 @@ def main(args):
     # ****************************************************************
     damp_controls(device, 12)
 
-    if params.asynchronous_mpc:
-        print("Stopping parallel process MPC")
-        controller.mpc.stop_parallel_loop()
+    controller.mpc.stop_parallel_loop()
 
     # ****************************************************************
 
