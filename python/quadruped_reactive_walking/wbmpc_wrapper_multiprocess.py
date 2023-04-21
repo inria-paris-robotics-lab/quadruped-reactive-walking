@@ -1,8 +1,8 @@
 try:
-    from multiprocess import Process, Value, RLock
+    from multiprocess import Process, Value, Lock
     from multiprocess.managers import SharedMemoryManager
 except ImportError:
-    from multiprocessing import Process, Value, RLock
+    from multiprocessing import Process, Value, Lock
     from multiprocessing.managers import SharedMemoryManager
 
 
@@ -54,7 +54,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self.new_result = Value("b", False)
 
         self._shms = set()
-        self.mutex = RLock()
+        self.mutex = Lock()
 
         self.x0_shared = self.create_shared_ndarray(self.nx)
         self.gait_shared = self.create_shared_ndarray((self.N_gait + 1, 4), np.int32)
