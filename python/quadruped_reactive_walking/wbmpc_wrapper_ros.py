@@ -41,12 +41,11 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
         solver_cls: Type[OCPAbstract],
         synchronous=False,
     ):
-        self.params = params
+        super().__init__(params)
         self.synchronous = synchronous
 
         self._result_lock = Lock()
         self.new_result: bool = False
-        self.pd = TaskSpec(params)
         self.last_available_result: MPCResult = MPCResult(
             params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx, self.WINDOW_SIZE
         )

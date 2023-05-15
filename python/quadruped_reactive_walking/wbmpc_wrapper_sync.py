@@ -1,5 +1,4 @@
 from .wb_mpc.ocp_abstract import OCPAbstract
-from .wb_mpc.task_spec import TaskSpec
 
 from typing import Type
 
@@ -15,12 +14,7 @@ class SyncMPCWrapper(MPCWrapperAbstract):
     def __init__(
         self, params: Params, footsteps, base_refs, solver_cls: Type[OCPAbstract]
     ):
-        self.params = params
-        self.pd = TaskSpec(params)
-        self.T = params.N_gait
-        self.nu = self.pd.nu
-        self.nx = self.pd.nx
-        self.ndx = self.pd.ndx
+        super().__init__(params)
         self.solver_cls = solver_cls
 
         self.ocp = solver_cls(params, footsteps, base_refs)

@@ -9,7 +9,6 @@ except ImportError:
 import numpy as np
 
 from .wb_mpc.ocp_abstract import OCPAbstract
-from .wb_mpc.task_spec import TaskSpec
 from .tools.utils import create_shared_ndarray
 
 from typing import Type
@@ -26,19 +25,14 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
     def __init__(
         self, params: Params, footsteps, base_refs, solver_cls: Type[OCPAbstract]
     ):
-        self.params = params
-        self.pd = TaskSpec(params)
-        self.N_gait = params.N_gait
-        self.nu = self.pd.nu
-        self.nx = self.pd.nx
-        self.ndx = self.pd.ndx
+        super().__init__(params)
         self.solver_cls = solver_cls
 
         self.footsteps_plan = footsteps
         self.base_refs = base_refs
 
         self.last_available_result: MPCResult = MPCResult(
-            params.N_gait, self.pd.nx, self.pd.nu, self.pd.ndx, self.WINDOW_SIZE
+            self.N_gait, self.nx, self.nu, self.ndx, self.WINDOW_SIZE
         )
 
         # Shared memory used for multiprocessing

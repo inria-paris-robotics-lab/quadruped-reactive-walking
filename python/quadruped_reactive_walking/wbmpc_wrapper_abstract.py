@@ -1,31 +1,33 @@
-from .wb_mpc.ocp_abstract import OCPAbstract
-from quadruped_reactive_walking import MPCResult
-
-from typing import Type
+from .wb_mpc.task_spec import TaskSpec
+from quadruped_reactive_walking import MPCResult, IMPCWrapper
 
 import abc
 
 
-class MPCWrapperAbstract:
+class _MPCMeta(type(IMPCWrapper), abc.ABCMeta):
+    pass
+
+
+class MPCWrapperAbstract(IMPCWrapper, metaclass=_MPCMeta):
     """
     Wrapper to run both types of MPC (OQSP or Crocoddyl)
     """
 
-    @abc.abstractclassmethod
-    def __init__(self, params, footsteps, base_refs, solver_cls: Type[OCPAbstract]):
-        pass
+    def __init__(self, params):
+        super().__init__(params)
+        self.pd = TaskSpec(params)
 
     @property
-    def WINDOW_SIZE(self):
-        return self.params.window_size
+    def nx(self):
+        return self.pd.nx
 
-    @abc.abstractclassmethod
-    def solve(self, k, x0, footstep, base_ref, xs=None, us=None):
-        pass
+    @property
+    def ndx(self):
+        return self.pd.ndx
 
-    @abc.abstractclassmethod
-    def get_latest_result(self) -> MPCResult:
-        pass
+    @property
+    def nu(self):
+        return self.pd.nu
 
     @abc.abstractclassmethod
     def stop_parallel_loop(self):
