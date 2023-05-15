@@ -51,21 +51,6 @@ class OCPAbstract(qrw.IOCPAbstract, metaclass=_OCPMeta):
     def initialize_models_from_gait(self, gait, footsteps=None, base_refs=None):
         pass
 
-    @abc.abstractmethod
-    def solve(self, k):
-        """
-        Solve the current instance of the OCP.
-        """
-        pass
-
-    @abc.abstractmethod
-    def get_results(self, window_size=None) -> tuple:
-        pass
-
-    @abc.abstractmethod
-    def make_ocp(self, k, x0, footstep, base_task):
-        pass
-
     @abc.abstractstaticmethod
     def get_type_str():
         pass
