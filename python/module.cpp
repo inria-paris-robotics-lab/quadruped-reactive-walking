@@ -24,4 +24,5 @@ BOOST_PYTHON_MODULE(quadruped_reactive_walking_pywrap) {
   exposeFilter();
   exposeMPCResult();
   qrw::exposeSolverInterface();
+  qrw::exposeMPCInterface();
 }

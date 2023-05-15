@@ -9,7 +9,8 @@ set(${PY_NAME}_SOURCES
     MPCResult.cpp
     Estimator.cpp
     Filter.cpp
-    expose-ocp-interface.cpp)
+    expose-ocp-interface.cpp
+    expose-mpc-interface.cpp)
 
 set(PY_LIB ${${PY_NAME}_LIB})
 message(STATUS "PY_LIB = ${PY_LIB}")
