@@ -85,9 +85,9 @@ class CrocOCP(OCPAbstract):
         t_update = time()
         self.t_update = t_update - t_start
 
-        if self.xs_init is None or self.us_init is None:
-            self._xs_init = [self.x0] * (self.ddp.problem.T + 1)
-            self._us_init = self.ddp.problem.quasiStatic([self.x0] * self.ddp.problem.T)
+        if self.warm_start_empty():
+            self.xs_init = [self.x0] * (self.ddp.problem.T + 1)
+            self.us_init = self.ddp.problem.quasiStatic([self.x0] * self.ddp.problem.T)
         self._check_ws_dim()
 
         t_warm_start = time()
@@ -210,7 +210,7 @@ class CrocOCP(OCPAbstract):
         self,
         model,
         feet_pos,
-        base_pose: Optional[np.ndarray],
+        base_vel_ref: Optional[np.ndarray],
         support_feet,
         is_terminal=False,
     ):
@@ -219,7 +219,7 @@ class CrocOCP(OCPAbstract):
             model.differential.contacts.changeContactStatus(name, i in support_feet)
         if not is_terminal:
             self.update_tracking_costs(
-                model.differential.costs, feet_pos, base_pose, support_feet
+                model.differential.costs, feet_pos, base_vel_ref, support_feet
             )
 
     def _create_standard_model(
@@ -464,7 +464,7 @@ class CrocOCP(OCPAbstract):
         return model
 
     def update_tracking_costs(
-        self, costs, feet_pos, base_pose: Optional[np.ndarray], support_feet
+        self, costs, feet_pos, base_vel_ref: Optional[np.ndarray], support_feet
     ):
         index = 0
         for i in self.task.feet_ids:
@@ -487,6 +487,6 @@ class CrocOCP(OCPAbstract):
             name = "{}_vel_zReg".format(self.task.model.frames[i].name)
             costs.changeCostStatus(name, i not in support_feet)
 
-        if base_pose is not None and self.task.base_velocity_tracking_w > 0:
+        if base_vel_ref is not None and self.task.base_velocity_tracking_w > 0:
             name = "base_velocity_tracking"
-            costs.costs[name].cost.residual.reference.np[:] = base_pose[:6]
+            costs.costs[name].cost.residual.reference.np[:] = base_vel_ref[:6]

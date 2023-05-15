@@ -26,8 +26,8 @@ nsteps = ocp.ddp.problem.T
 xs_i = [x0] * (nsteps + 1)
 us_i = ocp.problem.quasiStatic(xs_i[:nsteps])
 
-ocp._xs_init = xs_i
-ocp._us_init = us_i
+ocp.xs_init = xs_i
+ocp.us_init = us_i
 ocp.solve(0)
 
 

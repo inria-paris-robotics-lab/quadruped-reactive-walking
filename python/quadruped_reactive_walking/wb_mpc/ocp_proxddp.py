@@ -71,9 +71,9 @@ class AlgtrOCPAbstract(CrocOCP):
         self.t_update = t_update - t_start
         nsteps = self.my_problem.num_steps
 
-        if self.xs_init is None or self.us_init is None:
-            self._xs_init = [self.x0] * (nsteps + 1)
-            self._us_init = self.problem.quasiStatic([self.x0] * nsteps)
+        if self.warm_start_empty():
+            self.xs_init = [self.x0] * (nsteps + 1)
+            self.us_init = self.problem.quasiStatic([self.x0] * nsteps)
         self._check_ws_dim()
 
         t_warm_start = time.time()

@@ -36,7 +36,17 @@ void exposeSolverInterface() {
            (bp::arg("self"), bp::arg("window_size") = boost::none),
            "Fetch the results of the latest MPC iteration.")
       .def_readonly("params", &IOCPAbstract::params_)
-      .def_readwrite("num_iters", &IOCPAbstract::num_iters_);
+      .def_readwrite("num_iters", &IOCPAbstract::num_iters_)
+      .def_readonly("max_iter", &IOCPAbstract::max_iter)
+      .def_readonly("init_max_iters", &IOCPAbstract::init_max_iters)
+      .def_readwrite("xs_init", &IOCPAbstract::xs_init)
+      .def_readwrite("us_init", &IOCPAbstract::us_init)
+      .def("cycle_warm_start", &IOCPAbstract::cycle_warm_start,
+           bp::args("self"), "Cycle the warm start.")
+      .def("warm_start_empty", &IOCPAbstract::warm_start_empty,
+           bp::args("self"), "Check is the warm-start is empty.")
+      .def("_check_ws_dim", &IOCPAbstract::_check_ws_dim, bp::args("self"),
+           "Check whether the warm-start has the right size.");
 }
 
 }  // namespace qrw
