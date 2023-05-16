@@ -13,6 +13,8 @@ bool IOCPAbstract::warm_start_empty() const {
 }
 
 void IOCPAbstract::cycle_warm_start() {
+  xs_init[0] = xs_init.back();
+  us_init[0] = us_init.back();
   std::rotate(xs_init.begin(), xs_init.begin() + 1, xs_init.end());
   std::rotate(us_init.begin(), us_init.begin() + 1, us_init.end());
 }
