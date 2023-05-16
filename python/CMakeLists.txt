@@ -4,13 +4,13 @@ endif(GENERATE_PYTHON_STUBS)
 
 set(${PY_NAME}_SOURCES
     module.cpp
-    Animator.cpp
-    Params.cpp
-    MPCResult.cpp
-    Estimator.cpp
-    Filter.cpp
+    expose-animator.cpp
+    expose-estimator.cpp
+    expose-filter.cpp
+    expose-mpc-interface.cpp
+    expose-mpc-result.cpp
     expose-ocp-interface.cpp
-    expose-mpc-interface.cpp)
+    expose-params.cpp)
 
 set(PY_LIB ${${PY_NAME}_LIB})
 message(STATUS "PY_LIB = ${PY_LIB}")
