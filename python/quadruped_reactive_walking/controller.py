@@ -7,7 +7,7 @@ import quadruped_reactive_walking as qrw
 
 from crocoddyl import StateMultibody
 from . import wb_mpc
-from .wb_mpc.target import Target
+from .wb_mpc.target import Target, make_footsteps_and_refs
 from .wb_mpc.task_spec import TaskSpec
 from .wbmpc_wrapper_abstract import MPCResult
 from .tools.utils import quaternionToRPY, make_initial_footstep
@@ -52,30 +52,6 @@ class DummyDevice:
         def __init__(self):
             self.positions = np.zeros(12)
             self.velocities = np.zeros(12)
-
-
-def make_footsteps_and_refs(params, target: Target):
-    """
-    Build a list of both footstep position and base pose references.
-    Footsteps is a list of 3,4-matrices
-    Base_refs is a list of 6-vectors (not sure???)
-    TODO: clear up dim of base_ref
-    """
-    footsteps = []
-    base_refs = []
-    for k in range(params.N_gait):
-        if params.movement == "base_circle" or params.movement == "walk":
-            target_base = np.zeros(6)
-            target_footstep = np.zeros((3, 4))
-        else:
-            target_base = np.array([0.0, 0.0, params.h_ref, 0.0, 0.0, 0.0])
-            kk = k * params.mpc_wbc_ratio
-            target_footstep = target.compute(kk).copy()
-
-        base_refs.append(target_base.copy())
-        footsteps.append(target_footstep.copy())
-
-    return footsteps, base_refs
 
 
 class Controller:
@@ -159,8 +135,6 @@ class Controller:
         self.k_solve = 0
         if self.params.interpolate_mpc:
             self.interpolator = Interpolator(params, self.task.x0)
-        # self.xs_init = None
-        # self.us_init = None
         try:
             # filename = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
             # self.xs_init = list(filename["xs"])
@@ -239,7 +213,6 @@ class Controller:
                 self.save_guess()
 
             # Compute feedforward torque
-            # self.result.FF_weight = self.params.Kff_main * np.ones(12)
             self.result.tau_ff[:] = self.compute_torque()
 
             self.interpolate_solution(xs)

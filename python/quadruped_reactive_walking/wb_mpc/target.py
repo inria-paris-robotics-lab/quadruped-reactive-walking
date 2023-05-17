@@ -11,6 +11,7 @@ class Target:
         self.dt_wbc = params.dt_wbc
         self.k_per_step = 160
         self.initial_delay = 1000
+        self.initial_footsteps = make_initial_footstep(self.params.q_init)
 
         if params.movement == "base_circle":
             self.initial_base = np.array([0.0, 0.0, params.h_ref])
@@ -24,29 +25,27 @@ class Target:
             self.base_ref = np.concatenate(
                 [self.velocity_lin_target, self.velocity_ang_target]
             )
+        elif params.movement == "circle":
+            self.A = np.array([0.05, 0.0, 0.04])
+            self.offset = np.array([0.05, 0, 0.05])
+            self.freq = np.array([0.5, 0.0, 0.5])
+            self.phase = np.array([-np.pi / 2, 0.0, -np.pi / 2])
+        elif params.movement == "step":
+            foot_pose = self.initial_footsteps[:, 1]
+            self.p0 = foot_pose
+            self.p1 = foot_pose + np.array([0.025, 0.0, 0.03])
+            self.v1 = np.array([0.5, 0.0, 0.0])
+            self.p2 = foot_pose + np.array([0.05, 0.0, 0.0])
+
+            self.T = self.k_per_step * self.dt_wbc
+            self.ts = np.repeat(np.linspace(0, self.T, 3), 2)
+
+            self.update_time = -1
         else:
-            self.initial_footsteps = make_initial_footstep(self.params.q_init)
-            if params.movement == "circle":
-                self.A = np.array([0.05, 0.0, 0.04])
-                self.offset = np.array([0.05, 0, 0.05])
-                self.freq = np.array([0.5, 0.0, 0.5])
-                self.phase = np.array([-np.pi / 2, 0.0, -np.pi / 2])
-            elif params.movement == "step":
-                foot_pose = self.initial_footsteps[:, 1]
-                self.p0 = foot_pose
-                self.p1 = foot_pose + np.array([0.025, 0.0, 0.03])
-                self.v1 = np.array([0.5, 0.0, 0.0])
-                self.p2 = foot_pose + np.array([0.05, 0.0, 0.0])
-
-                self.T = self.k_per_step * self.dt_wbc
-                self.ts = np.repeat(np.linspace(0, self.T, 3), 2)
-
-                self.update_time = -1
-            else:
-                self.ramp_length = 100
-                self.target_ramp_x = np.linspace(0.0, 0.0, self.ramp_length)
-                self.target_ramp_y = np.linspace(0.0, 0.0, self.ramp_length)
-                self.target_ramp_z = np.linspace(0.0, 0.05, self.ramp_length)
+            self.ramp_length = 100
+            self.target_ramp_x = np.linspace(0.0, 0.0, self.ramp_length)
+            self.target_ramp_y = np.linspace(0.0, 0.0, self.ramp_length)
+            self.target_ramp_z = np.linspace(0.0, 0.05, self.ramp_length)
 
     def compute(self, k):
         if k < self.initial_delay:
@@ -120,3 +119,26 @@ class Target:
     def update_interpolator(self, initial, target, velocity):
         self.y = [initial, np.zeros(3), self.p1, velocity, target, np.zeros(3)]
         self.krog = KroghInterpolator(self.ts, np.array(self.y))
+
+
+def make_footsteps_and_refs(params, target: Target):
+    """
+    Build a list of both footstep position and base pose references.
+    Footsteps is a list of 3,4-matrices
+    Base_refs is a list of 6-vectors
+    """
+    footsteps = []
+    base_refs = []
+    for k in range(params.N_gait):
+        if params.movement == "base_circle" or params.movement == "walk":
+            target_base = np.zeros(6)
+            target_footstep = np.zeros((3, 4))
+        else:
+            target_base = np.array([0.0, 0.0, params.h_ref, 0.0, 0.0, 0.0])
+            kk = k * params.mpc_wbc_ratio
+            target_footstep = target.compute(kk).copy()
+
+        footsteps.append(target_footstep)
+        base_refs.append(target_base)
+
+    return footsteps, base_refs
