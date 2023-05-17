@@ -31,7 +31,8 @@ void exposeSolverInterface() {
       .def(bp::init<Params const &>(bp::args("self", "params")))
       .def("solve", bp::pure_virtual(&OCPWrapper::solve), bp::args("self", "k"))
       .def("make_ocp", bp::pure_virtual(&OCPWrapper::make_ocp),
-           bp::args("self", "k"))
+           bp::args("self", "k", "x0", "footsteps", "base_vel_ref"),
+           "Push a new node to the OCP.")
       .def("get_results", bp::pure_virtual(&OCPWrapper::get_results),
            (bp::arg("self"), bp::arg("window_size") = boost::none),
            "Fetch the results of the latest MPC iteration.")

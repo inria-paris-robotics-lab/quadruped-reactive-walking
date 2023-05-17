@@ -3,7 +3,7 @@
 #include "bindings/python.hpp"
 #include "bindings/custom-members.hpp"
 
-using qrw::make_non_resizable_vec_member;
+namespace qrw {
 
 void exposeMPCResult() {
   bp::class_<MPCResult>(
@@ -26,3 +26,5 @@ void exposeMPCResult() {
       .def_readwrite("num_iters", &MPCResult::num_iters)
       .def_readwrite("new_result", &MPCResult::new_result);
 }
+
+}  // namespace qrw

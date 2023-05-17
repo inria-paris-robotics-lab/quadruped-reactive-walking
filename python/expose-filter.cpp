@@ -1,6 +1,8 @@
 #include "qrw/Filter.hpp"
-
 #include "bindings/python.hpp"
+
+namespace qrw {
+
 template <typename Filter>
 struct FilterVisitor : public bp::def_visitor<FilterVisitor<Filter>> {
   template <class PyClassFilter>
@@ -18,3 +20,5 @@ struct FilterVisitor : public bp::def_visitor<FilterVisitor<Filter>> {
 };
 
 void exposeFilter() { FilterVisitor<Filter>::expose(); }
+
+}  // namespace qrw

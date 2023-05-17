@@ -5,6 +5,7 @@
 
 #include "bindings/visitors.hpp"
 
+namespace qrw {
 void exposeKeyboard();
 
 void exposeAnimators() {
@@ -39,3 +40,5 @@ void exposeAnimators() {
            "Get Joystick R1 status");
 #endif
 }
+
+}  // namespace qrw

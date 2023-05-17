@@ -19,8 +19,6 @@ struct params_pickle_suite : bp::pickle_suite {
   }
 };
 
-}  // namespace qrw
-
 constexpr auto rvp_by_value = bp::return_value_policy<bp::return_by_value>();
 
 void exposeParams() {
@@ -101,3 +99,5 @@ void exposeParams() {
       .def_readonly("tol", &OCPParams::tol)
       .def(bp::self_ns::str(bp::self));
 }
+
+}  // namespace qrw

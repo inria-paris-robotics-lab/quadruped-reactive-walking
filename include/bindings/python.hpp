@@ -6,14 +6,13 @@
 namespace bp = boost::python;
 
 namespace qrw {
-void exposeSolverInterface();
-void exposeMPCInterface();
-}  // namespace qrw
-
 void exposeAnimators();
 void exposeParams();
 void exposeEstimator();
 void exposeFilter();
 void exposeMPCResult();
+void exposeSolverInterface();
+void exposeMPCInterface();
+}  // namespace qrw
 
 #endif

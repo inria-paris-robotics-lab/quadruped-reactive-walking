@@ -8,6 +8,7 @@ BOOST_PYTHON_MODULE(quadruped_reactive_walking_pywrap) {
   eigenpy::enableEigenPy();
 
   bp::import("warnings");
+  bp::import("pinocchio");
 
   eigenpy::enableEigenPySpecific<Vector6>();
   eigenpy::enableEigenPySpecific<RowMatrix6N>();
@@ -18,11 +19,11 @@ BOOST_PYTHON_MODULE(quadruped_reactive_walking_pywrap) {
 
   qrw::YamlNodeToPython::registration();
 
-  exposeAnimators();
-  exposeParams();
-  exposeEstimator();
-  exposeFilter();
-  exposeMPCResult();
+  qrw::exposeAnimators();
+  qrw::exposeParams();
+  qrw::exposeEstimator();
+  qrw::exposeFilter();
+  qrw::exposeMPCResult();
   qrw::exposeSolverInterface();
   qrw::exposeMPCInterface();
 }

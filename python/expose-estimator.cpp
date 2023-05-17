@@ -1,6 +1,7 @@
 #include "qrw/Estimator.hpp"
-
 #include "bindings/python.hpp"
+
+namespace qrw {
 
 template <typename Estimator>
 struct EstimatorVisitor : public bp::def_visitor<EstimatorVisitor<Estimator>> {
@@ -64,3 +65,5 @@ struct EstimatorVisitor : public bp::def_visitor<EstimatorVisitor<Estimator>> {
 };
 
 void exposeEstimator() { EstimatorVisitor<Estimator>::expose(); }
+
+}  // namespace qrw

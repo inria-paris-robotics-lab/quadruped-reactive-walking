@@ -35,7 +35,6 @@ void exposeMPCInterface() {
            (bp::arg("self"), bp::arg("k"), bp::arg("x0"), bp::arg("footstep"),
             bp::arg("base_vel_ref"), bp::arg("xs") = boost::none,
             bp::arg("us") = boost::none));
-  ;
 }
 
 }  // namespace qrw

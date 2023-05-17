@@ -2,6 +2,8 @@
 
 #include "qrw/Animator.hpp"
 
+namespace qrw {
+
 template <typename Class>
 struct AnimatorVisitor : public bp::def_visitor<AnimatorVisitor<Class>> {
   template <class PyClass>
@@ -20,3 +22,5 @@ struct AnimatorVisitor : public bp::def_visitor<AnimatorVisitor<Class>> {
              "Get Reference Velocity");
   }
 };
+
+}  // namespace qrw
