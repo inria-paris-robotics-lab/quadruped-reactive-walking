@@ -1,6 +1,8 @@
 import abc
+import numpy as np
 
 from .task_spec import TaskSpec
+from typing import List
 import quadruped_reactive_walking as qrw
 
 
@@ -21,11 +23,10 @@ class OCPAbstract(qrw.IOCPAbstract, metaclass=_OCPMeta):
     def get_type_str():
         pass
 
-    def get_active_feet(self, footstep, support_feet):
+    def get_active_feet(self, footstep, support_feet) -> List[np.ndarray]:
         """Get the positions for all the active feet."""
-        feet_pos = ([], [])
+        feet_pos = []
         for i, fid in enumerate(self.task.feet_ids):
             if fid in support_feet:
-                feet_pos[0].append(fid)
-                feet_pos[1].append(footstep[:, i])
+                feet_pos.append(footstep[:, i])
         return feet_pos

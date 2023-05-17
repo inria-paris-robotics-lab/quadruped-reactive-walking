@@ -1,12 +1,14 @@
 import numpy as np
 import quadruped_reactive_walking as qrw
 import time
+import pprint
 
-from quadruped_reactive_walking.wb_mpc import AlgtrOCPProx, CrocOCP
+from quadruped_reactive_walking.wb_mpc import AlgtrOCPProx, CrocOCP, OCP_TYPE_MAP
 from quadruped_reactive_walking.controller import make_footsteps_and_refs
 from quadruped_reactive_walking.wb_mpc.task_spec import TaskSpec
 from quadruped_reactive_walking.wb_mpc.target import Target
 
+print("OCP registered types:", pprint.pformat(OCP_TYPE_MAP), sep="\n")
 params = qrw.Params.create_from_file()
 params.ocp: qrw.OCPParams
 task = TaskSpec(params)
@@ -41,8 +43,7 @@ elapsed = time.time() - ts
 print("Elapsed time: {}".format(elapsed))
 print("Avg. time   : {}".format(elapsed / n))
 
-ocp2_res = ocp2.prox_ddp.getResults()
-
+ocp2_res = ocp2.prox_ddp.results
 
 dist_x = np.linalg.norm(np.stack(ocp.ddp.xs) - np.stack(ocp2_res.xs))
 print("Dist X:", dist_x)

@@ -169,7 +169,7 @@ class Controller:
         self.t_measures = t_measures - t_start
 
         if self.params.movement == "base_circle" or self.params.movement == "walk":
-            self.target_base.np = self.v_ref
+            self.target_base.np[:] = self.v_ref
             self.target_footstep[:] = 0.0
         else:
             self.target_base.np[:] = 0.0

@@ -4,7 +4,7 @@ import pinocchio as pin
 import numpy as np
 from time import time
 from .ocp_abstract import OCPAbstract
-from typing import Optional
+from typing import Optional, List
 from ..tools.utils import no_copy_roll, no_copy_roll_insert
 
 
@@ -60,11 +60,11 @@ class CrocOCP(OCPAbstract):
         running_models = []
         feet_ids = np.asarray(self.task.feet_ids)
         for t in range(gait.shape[0]):
-            support_feet = feet_ids[gait[t] == 1]
+            support_feet_ids = feet_ids[gait[t] == 1]
             feet_pos = (
-                self.get_active_feet(footsteps[t], support_feet)
+                self.get_active_feet(footsteps[t], support_feet_ids)
                 if footsteps is not None
-                else ()
+                else []
             )
             base_vel_ref = base_vel_refs[t] if base_vel_refs is not None else None
             has_switched = np.any(gait[t] != gait[t - 1])
@@ -72,12 +72,12 @@ class CrocOCP(OCPAbstract):
             switch_feet = feet_ids[switch_matrix == 1]
             running_models.append(
                 self.make_running_model(
-                    support_feet, switch_feet, feet_pos, base_vel_ref
+                    support_feet_ids, switch_feet, feet_pos, base_vel_ref
                 )
             )
 
-        support_feet = feet_ids[gait[-1] == 1]
-        terminal_model = self.make_terminal_model(support_feet)
+        support_feet_ids = feet_ids[gait[-1] == 1]
+        terminal_model = self.make_terminal_model(support_feet_ids)
 
         return running_models, terminal_model
 
@@ -154,6 +154,9 @@ class CrocOCP(OCPAbstract):
             model = self.end_rm[i]
             no_copy_roll_insert(self.current_gait, self.ending_gait[i])
             base_vel_ref = None
+
+        if base_vel_ref is not None:
+            base_vel_ref = pin.Motion(base_vel_ref)
 
         feet_pos = self.get_active_feet(footsteps, support_feet)
         self._update_model(model, feet_pos, base_vel_ref, support_feet)
@@ -296,7 +299,11 @@ class CrocOCP(OCPAbstract):
         return model
 
     def make_running_model(
-        self, support_feet, switch_feet, feet_pos, base_vel_ref: Optional[pin.Motion]
+        self,
+        support_feet,
+        switch_feet,
+        feet_pos: List[np.ndarray],
+        base_vel_ref: Optional[pin.Motion],
     ):
         """
         Add all the costs to the running models
@@ -465,13 +472,15 @@ class CrocOCP(OCPAbstract):
         self.update_tracking_costs(costs, feet_pos, base_vel_ref, support_feet)
         return model
 
-    def update_tracking_costs(self, costs, feet_pos, base_vel_ref, support_feet):
+    def update_tracking_costs(
+        self, costs, feet_pos: List[np.ndarray], base_vel_ref, support_feet
+    ):
         index = 0
         for i in self.task.feet_ids:
             if self.task.foot_tracking_w > 0:
                 name = "{}_foot_tracking".format(self.task.model.frames[i].name)
-                if i in feet_pos[0]:
-                    costs.costs[name].cost.residual.reference = feet_pos[1][index]
+                if i in support_feet:
+                    costs.costs[name].cost.residual.reference = feet_pos[index]
                     index += 1
                 costs.changeCostStatus(name, i not in support_feet)
 

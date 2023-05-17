@@ -136,7 +136,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
             self.in_k.value = k
             self.x0_shared[:] = x0
             self.footstep_shared[:] = footstep
-            self.base_ref_shared[:] = base_ref
+            self.base_ref_shared[:] = np.asarray(base_ref)
 
     def _get_shared_data_in(self):
         """
