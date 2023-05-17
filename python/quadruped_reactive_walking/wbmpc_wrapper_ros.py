@@ -162,7 +162,7 @@ class ROSMPCWrapperServer:
         if not self.is_init:
             return MPCSolveResponse(run_success=False)
 
-        self.ocp.make_ocp(
+        self.ocp.push_node(
             msg.k,
             multiarray_to_numpy_float64(msg.x0),
             multiarray_to_numpy_float64(msg.footstep),

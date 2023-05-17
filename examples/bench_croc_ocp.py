@@ -19,7 +19,7 @@ def createProblem():
     x0 = pd.x0_reduced
 
     ocp = OCP(target)
-    ocp.make_ocp()
+    ocp.push_node()
     ocp.x0 = x0
 
     xs = [x0] * (ocp.ddp.problem.T + 1)

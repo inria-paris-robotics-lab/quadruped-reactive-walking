@@ -106,7 +106,7 @@ class CrocOCP(OCPAbstract):
         self.t_solve = time() - t_start
         self.num_iters = self.ddp.iter
 
-    def make_ocp(self, k, x0, footsteps, base_pose):
+    def push_node(self, k, x0, footsteps, base_pose):
         """
         Create a shooting problem for a simple walking gait.
 

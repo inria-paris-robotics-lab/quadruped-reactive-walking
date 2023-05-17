@@ -122,7 +122,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
                     self.params, self.footsteps_plan, self.base_refs
                 )
 
-            loop_ocp.make_ocp(k, x0, footstep, base_ref)
+            loop_ocp.push_node(k, x0, footstep, base_ref)
             loop_ocp.solve(k)
             gait, xs, us, K, solving_time = loop_ocp.get_results(self.WINDOW_SIZE)
             self._put_shared_data_out(gait, xs, us, K, loop_ocp.num_iters, solving_time)
