@@ -4,6 +4,8 @@ from ..tools.utils import make_initial_footstep
 
 
 class Target:
+    """Utility class to compute references for base and footstep."""
+
     def __init__(self, params):
         self.params = params
         self.dt_wbc = params.dt_wbc
@@ -32,9 +34,9 @@ class Target:
             elif params.movement == "step":
                 foot_pose = self.initial_footsteps[:, 1]
                 self.p0 = foot_pose
-                self.p1 = foot_pose.copy() + np.array([0.025, 0.0, 0.03])
+                self.p1 = foot_pose + np.array([0.025, 0.0, 0.03])
                 self.v1 = np.array([0.5, 0.0, 0.0])
-                self.p2 = foot_pose.copy() + np.array([0.05, 0.0, 0.0])
+                self.p2 = foot_pose + np.array([0.05, 0.0, 0.0])
 
                 self.T = self.k_per_step * self.dt_wbc
                 self.ts = np.repeat(np.linspace(0, self.T, 3), 2)
@@ -113,13 +115,8 @@ class Target:
             self.update_time = n_step
 
         t = k_step * self.dt_wbc
-        return self.compute_position(t)
+        return self.krog(t)
 
     def update_interpolator(self, initial, target, velocity):
         self.y = [initial, np.zeros(3), self.p1, velocity, target, np.zeros(3)]
         self.krog = KroghInterpolator(self.ts, np.array(self.y))
-
-    def compute_position(self, t):
-        p = self.krog(t)
-        # v = self.krog.derivative(t)
-        return p
