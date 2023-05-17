@@ -63,17 +63,17 @@ def make_footsteps_and_refs(params, target: Target):
     """
     footsteps = []
     base_refs = []
-    for k in range(params.N_gait * params.mpc_wbc_ratio):
+    for k in range(params.N_gait):
         if params.movement == "base_circle" or params.movement == "walk":
             target_base = np.zeros(6)
             target_footstep = np.zeros((3, 4))
         else:
             target_base = np.array([0.0, 0.0, params.h_ref, 0.0, 0.0, 0.0])
-            target_footstep = target.compute(k).copy()
+            kk = k * params.mpc_wbc_ratio
+            target_footstep = target.compute(kk).copy()
 
-        if k % params.mpc_wbc_ratio == 0:
-            base_refs.append(target_base.copy())
-            footsteps.append(target_footstep.copy())
+        base_refs.append(target_base.copy())
+        footsteps.append(target_footstep.copy())
 
     return footsteps, base_refs
 

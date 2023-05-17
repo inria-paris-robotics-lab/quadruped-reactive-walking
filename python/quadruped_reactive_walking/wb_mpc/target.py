@@ -49,51 +49,51 @@ class Target:
     def compute(self, k):
         if k < self.initial_delay:
             if self.params.movement == "base_circle" or self.params.movement == "walk":
-                target = self.base_ref
+                return self.base_ref
             else:
-                target = self.initial_footsteps
-            return target
+                return self.initial_footsteps
 
         k -= self.initial_delay
+        out = np.empty((3, 4))
 
         if self.params.movement == "base_circle":
-            target = self.evaluate_circle(k, self.initial_base)
+            out[:] = self._evaluate_circle(k, self.initial_base)
         elif self.params.movement == "walk":
-            target = self.base_ref
+            out[:] = self.base_ref
         else:
-            target = self.initial_footsteps.copy()
+            out[:] = self.initial_footsteps.copy()
             if self.params.movement == "circle":
-                target[:, 1] = self.evaluate_circle(k, self.initial_footsteps[:, 1])
+                out[:, 1] = self._evaluate_circle(k, self.initial_footsteps[:, 1])
             elif self.params.movement == "step":
-                target[:, 1] = self.evaluate_step(1, k)
-                target[2, 1] += 0.015
+                out[:, 1] = self._evaluate_step(1, k)
+                out[2, 1] += 0.015
             else:
-                target[0, 1] = (
+                out[0, 1] = (
                     self.target_ramp_x[k]
                     if k < self.ramp_length
                     else self.target_ramp_x[-1]
                 )
-                target[1, 1] = (
+                out[1, 1] = (
                     self.target_ramp_y[k]
                     if k < self.ramp_length
                     else self.target_ramp_y[-1]
                 )
-                target[2, 1] = (
+                out[2, 1] = (
                     self.target_ramp_z[k]
                     if k < self.ramp_length
                     else self.target_ramp_z[-1]
                 )
 
-        return target
+        return out
 
-    def evaluate_circle(self, k, initial_position):
+    def _evaluate_circle(self, k, initial_position):
         return (
             initial_position
             + self.offset
             + self.A * np.sin(2 * np.pi * self.freq * k * self.dt_wbc + self.phase)
         )
 
-    def evaluate_step(self, j, k):
+    def _evaluate_step(self, j, k):
         n_step = k // self.k_per_step
         if n_step % 2 == 0:
             return self.p0.copy() if (n_step % 4 == 0) else self.p2.copy()
