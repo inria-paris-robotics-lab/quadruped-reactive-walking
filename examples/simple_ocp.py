@@ -36,7 +36,7 @@ ocp.solve(0)
 ocp2 = AlgtrOCPProx(params, footsteps, base_refs)
 
 ts = time.time()
-n = 2000
+n = 1
 for i in range(n):
     ocp2.solve(0)
 elapsed = time.time() - ts
