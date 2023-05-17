@@ -1,6 +1,6 @@
 from .ocp_abstract import OCPAbstract
 from .ocp_crocoddyl import CrocOCP
-from .ocp_proxddp import AlgtrOCPProx, AlgtrOCPFDDP
+from .ocp_proxddp import AlgtrOCPAbstract, AlgtrOCPProx, AlgtrOCPFDDP
 
 _OCP_TYPES = (CrocOCP, AlgtrOCPProx, AlgtrOCPFDDP)
 
@@ -19,4 +19,11 @@ def get_ocp_list_str():
 OCP_TYPE_MAP = {ocp_cls.get_type_str(): ocp_cls for ocp_cls in _OCP_TYPES}
 
 
-__all__ = ["OCPAbstract", "CrocOCP", "AlgtrOCPProx", "AlgtrOCPFDDP", "OCP_TYPE_MAP"]
+__all__ = [
+    "OCPAbstract",
+    "CrocOCP",
+    "AlgtrOCPAbstract",
+    "AlgtrOCPProx",
+    "AlgtrOCPFDDP",
+    "OCP_TYPE_MAP",
+]
