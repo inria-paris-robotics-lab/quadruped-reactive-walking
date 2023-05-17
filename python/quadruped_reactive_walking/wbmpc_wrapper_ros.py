@@ -72,7 +72,7 @@ class ROSMPCWrapperClient(MPCWrapperAbstract):
                 "qrw_wbmpc/solve", MPCSolve, callback=self._result_cb, persistent=True
             )
 
-    def solve(self, k, x0, footstep, base_ref, xs=None, us=None):
+    def solve(self, k, x0, footstep, base_ref):
         res = self.solve_solver_srv(
             k=k,
             x0=numpy_to_multiarray_float64(x0),

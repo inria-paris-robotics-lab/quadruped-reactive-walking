@@ -10,11 +10,9 @@ struct PyMPCWrapper : MPCDerived, bp::wrapper<MPCDerived> {
   using StdVecVecN = std::vector<VectorN>;
 
   void solve(uint k, const ConstVecRefN &x0, Vector4 footstep,
-             Motion base_vel_ref,
-             const boost::optional<StdVecVecN> &xs = boost::none,
-             const boost::optional<StdVecVecN> &us = boost::none) override {
+             Motion base_vel_ref) override {
     bp::override fn = this->get_override("solve");
-    fn(k, x0, footstep, base_vel_ref, xs, us);
+    fn(k, x0, footstep, base_vel_ref);
   }
 
   MPCResult get_latest_result() const override {
@@ -33,8 +31,7 @@ void exposeMPCInterface() {
            bp::args("self"))
       .def("solve", bp::pure_virtual(&PyMPCWrapper<>::solve),
            (bp::arg("self"), bp::arg("k"), bp::arg("x0"), bp::arg("footstep"),
-            bp::arg("base_vel_ref"), bp::arg("xs") = boost::none,
-            bp::arg("us") = boost::none));
+            bp::arg("base_vel_ref")));
 }
 
 }  // namespace qrw

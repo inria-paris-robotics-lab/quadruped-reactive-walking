@@ -4,8 +4,6 @@
 #include "qrw/MPCResult.hpp"
 #include "qrw/IOCPAbstract.hpp"
 
-#include <boost/optional.hpp>
-
 namespace qrw {
 
 struct IMPCWrapper {
@@ -20,9 +18,7 @@ struct IMPCWrapper {
   int N_gait() const { return params_.N_gait; }
   uint window_size() const { return params_.window_size; }
   virtual void solve(uint k, const ConstVecRefN &x0, Vector4 footstep,
-                     Motion base_vel_ref,
-                     const boost::optional<StdVecVecN> &xs = boost::none,
-                     const boost::optional<StdVecVecN> &us = boost::none) = 0;
+                     Motion base_vel_ref) = 0;
   virtual MPCResult get_latest_result() const = 0;
 };
 
