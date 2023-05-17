@@ -165,10 +165,10 @@ class LoggerControl:
                 ]
                 self.target_base_linear[i] = controller.base_refs[
                     i // self.params.mpc_wbc_ratio
-                ][:3]
+                ].linear
                 self.target_base_angular[i] = controller.base_refs[
                     i // self.params.mpc_wbc_ratio
-                ][3:]
+                ].angular
         if self.i + self.params.N_gait * self.params.mpc_wbc_ratio < self.log_size:
             self.target[
                 self.i + self.params.N_gait * self.params.mpc_wbc_ratio

@@ -99,6 +99,8 @@ class Controller:
         )
 
         self.default_footstep = make_initial_footstep(params.q_init)
+        self.target_base = pin.Motion.Zero()
+        self.target_footstep = np.zeros((3, 4))
 
         self.mpc = None
         if params.mpc_in_rosnode:
@@ -136,9 +138,7 @@ class Controller:
         if self.params.interpolate_mpc:
             self.interpolator = Interpolator(params, self.task.x0)
         try:
-            # filename = np.load("/tmp/init_guess.npy", allow_pickle=True).item()
-            # self.xs_init = list(filename["xs"])
-            # self.us_init = list(filename["us"])
+            # TODO: reload warm starts here
             print("Initial guess loaded.\n")
         except Exception:
             print("No initial guess found.\n")
@@ -169,11 +169,11 @@ class Controller:
         self.t_measures = t_measures - t_start
 
         if self.params.movement == "base_circle" or self.params.movement == "walk":
-            self.target_base = self.v_ref
-            self.target_footstep = np.zeros((3, 4))
+            self.target_base.np = self.v_ref
+            self.target_footstep[:] = 0.0
         else:
-            self.target_base = np.zeros(3)
-            self.target_footstep = self.target.compute(
+            self.target_base.np[:] = 0.0
+            self.target_footstep[:] = self.target.compute(
                 self.k + self.params.N_gait * self.params.mpc_wbc_ratio
             )
 

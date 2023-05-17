@@ -50,13 +50,13 @@ class CrocOCP(OCPAbstract):
     def get_type_str():
         return "croc"
 
-    def initialize_models_from_gait(self, gait, footsteps=None, base_refs=None):
+    def initialize_models_from_gait(self, gait, footsteps=None, base_vel_refs=None):
         """Create action models (problem stages) from a gait matrix and other optional data."""
         assert (footsteps is None) == (
-            base_refs is None
+            base_vel_refs is None
         )  # both or neither must be none
         if footsteps is not None:
-            assert len(footsteps) == len(base_refs)
+            assert len(footsteps) == len(base_vel_refs)
         running_models = []
         feet_ids = np.asarray(self.task.feet_ids)
         for t in range(gait.shape[0]):
@@ -66,12 +66,14 @@ class CrocOCP(OCPAbstract):
                 if footsteps is not None
                 else ()
             )
-            base_pose = base_refs[t] if base_refs is not None else None
+            base_vel_ref = base_vel_refs[t] if base_vel_refs is not None else None
             has_switched = np.any(gait[t] != gait[t - 1])
             switch_matrix = gait[t] if has_switched else np.array([])
             switch_feet = feet_ids[switch_matrix == 1]
             running_models.append(
-                self.make_running_model(support_feet, switch_feet, feet_pos, base_pose)
+                self.make_running_model(
+                    support_feet, switch_feet, feet_pos, base_vel_ref
+                )
             )
 
         support_feet = feet_ids[gait[-1] == 1]
@@ -106,7 +108,7 @@ class CrocOCP(OCPAbstract):
         self.t_solve = time() - t_start
         self.num_iters = self.ddp.iter
 
-    def push_node(self, k, x0, footsteps, base_pose):
+    def push_node(self, k, x0, footsteps, base_vel_ref: Optional[pin.Motion]):
         """
         Create a shooting problem for a simple walking gait.
 
@@ -151,10 +153,10 @@ class CrocOCP(OCPAbstract):
             support_feet = feet_ids[self.ending_gait[i] == 1]
             model = self.end_rm[i]
             no_copy_roll_insert(self.current_gait, self.ending_gait[i])
-            base_pose = None
+            base_vel_ref = None
 
         feet_pos = self.get_active_feet(footsteps, support_feet)
-        self._update_model(model, feet_pos, base_pose, support_feet)
+        self._update_model(model, feet_pos, base_vel_ref, support_feet)
         self.circular_append(model)
         if k > 0:
             self.cycle_warm_start()
@@ -210,7 +212,7 @@ class CrocOCP(OCPAbstract):
         self,
         model,
         feet_pos,
-        base_vel_ref: Optional[np.ndarray],
+        base_vel_ref: Optional[pin.Motion],
         support_feet,
         is_terminal=False,
     ):
@@ -294,7 +296,7 @@ class CrocOCP(OCPAbstract):
         return model
 
     def make_running_model(
-        self, support_feet, switch_feet, feet_pos, base_pose: Optional[np.ndarray]
+        self, support_feet, switch_feet, feet_pos, base_vel_ref: Optional[pin.Motion]
     ):
         """
         Add all the costs to the running models
@@ -434,8 +436,8 @@ class CrocOCP(OCPAbstract):
                     )
 
         name = "base_velocity_tracking"
-        if base_pose is not None:
-            ref = pin.Motion(base_pose)
+        if base_vel_ref is not None:
+            ref = pin.Motion(base_vel_ref)
         else:
             ref = pin.Motion.Zero()
 
@@ -460,12 +462,10 @@ class CrocOCP(OCPAbstract):
         )
         costs.addCost("control_bound", control_bound, self.task.control_bound_w)
 
-        self.update_tracking_costs(costs, feet_pos, base_pose, support_feet)
+        self.update_tracking_costs(costs, feet_pos, base_vel_ref, support_feet)
         return model
 
-    def update_tracking_costs(
-        self, costs, feet_pos, base_vel_ref: Optional[np.ndarray], support_feet
-    ):
+    def update_tracking_costs(self, costs, feet_pos, base_vel_ref, support_feet):
         index = 0
         for i in self.task.feet_ids:
             if self.task.foot_tracking_w > 0:
@@ -489,4 +489,4 @@ class CrocOCP(OCPAbstract):
 
         if base_vel_ref is not None and self.task.base_velocity_tracking_w > 0:
             name = "base_velocity_tracking"
-            costs.costs[name].cost.residual.reference.np[:] = base_vel_ref[:6]
+            costs.costs[name].cost.residual.reference = base_vel_ref

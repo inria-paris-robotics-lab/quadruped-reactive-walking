@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.interpolate import KroghInterpolator
 from ..tools.utils import make_initial_footstep
+import pinocchio as pin
 
 
 class Target:
@@ -12,6 +13,7 @@ class Target:
         self.k_per_step = 160
         self.initial_delay = 1000
         self.initial_footsteps = make_initial_footstep(self.params.q_init)
+        self.base_vel_ref = pin.Motion()
 
         if params.movement == "base_circle":
             self.initial_base = np.array([0.0, 0.0, params.h_ref])
@@ -22,8 +24,9 @@ class Target:
         elif params.movement == "walk":
             self.velocity_lin_target = np.array([0.5, 0, 0])
             self.velocity_ang_target = np.array([0, 0, 0])
-            self.base_ref = np.concatenate(
-                [self.velocity_lin_target, self.velocity_ang_target]
+            # dim 6
+            self.base_vel_ref = pin.Motion(
+                self.velocity_lin_target, self.velocity_ang_target
             )
         elif params.movement == "circle":
             self.A = np.array([0.05, 0.0, 0.04])
@@ -50,8 +53,6 @@ class Target:
     def compute(self, k):
         if k < self.initial_delay:
             if self.params.movement == "base_circle" or self.params.movement == "walk":
-                return self.base_ref
-            else:
                 return self.initial_footsteps
 
         k -= self.initial_delay
@@ -60,9 +61,9 @@ class Target:
         if self.params.movement == "base_circle":
             out[:] = self._evaluate_circle(k, self.initial_base)
         elif self.params.movement == "walk":
-            out[:] = self.base_ref
+            out[:] = self.initial_footsteps
         else:
-            out[:] = self.initial_footsteps.copy()
+            out[:] = self.initial_footsteps
             if self.params.movement == "circle":
                 out[:, 1] = self._evaluate_circle(k, self.initial_footsteps[:, 1])
             elif self.params.movement == "step":
@@ -130,13 +131,10 @@ def make_footsteps_and_refs(params, target: Target):
     footsteps = []
     base_refs = []
     for k in range(params.N_gait):
-        if params.movement == "base_circle" or params.movement == "walk":
-            target_base = np.zeros(6)
-            target_footstep = np.zeros((3, 4))
-        else:
-            target_base = np.array([0.0, 0.0, params.h_ref, 0.0, 0.0, 0.0])
-            kk = k * params.mpc_wbc_ratio
-            target_footstep = target.compute(kk).copy()
+        target_base = np.array([0.0, 0.0, params.h_ref, 0.0, 0.0, 0.0])
+        target_base = pin.Motion(target_base)
+        kk = k * params.mpc_wbc_ratio
+        target_footstep = target.compute(kk).copy()
 
         footsteps.append(target_footstep)
         base_refs.append(target_base)
