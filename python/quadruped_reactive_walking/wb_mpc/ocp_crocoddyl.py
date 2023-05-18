@@ -219,6 +219,7 @@ class CrocOCP(OCPAbstract):
         support_feet,
         is_terminal=False,
     ):
+        """Update each stage of the OCP: the contact status of the dynamics and cost functions."""
         for i in self.task.feet_ids:
             name = self.task.model.frames[i].name + "_contact"
             model.differential.contacts.changeContactStatus(name, i in support_feet)
@@ -315,7 +316,9 @@ class CrocOCP(OCPAbstract):
             start_pos = self.rdata.oMf[i].translation
 
             # Contact forces
-            cone = crocoddyl.FrictionCone(self.task.Rsurf, self.task.mu, 4, False, 3)
+            cone = crocoddyl.FrictionCone(
+                self.task.Rsurf, self.task.friction_mu, 4, False, 3
+            )
             residual = crocoddyl.ResidualModelContactFrictionCone(
                 self.state, i, cone, nu
             )

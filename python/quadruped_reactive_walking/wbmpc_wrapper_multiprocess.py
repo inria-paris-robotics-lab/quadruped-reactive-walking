@@ -72,8 +72,8 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self._shms.add(shm)
         return create_shared_ndarray(shape, dtype, shm)
 
-    def solve(self, k, x0, footstep, base_ref):
-        self._put_shared_data_in(k, x0, footstep, base_ref)
+    def solve(self, k, x0, footstep, base_vel_ref):
+        self._put_shared_data_in(k, x0, footstep, base_vel_ref)
         self.new_data.value = True
 
     def get_latest_result(self):

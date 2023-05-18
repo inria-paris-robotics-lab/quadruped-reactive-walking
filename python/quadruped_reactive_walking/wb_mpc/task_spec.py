@@ -77,7 +77,7 @@ class TaskSpec(TaskSpecBase):
         task_pms = params.task
 
         # Cost function weights
-        self.mu = task_pms["mu"]
+        self.friction_mu = task_pms["friction_mu"]
 
         # if params.movement == "step":
         #     self.foot_tracking_w = 2.0 * 1e3
@@ -95,18 +95,18 @@ class TaskSpec(TaskSpecBase):
         self.base_velocity_tracking_w = task_pms["base_velocity_tracking_w"]
         self.foot_tracking_w = task_pms["foot_tracking_w"]
 
-        self.impact_altitude_w = 1e6
-        self.impact_velocity_w = 1e4
-        self.friction_cone_w = 1e3 * 0.0
+        self.impact_altitude_w = task_pms["impact_altitude_w"]
+        self.impact_velocity_w = task_pms["impact_velocity_w"]
+        self.friction_cone_w = task_pms["friction_cone_w"]
 
-        self.control_bound_w = 1e4
-        self.control_reg_w = 1e4
+        self.control_bound_w = task_pms["control_bound_w"]
+        self.control_reg_w = task_pms["control_reg_w"]
         self.state_reg_w = np.array(
             [0] * 3 + [0] * 3 + [1e2 * 3] * 12 + [0] * 6 + [1e1 * 2] * 12
         )
         self.state_bound_w = np.array([0] * 18 + [0] * 6 + [0] * 12)
         self.terminal_velocity_w = np.array([0] * self.nv + [1e3] * self.nv)
-        self.force_reg_w = 1e2
+        self.force_reg_w = task_pms["force_reg_w"]
 
         self.xref = self.x0
         self.uref = np.array(
