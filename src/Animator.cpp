@@ -4,6 +4,8 @@ AnimatorBase::AnimatorBase(Params const& params)
     : params_(&params),
       dt_mpc(params.dt_mpc),
       dt_wbc(params.dt_wbc),
+      t_switch(params.t_switch),
+      k_switch((t_switch / dt_wbc).cast<int>()),
       v_switch(params.v_switch) {
   A2_.setZero();
   A3_.setZero();
