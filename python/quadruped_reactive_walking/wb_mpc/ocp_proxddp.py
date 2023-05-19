@@ -7,12 +7,12 @@ Author:
 import time
 import proxddp
 import crocoddyl
+import numpy as np
 
+from abc import abstractclassmethod
 from colorama import Fore
 from .ocp_crocoddyl import CrocOCP
 from quadruped_reactive_walking import Params
-import abc
-import numpy as np
 
 
 def infNorm(x):
@@ -25,7 +25,7 @@ class AlgtrOCPAbstract(CrocOCP):
     # Must be set by child class
     prox_ddp = None  # Solver instance
 
-    @abc.abstractclassmethod
+    @abstractclassmethod
     def get_type_str():
         pass
 
@@ -54,15 +54,6 @@ class AlgtrOCPAbstract(CrocOCP):
         self.prox_ddp.max_iters = self.max_iter
         self.prox_ddp.setup(self.my_problem)
 
-        self.x_solver_errs = []
-        self.u_solver_errs = []
-        self.ff_errs = []
-        self.fb_errs = []
-        self.prox_stops = []
-        self.croc_stops = []
-        self.prox_iters = []
-        self.croc_iters = []
-
     def solve(self, k):
         t_start = time.time()
         self.my_problem.x0_init = self.x0
@@ -72,6 +63,7 @@ class AlgtrOCPAbstract(CrocOCP):
         nsteps = self.my_problem.num_steps
 
         if self.warm_start_empty():
+            print(Fore.CYAN + "No warm-start found, initializing..." + Fore.RESET)
             self.xs_init = [self.x0] * (nsteps + 1)
             self.us_init = self.problem.quasiStatic([self.x0] * nsteps)
         self._check_ws_dim()
@@ -85,9 +77,6 @@ class AlgtrOCPAbstract(CrocOCP):
 
         # compute proxddp's criteria
         res = self.prox_ddp.results
-        prox_norm_inf = max(res.primal_infeas, res.dual_infeas)
-        self.prox_stops.append(prox_norm_inf)
-        self.prox_iters.append(res.num_iters)
 
         t_ddp = time.time()
         self.t_ddp = t_ddp - t_warm_start
@@ -125,14 +114,6 @@ class AlgtrOCPAbstract(CrocOCP):
     def clear(self):
         self.x_solver_errs.clear()
         self.u_solver_errs.clear()
-        self.ff_errs.clear()
-        self.fb_errs.clear()
-
-        self.prox_stops.clear()
-        self.prox_iters.clear()
-
-        self.croc_stops.clear()
-        self.croc_iters.clear()
 
 
 class AlgtrOCPFDDP(AlgtrOCPAbstract):

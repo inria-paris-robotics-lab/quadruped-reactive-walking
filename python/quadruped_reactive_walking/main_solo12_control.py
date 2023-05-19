@@ -15,7 +15,6 @@ from quadruped_reactive_walking.tools.logger_control import (
 from quadruped_reactive_walking.wb_mpc import (
     get_ocp_from_str,
     get_ocp_list_str,
-    AlgtrOCPAbstract,
 )
 
 import tqdm
@@ -297,48 +296,6 @@ def main(args):
         if params.PLOTTING:
             logger.plot(save=True, filename=str(log_path))
             print("Plots saved in ", str(log_path) + "/")
-
-            mpc = controller.mpc  # noqa
-
-            def plot_prox_ocp(ocp: AlgtrOCPAbstract):
-                nplt = 3
-                h = 7.2
-                fig, axs = plt.subplots(nplt, 1, figsize=(6.4, h), layout="constrained")
-                fig: plt.Figure
-
-                plt.sca(axs[0])
-                plt.plot(ocp.prox_stops, label="algtr", ls="-")
-                plt.plot(ocp.croc_stops, label="croco", ls="dotted")
-                plt.xlabel("MPC cycle")
-                plt.yscale("log")
-                plt.title("$\\ell_\\infty$-norm of stopping criterion")
-                plt.legend()
-
-                plt.sca(axs[1])
-                plt.plot(ocp.prox_stops_2, label="algtr", ls="-")
-                plt.plot(ocp.croc_stops_2, label="croco", ls="dotted")
-                plt.xlabel("MPC cycle")
-                plt.title("Squared norm stopping criterion")
-                plt.yscale("log")
-                plt.legend()
-
-                plt.sca(axs[2])
-                # plt.plot(ocp.prox_iters, label="algtr", ls="-")
-                # plt.plot(ocp.croc_iters, label="croco", ls="dotted")
-                # plt.title("Number of OCP iterations")
-                # plt.grid(visible=True, which="minor", axis="y")
-                plt.plot(ocp.x_solver_errs, label="$x$")
-                plt.plot(ocp.u_solver_errs, label="$u$")
-                plt.plot(ocp.ff_errs, label="$\\kappa^\\mathrm{ff}$")
-                plt.plot(ocp.fb_errs, label="$K$")
-                plt.yscale("log")
-                plt.title("Error between solvers")
-                plt.grid(visible=True, which="minor", axis="y")
-                plt.legend()
-
-            # if hasattr(mpc, "ocp") and isinstance(mpc.ocp, AlgtrOCPAbstract):
-            #     plot_prox_ocp(mpc.ocp)
-
             plt.show()
 
     if params.SIMULATION:

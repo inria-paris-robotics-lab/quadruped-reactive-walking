@@ -403,6 +403,8 @@ class LoggerControl:
             label="mpc $\\Delta t$",
         )
         plt.legend()
+        ylims = plt.ylim()
+        plt.ylim(-0.004, min(ylims[1], 0.04))
         plt.xlabel("Clock  [s]")
         plt.ylabel("Timing [s]")
         plt.tight_layout()

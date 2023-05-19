@@ -12,7 +12,7 @@ class TaskSpecBase:
         self.q0[:7] = np.array([0.0, 0.0, params.h_ref, 0, 0, 0, 1])
         self.q0[7:] = params.q_init
 
-        self.model = self.robot.model
+        self.model: pin.Model = self.robot.model
         self.collision_model = self.robot.collision_model
         self.visual_model = self.robot.visual_model
 

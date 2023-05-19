@@ -2,10 +2,14 @@ import crocoddyl
 import sobec
 import pinocchio as pin
 import numpy as np
+
+from colorama import Fore
 from time import time
 from .ocp_abstract import OCPAbstract
 from typing import Optional, List
 from ..tools.utils import no_copy_roll, no_copy_roll_insert
+from quadruped_reactive_walking import Params
+from . import task_spec
 
 
 class CrocOCP(OCPAbstract):
@@ -13,8 +17,9 @@ class CrocOCP(OCPAbstract):
     Generate a Crocoddyl OCP for the control task.
     """
 
-    def __init__(self, params, footsteps, base_refs):
+    def __init__(self, params: Params, footsteps, base_refs):
         super().__init__(params)
+        self.task = task_spec.TaskSpec(params)
 
         self.state = crocoddyl.StateMultibody(self.task.model)
 
@@ -88,6 +93,7 @@ class CrocOCP(OCPAbstract):
         self.t_update = t_update - t_start
 
         if self.warm_start_empty():
+            print(Fore.CYAN + "No warm-start found, initializing..." + Fore.RESET)
             self.xs_init = [self.x0] * (self.ddp.problem.T + 1)
             self.us_init = self.ddp.problem.quasiStatic([self.x0] * self.ddp.problem.T)
         self._check_ws_dim()
