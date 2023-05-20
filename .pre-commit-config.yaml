@@ -6,13 +6,14 @@ repos:
         args: ['--style={BasedOnStyle: Google, SortIncludes: false}']
 -   repo: meta
     hooks:
-    -  id: check-useless-excludes
-    -  id: check-hooks-apply
+    -   id: check-useless-excludes
+    -   id: check-hooks-apply
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.3.0
     hooks:
     -   id: check-added-large-files
     -   id: check-ast
+    -   id: check-yaml
     -   id: check-executables-have-shebangs
     -   id: check-merge-conflict
     -   id: debug-statements
@@ -28,9 +29,9 @@ repos:
     -   id: black
 -   repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.0.245'
+    rev: v0.0.245
     hooks:
-      - id: ruff
+    -   id: ruff
         args: [--fix, --exit-non-zero-on-fix]
 -   repo: https://github.com/cheshirekow/cmake-format-precommit
     rev: v0.6.10
