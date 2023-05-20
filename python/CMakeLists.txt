@@ -43,6 +43,8 @@ set(${PY_NAME}_WB_MPC_PYTHON
     ocp_proxddp.py
     ocp_crocoddyl.py
     ocp_casadi.py
+    jump.py
+    walking.py
     task_spec.py
     target.py)
 
