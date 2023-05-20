@@ -95,8 +95,8 @@ class AlgtrOCPAbstract(CrocOCP):
 
     def get_results(self, window_size=None):
         res = self.prox_ddp.results
-        self.xs_init[:] = res.xs
-        self.us_init[:] = res.us
+        self.xs_init = res.xs
+        self.us_init = res.us
         if window_size is None:
             window_size = len(res.us)
         feedbacks = res.controlFeedbacks()[:window_size]

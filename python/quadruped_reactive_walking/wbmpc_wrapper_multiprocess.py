@@ -7,6 +7,7 @@ except ImportError:
 
 
 import numpy as np
+import pinocchio as pin
 
 from .wb_mpc.ocp_abstract import OCPAbstract
 from .tools.utils import create_shared_ndarray
@@ -72,8 +73,8 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
         self._shms.add(shm)
         return create_shared_ndarray(shape, dtype, shm)
 
-    def solve(self, k, x0, footstep, base_vel_ref):
-        self._put_shared_data_in(k, x0, footstep, base_vel_ref)
+    def solve(self, k, x0, footstep, base_vel_ref: pin.Motion):
+        self._put_shared_data_in(k, x0, footstep, base_vel_ref.np)
         self.new_data.value = True
 
     def get_latest_result(self):
@@ -136,7 +137,7 @@ class MultiprocessMPCWrapper(MPCWrapperAbstract):
             self.in_k.value = k
             self.x0_shared[:] = x0
             self.footstep_shared[:] = footstep
-            self.base_ref_shared[:] = np.asarray(base_ref)
+            self.base_ref_shared[:] = base_ref
 
     def _get_shared_data_in(self):
         """
