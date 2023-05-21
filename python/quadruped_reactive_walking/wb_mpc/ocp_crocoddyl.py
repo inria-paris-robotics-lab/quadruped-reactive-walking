@@ -10,7 +10,10 @@ from typing import Optional
 from ..tools.utils import no_copy_roll, no_copy_roll_insert
 from quadruped_reactive_walking import Params
 from . import task_spec
-from .walking import WalkingOCPBuilder, get_active_feet
+from quadruped_reactive_walking.ocp_defs.walking import (
+    WalkingOCPBuilder,
+    get_active_feet,
+)
 
 
 class CrocOCP(OCPAbstract):

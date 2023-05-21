@@ -27,68 +27,58 @@ endif()
 target_link_boost_python(${PY_LIB} PRIVATE)
 install(TARGETS ${PY_LIB} DESTINATION ${${PY_NAME}_INSTALL_DIR})
 
-set(${PY_NAME}_PYTHON
-    __init__.py
-    controller.py
-    main_solo12_control.py
-    wbmpc_wrapper_abstract.py
-    wbmpc_wrapper_sync.py
-    wbmpc_wrapper_multiprocess.py
-    wbmpc_wrapper_ros_mp.py
-    wbmpc_wrapper_ros.py)
+file(
+  GLOB ${PY_NAME}_PYTHON
+  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/${PY_NAME}
+  ${PY_NAME}/*.py)
 
-set(${PY_NAME}_WB_MPC_PYTHON
-    __init__.py
-    ocp_abstract.py
-    ocp_proxddp.py
-    ocp_crocoddyl.py
-    ocp_casadi.py
-    jump.py
-    walking.py
-    task_spec.py
-    target.py)
+file(
+  GLOB ${PY_NAME}_WB_MPC_PYTHON
+  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/${PY_NAME}
+  ${PY_NAME}/wb_mpc/*.py)
 
-set(${PY_NAME}_TOOLS_PYTHON
-    gamepadClient.py
-    __init__.py
-    logger_control.py
-    pybullet_sim.py
-    utils.py
-    qualisys_client.py
-    ros_tools.py
-    kinematics_utils.py
-    meshcat_viewer.py
-    Interpolator.py)
+file(
+  GLOB ${PY_NAME}_TOOLS_PYTHON
+  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/${PY_NAME}
+  ${PY_NAME}/tools/*.py)
+
+file(
+  GLOB ${PY_NAME}_OCP
+  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/${PY_NAME}
+  ${PY_NAME}/ocp_defs/*.py)
 
 if(GENERATE_PYTHON_STUBS)
   load_stubgen()
   generate_stubs(${CMAKE_CURRENT_BINARY_DIR} ${PY_NAME} ${PYTHON_SITELIB} ${PY_LIB})
 endif(GENERATE_PYTHON_STUBS)
 
-foreach(python ${${PY_NAME}_PYTHON})
-  python_install_on_site(${PY_NAME} ${python})
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${PY_NAME}/wb_mpc
+     ${CMAKE_CURRENT_BINARY_DIR}/${PY_NAME}/tools
+     ${CMAKE_CURRENT_BINARY_DIR}/${PY_NAME}/ocp_defs)
+
+# util to add python file with their dir as MODULE var
+function(add_pyfile pyfile)
+  get_filename_component(fname ${pyfile} NAME)
+  get_filename_component(fdir ${pyfile} DIRECTORY)
+  python_install_on_site(${PY_NAME}/${fdir} ${fname})
   execute_process(
     COMMAND
-      ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/${PY_NAME}/${python}
-      ${CMAKE_CURRENT_BINARY_DIR}/${PY_NAME}/${python})
+      ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/${PY_NAME}/${pyfile}
+      ${CMAKE_CURRENT_BINARY_DIR}/${PY_NAME}/${pyfile})
+endfunction(add_pyfile ${pyfile})
+
+foreach(python ${${PY_NAME}_PYTHON})
+  add_pyfile(${python})
 endforeach()
 
-set(WBMPC_DIR ${PY_NAME}/wb_mpc)
-
 foreach(python ${${PY_NAME}_WB_MPC_PYTHON})
-  python_install_on_site(${PY_NAME}/wb_mpc ${python})
-  execute_process(
-    COMMAND
-      ${CMAKE_COMMAND} -E create_symlink
-      ${CMAKE_CURRENT_SOURCE_DIR}/${WBMPC_DIR}/${python}
-      ${CMAKE_CURRENT_BINARY_DIR}/${WBMPC_DIR}/${python})
+  add_pyfile(${python})
 endforeach()
 
 foreach(python ${${PY_NAME}_TOOLS_PYTHON})
-  python_install_on_site(${PY_NAME}/tools ${python})
-  execute_process(
-    COMMAND
-      ${CMAKE_COMMAND} -E create_symlink
-      ${CMAKE_CURRENT_SOURCE_DIR}/${PY_NAME}/tools/${python}
-      ${CMAKE_CURRENT_BINARY_DIR}/${PY_NAME}/tools/${python})
+  add_pyfile(${python})
+endforeach()
+
+foreach(python ${${PY_NAME}_OCP})
+  add_pyfile(${python})
 endforeach()

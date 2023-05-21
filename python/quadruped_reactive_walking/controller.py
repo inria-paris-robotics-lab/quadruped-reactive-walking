@@ -11,7 +11,7 @@ from .wb_mpc.target import Target, make_footsteps_and_refs
 from .wb_mpc.task_spec import TaskSpec
 from .wbmpc_wrapper_abstract import MPCResult
 from .tools.utils import quaternionToRPY, make_initial_footstep
-from .tools.Interpolator import Interpolator
+from .tools.interpolator import Interpolator
 from typing import Type
 
 
