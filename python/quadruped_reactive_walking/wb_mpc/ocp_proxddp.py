@@ -60,12 +60,7 @@ class AlgtrOCPAbstract(CrocOCP):
 
         t_update = time.time()
         self.t_update = t_update - t_start
-        nsteps = self.my_problem.num_steps
 
-        if self.warm_start_empty():
-            print(Fore.CYAN + "No warm-start found, initializing..." + Fore.RESET)
-            self.xs_init = [self.x0] * (nsteps + 1)
-            self.us_init = self.problem.quasiStatic([self.x0] * nsteps)
         self._check_ws_dim()
 
         t_warm_start = time.time()
@@ -110,10 +105,6 @@ class AlgtrOCPAbstract(CrocOCP):
             feedbacks,
             self.t_ddp,
         )
-
-    def clear(self):
-        self.x_solver_errs.clear()
-        self.u_solver_errs.clear()
 
 
 class AlgtrOCPFDDP(AlgtrOCPAbstract):

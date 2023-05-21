@@ -72,7 +72,7 @@ class Controller:
 
         self.params = params
         self.task = TaskSpec(params)
-        self.rdata = self.task.create_rdata()
+        self.rdata = self.task.model.createData()
         self.state = StateMultibody(self.task.model)
 
         self.k = 0

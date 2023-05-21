@@ -47,9 +47,6 @@ class TaskSpecBase:
 
         self.Rsurf = np.eye(3)
 
-    def create_rdata(self):
-        return self.model.createData()
-
     def freeze(self):
         geom_models = [self.visual_model, self.collision_model]
         self.model, geometric_models_reduced = pin.buildReducedModel(

@@ -170,8 +170,7 @@ class CrocOCP(OCPAbstract):
         active_feet_pos = get_active_feet(footsteps, support_feet)
         self._builder.update_model(model, active_feet_pos, base_vel_ref, support_feet)
         self.circular_append(model)
-        if k > 0:
-            self.cycle_warm_start()
+        self.cycle_warm_start()
 
     def circular_append(self, m):
         d = m.createData()

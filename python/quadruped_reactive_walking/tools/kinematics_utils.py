@@ -6,7 +6,7 @@ from ..wb_mpc.task_spec import TaskSpec
 def get_translation(pd: TaskSpec, x, idx, ref_frame=pin.WORLD):
     q = x[: pd.nq]
     v = x[pd.nq :]
-    rdata = pd.create_rdata()
+    rdata = pd.model.createData()
     pin.forwardKinematics(pd.model, rdata, q, v)
     pin.updateFramePlacements(pd.model, rdata)
     frame_p = rdata.oMf[idx].translation
@@ -17,7 +17,7 @@ def get_translation(pd: TaskSpec, x, idx, ref_frame=pin.WORLD):
 def get_translation_array(pd: TaskSpec, x, idx, ref_frame=pin.WORLD, x0=None):
     frame_p = []
     frame_v = []
-    rdata = pd.create_rdata()
+    rdata = pd.model.createData()
     if isinstance(x0, np.ndarray):
         xiter = np.concatenate([x0.reshape(1, -1), x])
     else:
