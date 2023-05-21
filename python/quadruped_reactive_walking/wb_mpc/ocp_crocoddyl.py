@@ -39,13 +39,15 @@ class CrocOCP(OCPAbstract):
         )
         self.x0 = self.task.x0
 
-        self.life_rm, self.life_tm = self.initialize_models_from_gait(
+        self.life_rm, self.life_tm = self._builder.initialize_models_from_gait(
             self.life_gait, footsteps, base_refs
         )
-        self.start_rm, self.start_tm = self.initialize_models_from_gait(
+        self.start_rm, self.start_tm = self._builder.initialize_models_from_gait(
             self.starting_gait
         )
-        self.end_rm, self.end_tm = self.initialize_models_from_gait(self.ending_gait)
+        self.end_rm, self.end_tm = self._builder.initialize_models_from_gait(
+            self.ending_gait
+        )
 
         self.problem = crocoddyl.ShootingProblem(self.x0, self.start_rm, self.start_tm)
         self.ddp = crocoddyl.SolverFDDP(self.problem)
@@ -62,36 +64,6 @@ class CrocOCP(OCPAbstract):
 
     def get_type_str():
         return "croc"
-
-    def initialize_models_from_gait(self, gait, footsteps=None, base_vel_refs=None):
-        """Create action models (problem stages) from a gait matrix and other optional data."""
-        # both or neither must be none
-        assert (footsteps is None) == (base_vel_refs is None)
-        if footsteps is not None:
-            assert len(footsteps) == len(base_vel_refs)
-        running_models = []
-        feet_ids = np.asarray(self.task.feet_ids)
-        for t in range(gait.shape[0]):
-            support_feet_ids = feet_ids[gait[t] == 1]
-            feet_pos = (
-                get_active_feet(footsteps[t], support_feet_ids)
-                if footsteps is not None
-                else []
-            )
-            base_vel_ref = base_vel_refs[t] if base_vel_refs is not None else None
-            has_switched = np.any(gait[t] != gait[t - 1])
-            switch_matrix = gait[t] if has_switched else np.array([])
-            switch_feet = feet_ids[switch_matrix == 1]
-            running_models.append(
-                self._builder.make_running_model(
-                    support_feet_ids, switch_feet, feet_pos, base_vel_ref
-                )
-            )
-
-        support_feet_ids = feet_ids[gait[-1] == 1]
-        terminal_model = self._builder.make_terminal_model(support_feet_ids)
-
-        return running_models, terminal_model
 
     def solve(self, k):
         t_start = time.time()

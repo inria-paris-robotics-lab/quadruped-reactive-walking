@@ -31,6 +31,36 @@ class WalkingOCPBuilder:
     def rmodel(self):
         return self.task.model
 
+    def initialize_models_from_gait(self, gait, footsteps=None, base_vel_refs=None):
+        """Create action models (problem stages) from a gait matrix and other optional data."""
+        # both or neither must be none
+        assert (footsteps is None) == (base_vel_refs is None)
+        if footsteps is not None:
+            assert len(footsteps) == len(base_vel_refs)
+        running_models = []
+        feet_ids = np.asarray(self.task.feet_ids)
+        for t in range(gait.shape[0]):
+            support_feet_ids = feet_ids[gait[t] == 1]
+            feet_pos = (
+                get_active_feet(footsteps[t], support_feet_ids)
+                if footsteps is not None
+                else []
+            )
+            base_vel_ref = base_vel_refs[t] if base_vel_refs is not None else None
+            has_switched = np.any(gait[t] != gait[t - 1])
+            switch_matrix = gait[t] if has_switched else np.array([])
+            switch_feet = feet_ids[switch_matrix == 1]
+            running_models.append(
+                self.make_running_model(
+                    support_feet_ids, switch_feet, feet_pos, base_vel_ref
+                )
+            )
+
+        support_feet_ids = feet_ids[gait[-1] == 1]
+        terminal_model = self.make_terminal_model(support_feet_ids)
+
+        return running_models, terminal_model
+
     def _create_standard_model(
         self, support_feet
     ) -> crocoddyl.IntegratedActionModelAbstract:
