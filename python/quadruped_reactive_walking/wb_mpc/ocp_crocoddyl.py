@@ -7,10 +7,9 @@ from colorama import Fore
 from crocoddyl import StateMultibody
 from .ocp_abstract import OCPAbstract
 from typing import Optional
-from ..tools.utils import no_copy_roll, no_copy_roll_insert
 from quadruped_reactive_walking import Params
 from . import task_spec
-from quadruped_reactive_walking.ocp_defs.walking import (
+from ..ocp_defs.walking import (
     WalkingOCPBuilder,
     get_active_feet,
 )
@@ -27,32 +26,21 @@ class CrocOCP(OCPAbstract):
         self.state = StateMultibody(self.rmodel)
         self.rdata = self.task.model.createData()
 
-        self._builder = WalkingOCPBuilder(params)
+        self._builder = WalkingOCPBuilder(params, footsteps, base_refs)
+        self.current_gait = np.append(
+            self._builder.starting_gait,
+            self._builder.ending_gait[0].reshape(1, -1),
+            axis=0,
+        )
 
         # Set the problem parameters
         self.t_problem_update = 0
         self.t_update_last_model = 0.0
         self.t_shift = 0.0
 
-        self.life_gait = params.gait
-        self.starting_gait = np.ones((params.starting_nodes, 4), dtype=np.int32)
-        self.ending_gait = np.ones((params.ending_nodes, 4), dtype=np.int32)
-        self.current_gait = np.append(
-            self.starting_gait, self.ending_gait[0].reshape(1, -1), axis=0
-        )
         self.x0 = self.task.x0
 
-        self.life_rm, self.life_tm = self._builder.initialize_models_from_gait(
-            self.life_gait, footsteps, base_refs
-        )
-        self.start_rm, self.start_tm = self._builder.initialize_models_from_gait(
-            self.starting_gait
-        )
-        self.end_rm, self.end_tm = self._builder.initialize_models_from_gait(
-            self.ending_gait
-        )
-
-        self.problem = crocoddyl.ShootingProblem(self.x0, self.start_rm, self.start_tm)
+        self.problem = self._builder.problem
         self.ddp = crocoddyl.SolverFDDP(self.problem)
         if params.ocp.verbose:
             self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
@@ -105,43 +93,14 @@ class CrocOCP(OCPAbstract):
         pin.forwardKinematics(self.rmodel, self.rdata, self.x0[: self.task.nq])
         pin.updateFramePlacements(self.rmodel, self.rdata)
 
-        t = int(k / self.params.mpc_wbc_ratio) - 1
-
         self.problem.x0 = self.x0
-        feet_ids = np.asarray(self.task.feet_ids)
 
         if k == 0:
             return
 
-        if t < len(self.start_rm):
-            mask = self.life_gait[t] == 1
-            support_feet = feet_ids[mask]
-            model = self.life_rm[t]
-            no_copy_roll_insert(self.current_gait, self.life_gait[t])
-
-        elif t < len(self.start_rm) + len(self.life_rm) * self.params.gait_repetitions:
-            no_copy_roll(self.life_gait)
-            mask = self.life_gait[-1] == 1
-            support_feet = feet_ids[mask]
-            model = self.problem.runningModels[0]
-            no_copy_roll_insert(self.current_gait, self.life_gait[-1])
-
-        else:
-            i = (
-                0
-                if t
-                == len(self.start_rm) + len(self.life_rm) * self.params.gait_repetitions
-                else 1
-            )
-            # choose to pich the node with impact or not
-            support_feet = feet_ids[self.ending_gait[i] == 1]
-            model = self.end_rm[i]
-            no_copy_roll_insert(self.current_gait, self.ending_gait[i])
-            base_vel_ref = None
-
-        if base_vel_ref is not None:
-            base_vel_ref = pin.Motion(base_vel_ref)
-
+        model, support_feet, base_vel_ref = self._builder.select_next_model(
+            k, self.current_gait, base_vel_ref
+        )
         active_feet_pos = get_active_feet(footsteps, support_feet)
         self._builder.update_model(model, active_feet_pos, base_vel_ref, support_feet)
         self.circular_append(model)

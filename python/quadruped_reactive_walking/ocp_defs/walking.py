@@ -5,7 +5,8 @@ import crocoddyl
 from sobec import ResidualModelFlyHigh
 from typing import List, Optional
 from quadruped_reactive_walking import Params
-from . import task_spec
+from ..wb_mpc import task_spec
+from ..tools.utils import no_copy_roll, no_copy_roll_insert
 from crocoddyl import (
     ActivationBounds,
     StateMultibody,
@@ -21,11 +22,61 @@ from crocoddyl import (
 class WalkingOCPBuilder:
     """Builder class to define the walking OCP."""
 
-    def __init__(self, params: Params):
+    def __init__(self, params: Params, footsteps, base_vel_refs):
         self.params = params
         self.task = task_spec.TaskSpec(params)
         self.state = StateMultibody(self.rmodel)
         self.rdata = self.rmodel.createData()
+
+        self.life_gait = params.gait
+        self.starting_gait = np.ones((params.starting_nodes, 4), dtype=np.int32)
+        self.ending_gait = np.ones((params.ending_nodes, 4), dtype=np.int32)
+
+        self.life_rm, self.life_tm = self.initialize_models_from_gait(
+            self.life_gait, footsteps, base_vel_refs
+        )
+        self.start_rm, self.start_tm = self.initialize_models_from_gait(
+            self.starting_gait
+        )
+        self.end_rm, self.end_tm = self.initialize_models_from_gait(self.ending_gait)
+
+        self.x0 = self.task.x0
+        self.problem = crocoddyl.ShootingProblem(self.x0, self.start_rm, self.start_tm)
+
+    def select_next_model(self, k, current_gait, base_vel_ref):
+        feet_ids = np.asarray(self.task.feet_ids)
+
+        t = int(k / self.params.mpc_wbc_ratio) - 1
+
+        if t < len(self.start_rm):
+            mask = self.life_gait[t] == 1
+            support_feet = feet_ids[mask]
+            model = self.life_rm[t]
+            no_copy_roll_insert(current_gait, self.life_gait[t])
+
+        elif t < len(self.start_rm) + len(self.life_rm) * self.params.gait_repetitions:
+            no_copy_roll(self.life_gait)
+            mask = self.life_gait[-1] == 1
+            support_feet = feet_ids[mask]
+            model = self.problem.runningModels[0]
+            no_copy_roll_insert(current_gait, self.life_gait[-1])
+
+        else:
+            i = (
+                0
+                if t
+                == len(self.start_rm) + len(self.life_rm) * self.params.gait_repetitions
+                else 1
+            )
+            # choose to pich the node with impact or not
+            support_feet = feet_ids[self.ending_gait[i] == 1]
+            model = self.end_rm[i]
+            no_copy_roll_insert(current_gait, self.ending_gait[i])
+            base_vel_ref = None
+
+        if base_vel_ref is not None:
+            base_vel_ref = pin.Motion(base_vel_ref)
+        return model, support_feet, base_vel_ref
 
     @property
     def rmodel(self):
