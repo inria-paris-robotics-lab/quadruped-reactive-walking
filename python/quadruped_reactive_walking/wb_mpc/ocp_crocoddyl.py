@@ -4,7 +4,6 @@ import numpy as np
 import time
 
 from colorama import Fore
-from crocoddyl import StateMultibody
 from .ocp_abstract import OCPAbstract
 from typing import Optional
 from quadruped_reactive_walking import Params
@@ -23,7 +22,6 @@ class CrocOCP(OCPAbstract):
     def __init__(self, params: Params, footsteps, base_refs):
         super().__init__(params)
         self.task = task_spec.TaskSpec(params)
-        self.state = StateMultibody(self.rmodel)
         self.rdata = self.task.model.createData()
 
         self._builder = WalkingOCPBuilder(params, footsteps, base_refs)
