@@ -6,7 +6,6 @@ from quadruped_reactive_walking import Params
 
 class TaskSpecBase:
     def __init__(self, params: Params, frozen_names=[]):
-
         self.robot = erd.load("solo12")
         self.q0 = self.robot.q0
         self.q0[:7] = np.array([0.0, 0.0, params.h_ref, 0, 0, 0, 1])
@@ -106,22 +105,7 @@ class TaskSpec(TaskSpecBase):
         self.force_reg_w = task_pms["force_reg_w"]
 
         self.xref = self.x0
-        self.uref = np.array(
-            [
-                -0.02615051,
-                -0.25848605,
-                0.51696646,
-                0.0285894,
-                -0.25720605,
-                0.51441775,
-                -0.02614404,
-                0.25848271,
-                -0.51697107,
-                0.02859587,
-                0.25720939,
-                -0.51441314,
-            ]
-        )
+        self.uref = np.array(task_pms["uref"])
 
 
 class TaskSpecFull(TaskSpecBase):

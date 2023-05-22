@@ -146,11 +146,13 @@ struct Params {
   VectorNi gait_vec;     // Initial gait matrix (vector)
 
   // Parameters of Joystick
-  Scalar gp_alpha_vel;  // Coefficient of the low pass filter applied to gamepad
-                        // velocity
-  Scalar gp_alpha_pos;  // Coefficient of the low pass filter applied to gamepad
-                        // position
-  VectorN t_switch;      // Predefined velocity switch times matrix
+  Scalar
+      gp_alpha_vel;  //  Coefficient of the low pass filter applied to gamepad
+                     //  velocity
+  Scalar
+      gp_alpha_pos;  //  Coefficient of the low pass filter applied to gamepad
+                     //  position
+  VectorN t_switch;  // Predefined velocity switch times matrix
   RowMatrix6N v_switch;  // Predefined velocity switch values matrix
 
   // Parameters of Estimator

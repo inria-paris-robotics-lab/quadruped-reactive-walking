@@ -18,8 +18,11 @@ message(STATUS "PY_LIB = ${PY_LIB}")
 add_library(${PY_LIB} SHARED ${${PY_NAME}_SOURCES})
 target_link_libraries(${PY_LIB} PUBLIC ${PROJECT_NAME} ${PYTHON_LIBRARY} eigenpy::eigenpy)
 target_include_directories(${PY_LIB} SYSTEM PRIVATE ${PYTHON_INCLUDE_DIR})
-set_target_properties(${PY_LIB} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PY_NAME} PREFIX ""
-                                           SUFFIX ${PYTHON_EXT_SUFFIX})
+set_target_properties(
+  ${PY_LIB}
+  PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PY_NAME}
+             PREFIX ""
+             SUFFIX ${PYTHON_EXT_SUFFIX})
 if(UNIX)
   get_relative_rpath(${${PY_NAME}_INSTALL_DIR} ${PY_NAME}_INSTALL_RPATH)
   set_target_properties(${PY_LIB} PROPERTIES INSTALL_RPATH "${${PY_NAME}_INSTALL_RPATH}")

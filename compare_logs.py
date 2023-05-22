@@ -65,6 +65,7 @@ fbs2 = data2["ocp_K"]
 assert fbs1.shape[1] == NJOINTS
 assert fbs1.shape[2] == state.ndx
 
+
 # Plotting
 def infNorm(x, **kwargs):
     return np.linalg.norm(x, ord=np.inf, **kwargs)

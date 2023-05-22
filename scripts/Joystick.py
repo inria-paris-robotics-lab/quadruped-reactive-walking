@@ -13,7 +13,6 @@ class Joystick:
     """
 
     def __init__(self, params, multi_simu=False):
-
         # Controller parameters
         self.dt_wbc = params.dt_wbc
         self.dt_mpc = params.dt_mpc
@@ -458,7 +457,6 @@ class Joystick:
         return 0
 
     def update_for_analysis(self, des_vel_analysis, N_analysis, N_steady):
-
         self.analysis = True
 
         self.k_switch = np.array(
@@ -472,7 +470,6 @@ class Joystick:
 
 
 if __name__ == "__main__":
-
     from matplotlib import pyplot as plt
 
     params = (

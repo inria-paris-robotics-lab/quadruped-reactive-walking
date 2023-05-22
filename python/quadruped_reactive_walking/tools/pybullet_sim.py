@@ -575,7 +575,6 @@ class PybulletWrapper:
         D = 0.05 * np.array([[1.0, 0.3, 0.3] * 4]).transpose()
 
         while True or np.max(np.abs(qtarget - qmes)) > 0.1:
-
             time_loop = time.time()
 
             # Retrieve angular position and velocity of actuators
