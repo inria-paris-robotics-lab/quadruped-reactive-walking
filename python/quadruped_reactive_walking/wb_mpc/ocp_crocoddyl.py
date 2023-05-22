@@ -22,14 +22,10 @@ class CrocOCP(OCPAbstract):
     def __init__(self, params: Params, footsteps, base_refs):
         super().__init__(params)
         self.task = task_spec.TaskSpec(params)
-        self.rdata = self.task.model.createData()
 
         self._builder = WalkingOCPBuilder(params, footsteps, base_refs)
-        self.current_gait = np.append(
-            self._builder.starting_gait,
-            self._builder.ending_gait[0].reshape(1, -1),
-            axis=0,
-        )
+        self.rdata = self._builder.rdata
+        self.current_gait = self._builder.current_gait
 
         # Set the problem parameters
         self.t_problem_update = 0

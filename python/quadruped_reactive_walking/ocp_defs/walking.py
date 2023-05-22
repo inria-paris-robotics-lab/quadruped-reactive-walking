@@ -7,6 +7,7 @@ from typing import List, Optional
 from quadruped_reactive_walking import Params
 from ..wb_mpc import task_spec
 from ..tools.utils import no_copy_roll, no_copy_roll_insert
+from .common import OCPBuilder
 from crocoddyl import (
     ActivationBounds,
     StateMultibody,
@@ -19,7 +20,7 @@ from crocoddyl import (
 )
 
 
-class WalkingOCPBuilder:
+class WalkingOCPBuilder(OCPBuilder):
     """Builder class to define the walking OCP."""
 
     def __init__(self, params: Params, footsteps, base_vel_refs):
@@ -31,6 +32,11 @@ class WalkingOCPBuilder:
         self.life_gait = params.gait
         self.starting_gait = np.ones((params.starting_nodes, 4), dtype=np.int32)
         self.ending_gait = np.ones((params.ending_nodes, 4), dtype=np.int32)
+        self.current_gait = np.append(
+            self.starting_gait,
+            self.ending_gait[0].reshape(1, -1),
+            axis=0,
+        )
 
         self.life_rm, self.life_tm = self.initialize_models_from_gait(
             self.life_gait, footsteps, base_vel_refs
