@@ -1,3 +1,5 @@
 task:
   jump_height_w: 10000.
-  jump_height_v: 0.4
+  jump_velocity: [0.6, 0., 0.0, 0., 0., 0.]
+  t_jump: 0.18
+  t_land: 0.4

@@ -3,11 +3,11 @@ Construct an OCP for jumping.
 """
 import crocoddyl
 import numpy as np
-
-# import pinocchio as pin
+import pinocchio as pin
 import yaml
 
 from quadruped_reactive_walking import Params
+from crocoddyl import CostModelSum
 from pathlib import Path
 from . import walking
 from ..tools.utils import make_initial_footstep
@@ -34,9 +34,29 @@ class JumpOCPBuilder:
         self.jump_spec = read_jump_yaml()
         feet_pos = make_initial_footstep(params.q_init)
         self.ground_models_1 = self.create_ground_models(feet_pos)
-        self.jump_models = self.create_jump_model()
+        jump_vel = np.asarray(self.jump_spec["jump_velocity"])
+        jump_vel = pin.Motion(jump_vel)
+        self.jump_models = self.create_jump_model(jump_vel)
         self.landing_model = None
-        self.problem = crocoddyl.ShootingProblem(self.x0, *self.ground_models_1)
+        self.problem = crocoddyl.ShootingProblem(self.x0, *self.build_timeline())
+
+    def build_timeline(self):
+        N = self.params.N_gait
+        t_jump = self.jump_spec["t_jump"]
+        t_land = self.jump_spec["t_land"]
+        k0 = int(t_jump / self.params.dt_mpc)
+        k1 = int(t_land / self.params.dt_mpc) + 1
+        assert k1 > k0, "Landing time should be larger than jumping time"
+        N_jump = k1 - k0
+        ground_rms, ground_tm = self.ground_models_1
+        assert k0 < len(ground_rms)
+        rms = ground_rms[:k0].copy()
+        rms += [self.jump_models] * N_jump
+        N_land = N - k1
+
+        rms += ground_rms[-N_land:].copy()
+        assert len(rms) == N
+        return rms, ground_tm
 
     def create_ground_models(self, feet_pos):
         rms = []
@@ -46,7 +66,15 @@ class JumpOCPBuilder:
             rms.append(m)
         return rms, self._base_builder.make_terminal_model(support_feet)
 
-    def create_jump_model(self):
+    def get_num_contacts(self, m):
+        return len(m.differential.contacts.active_set)
+
+    def create_jump_model(self, base_vel_ref: pin.Motion):
         support_feet = np.array([])
         m = self._base_builder._create_standard_model(support_feet)
+        costs: CostModelSum = m.differential.costs
+        self._base_builder._add_base_vel_cost(base_vel_ref, costs)
+        for i in self.task.feet_ids:
+            self._base_builder._add_fly_high_cost(i, costs)
+            self._base_builder._add_vert_velocity_cost(i, costs)
         return m

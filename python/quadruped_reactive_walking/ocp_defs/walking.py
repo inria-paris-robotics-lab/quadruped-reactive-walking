@@ -181,7 +181,6 @@ class WalkingOCPBuilder(OCPBuilder):
         Add all the costs to the running models
         """
         model = self._create_standard_model(support_feet)
-        nu = model.differential.actuation.nu
         costs = model.differential.costs
         for i in self.task.feet_ids:
             start_pos = self.rdata.oMf[i].translation
@@ -207,6 +206,13 @@ class WalkingOCPBuilder(OCPBuilder):
                 ref = pin.Motion.Zero()
             self._add_base_vel_cost(ref, costs)
 
+        self._add_control_costs(costs)
+
+        self.update_tracking_costs(costs, feet_pos, base_vel_ref, support_feet)
+        return model
+
+    def _add_control_costs(self, costs: CostModelSum):
+        nu = costs.nu
         control_reg = CostModelResidual(
             self.state, ResidualModelControl(self.state, self.task.uref)
         )
@@ -219,9 +225,6 @@ class WalkingOCPBuilder(OCPBuilder):
             self.state, control_bound_activation, ResidualModelControl(self.state, nu)
         )
         costs.addCost("control_bound", control_bound, self.task.control_bound_w)
-
-        self.update_tracking_costs(costs, feet_pos, base_vel_ref, support_feet)
-        return model
 
     def make_terminal_model(self, support_feet):
         """
