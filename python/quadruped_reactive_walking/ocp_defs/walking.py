@@ -188,7 +188,8 @@ class WalkingOCPBuilder(OCPBuilder):
 
             self._add_friction_cost(i, support_feet, costs)
             self._add_force_reg(i, model)
-            self._add_foot_track_cost(i, costs)
+            if self.has_foot_track_cost:
+                self._add_foot_track_cost(i, costs)
             if self.has_ground_collision:
                 self._add_ground_coll_penalty(i, costs, start_pos)
             if self.has_fly_high:
@@ -265,6 +266,10 @@ class WalkingOCPBuilder(OCPBuilder):
         costs.addCost(name, force_reg, self.task.force_reg_w)
         costs.changeCostStatus(name, False)
 
+    @property
+    def has_foot_track_cost(self):
+        return self.task.foot_tracking_w > 0
+
     def _add_foot_track_cost(self, i: int, costs: CostModelSum):
         nu = costs.nu
         # Tracking foot trajectory
@@ -273,9 +278,8 @@ class WalkingOCPBuilder(OCPBuilder):
             self.state, i, np.zeros(3), nu
         )
         foot_tracking = CostModelResidual(self.state, residual)
-        if self.task.foot_tracking_w > 0:
-            costs.addCost(name, foot_tracking, self.task.foot_tracking_w)
-            costs.changeCostStatus(name, False)
+        costs.addCost(name, foot_tracking, self.task.foot_tracking_w)
+        costs.changeCostStatus(name, False)
 
     def _add_ground_coll_penalty(self, i: int, costs: CostModelSum, start_pos):
         nu = costs.nu
@@ -424,7 +428,7 @@ class WalkingOCPBuilder(OCPBuilder):
     ):
         index = 0
         for i in self.task.feet_ids:
-            if self.task.foot_tracking_w > 0:
+            if self.has_foot_track_cost:
                 name = "{}_foot_tracking".format(self.rmodel.frames[i].name)
                 if i in support_feet:
                     costs.costs[name].cost.residual.reference = feet_pos[index]
@@ -434,16 +438,18 @@ class WalkingOCPBuilder(OCPBuilder):
             name = "{}_forceReg".format(self.rmodel.frames[i].name)
             costs.changeCostStatus(name, i in support_feet)
 
-            name = "{}_groundCol".format(self.rmodel.frames[i].name)
-            costs.changeCostStatus(name, i not in support_feet)
+            if self.has_ground_collision:
+                name = "{}_groundCol".format(self.rmodel.frames[i].name)
+                costs.changeCostStatus(name, i not in support_feet)
 
-            name = "{}_flyHigh".format(self.rmodel.frames[i].name)
-            costs.changeCostStatus(name, i not in support_feet)
+            if self.has_fly_high:
+                name = "{}_flyHigh".format(self.rmodel.frames[i].name)
+                costs.changeCostStatus(name, i not in support_feet)
 
             name = "{}_vel_zReg".format(self.rmodel.frames[i].name)
             costs.changeCostStatus(name, i not in support_feet)
 
-        if base_vel_ref is not None and self.task.base_velocity_tracking_w > 0:
+        if base_vel_ref is not None and self.has_base_vel_cost:
             name = "base_velocity_tracking"
             costs.costs[name].cost.residual.reference = base_vel_ref
 
