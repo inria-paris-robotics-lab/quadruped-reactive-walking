@@ -24,7 +24,7 @@ class WalkingOCPBuilder(OCPBuilder):
     """Builder class to define the walking OCP."""
 
     def __init__(self, params: Params, footsteps, base_vel_refs):
-        self.params = params
+        super().__init__(params)
         self.task = task_spec.TaskSpec(params)
         self.state = StateMultibody(self.rmodel)
         self.rdata = self.rmodel.createData()

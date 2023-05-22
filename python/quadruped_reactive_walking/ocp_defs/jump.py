@@ -1,7 +1,7 @@
 """
 Construct an OCP for jumping.
 """
-# import crocoddyl
+import crocoddyl
 import numpy as np
 
 # import pinocchio as pin
@@ -14,7 +14,8 @@ from ..tools.utils import make_initial_footstep
 
 
 def read_jump_yaml():
-    fdir = Path.home() / "git-repos/quadruped-reactive-walking/config"
+    # fdir = Path.home() / "git-repos/quadruped-reactive-walking/config"
+    fdir = Path.cwd() / "config"
     fp = fdir / "jump_task.yaml"
     with fp.open() as f:
         spec = yaml.safe_load(f)["task"]
@@ -29,12 +30,13 @@ class JumpOCPBuilder:
         self.state = self._base_builder.state
         self.rdata = self._base_builder.rdata
 
+        self.x0 = self.task.x0
         self.jump_spec = read_jump_yaml()
-        # N = self.params.N_gait
         feet_pos = make_initial_footstep(params.q_init)
         self.ground_models_1 = self.create_ground_models(feet_pos)
         self.jump_models = self.create_jump_model()
         self.landing_model = None
+        self.problem = crocoddyl.ShootingProblem(self.x0, *self.ground_models_1)
 
     def create_ground_models(self, feet_pos):
         rms = []
