@@ -2,13 +2,15 @@
 Construct an OCP for jumping.
 """
 # import crocoddyl
-# import numpy as np
+import numpy as np
+
 # import pinocchio as pin
 import yaml
 
 from quadruped_reactive_walking import Params
-from . import task_spec
 from pathlib import Path
+from . import walking
+from ..tools.utils import make_initial_footstep
 
 
 def read_jump_yaml():
@@ -20,6 +22,29 @@ def read_jump_yaml():
 
 
 class JumpOCPBuilder:
-    def __init__(self, params: Params):
+    def __init__(self, params: Params, footsteps, base_vel_refs):
         self.params = params
-        self.task = task_spec.TaskSpec(params)
+        self._base_builder = walking.WalkingOCPBuilder(params, footsteps, base_vel_refs)
+        self.task = self._base_builder.task
+        self.state = self._base_builder.state
+        self.rdata = self._base_builder.rdata
+
+        self.jump_spec = read_jump_yaml()
+        # N = self.params.N_gait
+        feet_pos = make_initial_footstep(params.q_init)
+        self.ground_models_1 = self.create_ground_models(feet_pos)
+        self.jump_models = self.create_jump_model()
+        self.landing_model = None
+
+    def create_ground_models(self, feet_pos):
+        rms = []
+        support_feet = np.asarray(self.task.feet_ids)
+        for k in range(self.params.N_gait):
+            m = self._base_builder.make_running_model(support_feet, [], feet_pos, None)
+            rms.append(m)
+        return rms, self._base_builder.make_terminal_model(support_feet)
+
+    def create_jump_model(self):
+        support_feet = np.array([])
+        m = self._base_builder._create_standard_model(support_feet)
+        return m

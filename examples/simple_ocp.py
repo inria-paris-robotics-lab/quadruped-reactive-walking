@@ -5,9 +5,8 @@ import time
 import pprint
 
 from quadruped_reactive_walking.wb_mpc import AlgtrOCPProx, CrocOCP, OCP_TYPE_MAP
-from quadruped_reactive_walking.controller import make_footsteps_and_refs
 from quadruped_reactive_walking.wb_mpc.task_spec import TaskSpec
-from quadruped_reactive_walking.wb_mpc.target import Target
+from quadruped_reactive_walking.wb_mpc.target import Target, make_footsteps_and_refs
 
 print("OCP registered types:", pprint.pformat(OCP_TYPE_MAP), sep="\n")
 params = qrw.Params.create_from_file()
