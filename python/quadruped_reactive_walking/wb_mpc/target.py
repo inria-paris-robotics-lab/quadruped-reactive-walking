@@ -126,17 +126,17 @@ def make_footsteps_and_refs(params, target: Target):
     """
     Build a list of both footstep position and base pose references.
     Footsteps is a list of 3,4-matrices
-    Base_refs is a list of 6-vectors
+    Base_vel_refs is a list of 6-vectors (6D velocity references)
     """
     footsteps = []
     base_refs = []
     for k in range(params.N_gait):
-        target_base = np.array([0.0, 0.0, params.h_ref, 0.0, 0.0, 0.0])
-        target_base = pin.Motion(target_base)
+        target_base_vel = np.array([0.0, 0.0, params.h_ref, 0.0, 0.0, 0.0])
+        target_base_vel = pin.Motion(target_base_vel)
         kk = k * params.mpc_wbc_ratio
         target_footstep = target.compute(kk).copy()
 
         footsteps.append(target_footstep)
-        base_refs.append(target_base)
+        base_refs.append(target_base_vel)
 
     return footsteps, base_refs
