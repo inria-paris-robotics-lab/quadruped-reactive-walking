@@ -278,7 +278,8 @@ class LoggerControl:
         )
         x = np.concatenate([self.q_filtered, self.v_filtered], axis=1)
         m_feet_p_log = {
-            idx: get_translation_array(self.pd, x, idx)[0] for idx in self.pd.feet_ids
+            idx: get_translation_array(self.pd.model, x, idx)[0]
+            for idx in self.pd.feet_ids
         }
 
         x_mpc = [self.ocp_xs[0][0, :]]
@@ -286,7 +287,7 @@ class LoggerControl:
         x_mpc = np.array(x_mpc)
 
         feet_p_log = {
-            idx: get_translation_array(self.pd, x_mpc, idx)[0]
+            idx: get_translation_array(self.pd.model, x_mpc, idx)[0]
             for idx in self.pd.feet_ids
         }
 
