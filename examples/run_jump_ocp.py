@@ -7,8 +7,8 @@ from quadruped_reactive_walking import Params
 from quadruped_reactive_walking.ocp_defs import jump
 from quadruped_reactive_walking.wb_mpc.target import Target, make_footsteps_and_refs
 from crocoddyl import SolverFDDP, ShootingProblem
-from pinocchio.visualize import MeshcatVisualizer
 from quadruped_reactive_walking.tools.kinematics_utils import get_translation_array
+from quadruped_reactive_walking.tools.meshcat_viewer import make_meshcat_viz
 
 
 params = Params.create_from_file()
@@ -28,27 +28,6 @@ dt = params.dt_mpc
 x0 = ocp_spec.x0
 xs_init = [x0 for _ in range(params.N_gait + 1)]
 us_init = problem.quasiStatic(xs_init[:nsteps])
-
-
-def make_meshcat_viz():
-    import hppfcl
-    import pinocchio as pin
-    import numpy as np
-
-    plane = hppfcl.Plane(np.array([0, 0, 1]), 0.0)
-    geobj = pin.GeometryObject("plane", 0, pin.SE3.Identity(), plane)
-    geobj.meshColor[:] = 0.6, 0.1, 0.1, 0.8
-    geobj.meshScale *= 2.0
-
-    vmodel = robot.visual_model
-    vmodel.addGeometryObject(geobj)
-
-    vizer = MeshcatVisualizer(
-        robot.model, robot.collision_model, vmodel, data=robot.data
-    )
-    vizer.initViewer(loadModel=True)
-    vizer.setBackgroundColor()
-    return vizer
 
 
 solver.setCallbacks([crocoddyl.CallbackVerbose()])
@@ -71,8 +50,10 @@ plt.tight_layout()
 plt.show()
 
 
-vizer = make_meshcat_viz()
+vizer = make_meshcat_viz(robot)
 vizer.viewer.open()
 
-input()
-vizer.play(qs, dt)
+while True:
+    input()
+    vizer.play(qs, dt)
+    print("[play again?]", end="")
