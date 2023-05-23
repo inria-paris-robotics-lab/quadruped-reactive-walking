@@ -1,5 +1,6 @@
 import numpy as np
 import quadruped_reactive_walking as qrw
+from quadruped_reactive_walking.controller import Controller
 import time
 import pprint
 
@@ -47,3 +48,5 @@ ocp2_res = ocp2.prox_ddp.results
 
 dist_x = np.linalg.norm(np.stack(ocp.ddp.xs) - np.stack(ocp2_res.xs))
 print("Dist X:", dist_x)
+
+ctrler = Controller(params, params.q_init, CrocOCP)

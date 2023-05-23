@@ -184,7 +184,7 @@ def main(args):
     q_init = params.q_init
     solver_cls = get_ocp_from_str(args.solver)
 
-    controller = Controller(params, q_init, 0.0, solver_cls)
+    controller = Controller(params, q_init, solver_cls)
     device, qc = get_device(params.SIMULATION, sim_params["record_video"])
 
     if params.LOGGING or params.PLOTTING:

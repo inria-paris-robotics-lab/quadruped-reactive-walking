@@ -59,7 +59,7 @@ class Controller:
     q_security = np.array([1.2, 2.1, 3.14] * 4)
 
     def __init__(
-        self, params: qrw.Params, q_init, t, solver_cls: Type[wb_mpc.OCPAbstract]
+        self, params: qrw.Params, q_init, solver_cls: Type[wb_mpc.OCPAbstract]
     ):
         """
         Function that computes the reference control (tau, q_des, v_des and gains)
@@ -67,7 +67,6 @@ class Controller:
         Args:
             params (Params object): store parameters
             q_init (array): initial position of actuators
-            t (float): time of the simulation
         """
 
         self.params = params
