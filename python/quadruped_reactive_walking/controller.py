@@ -221,7 +221,7 @@ class Controller:
             # Compute feedforward torque
             self.result.tau_ff[:] = self.compute_torque()
 
-            self.interpolate_solution(xs)
+            self.result.q_des[:], self.result.v_des[:] = self.interpolate_solution(xs)
 
         t_send = time.time()
         self.t_send = t_send - t_mpc
@@ -253,8 +253,7 @@ class Controller:
         else:
             # use integration
             q, v = self.integrate_x()
-        self.result.q_des[:] = q
-        self.result.v_des[:] = v
+        return q, v
 
     def security_check(self):
         """
