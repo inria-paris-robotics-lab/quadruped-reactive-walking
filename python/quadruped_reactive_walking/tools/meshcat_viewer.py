@@ -1,4 +1,3 @@
-import hppfcl
 import numpy as np
 import pinocchio as pin
 
@@ -6,25 +5,34 @@ from pinocchio import RobotWrapper
 from pinocchio.visualize import MeshcatVisualizer
 
 
+def make_meshcat_viz(
+    robot: RobotWrapper, meshColor=(0.6, 0.1, 0.1, 0.8)
+) -> MeshcatVisualizer:
+    import hppfcl
+
+    plane = hppfcl.Plane(np.array([0, 0, 1]), 0.0)
+    geobj = pin.GeometryObject("ground", 0, pin.SE3.Identity(), plane)
+    geobj.meshColor[:] = meshColor
+    geobj.meshScale *= 2.0
+
+    vmodel = robot.visual_model
+    vmodel.addGeometryObject(geobj)
+
+    vizer = MeshcatVisualizer(
+        robot.model, robot.collision_model, vmodel, data=robot.data
+    )
+    vizer.initViewer(loadModel=True)
+    vizer.setBackgroundColor()
+    return vizer
+
+
 class MeshcatViewer:
     def __init__(self, robot: RobotWrapper):
         self.rmodel = robot.model
         self.rdata = robot.data
-        plane_normal = np.array([0.0, 0.0, 1.0])
-        plane = hppfcl.Plane(plane_normal, 0.0)
-        plane_obj = pin.GeometryObject("ground", 0, pin.SE3.Identity(), plane)
-        plane_obj.meshColor[:] = 0.7, 1.0, 0.65, 1.0
-        robot.visual_model.addGeometryObject(plane_obj)
-        robot.collision_model.addGeometryObject(plane_obj)
+        meshColor = 0.7, 1.0, 0.65, 1.0
 
-        self.viz = MeshcatVisualizer(
-            self.rmodel,
-            collision_model=robot.collision_model,
-            visual_model=robot.visual_model,
-            data=robot.data,
-        )
-        self.viz.initViewer(loadModel=True, open=True)
-        self.viz.setBackgroundColor()
+        self.viz = make_meshcat_viz(robot, meshColor)
 
     def update(self, controller, device):
         q = np.zeros(19)
