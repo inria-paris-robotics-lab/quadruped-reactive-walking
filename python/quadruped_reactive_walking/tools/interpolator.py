@@ -67,26 +67,27 @@ class Interpolator:
 
         return q, v
 
-    def plot(self, n, dt):
-        import matplotlib.pyplot as plt
 
-        ts = np.linspace(0.0, 2 * self.dt, 2 * n + 1)
-        plt.style.use("seaborn")
-        for i in range(3):
-            plt.subplot(3, 2, (i * 2) + 1)
-            plt.title("Position interpolation")
-            plt.plot(ts, [self.interpolate(t)[0][i] for t in ts])
-            plt.scatter(y=self.q0[i], x=0.0, color="violet", marker="+")
-            plt.scatter(y=self.q1[i], x=self.dt, color="violet", marker="+")
-            if self.type == 3 and self.q2 is not None:
-                plt.scatter(y=self.q2[i], x=2 * self.dt, color="violet", marker="+")
+def plot(interp: Interpolator, n):
+    import matplotlib.pyplot as plt
 
-            plt.subplot(3, 2, (i * 2) + 2)
-            plt.title("Velocity interpolation")
-            plt.plot(ts, [self.interpolate(t)[1][i] for t in ts])
-            plt.scatter(y=self.v0[i], x=0.0, color="violet", marker="+")
-            plt.scatter(y=self.v1[i], x=self.dt, color="violet", marker="+")
-            if self.type == 3 and self.v2 is not None:
-                plt.scatter(y=self.v2[i], x=2 * self.dt, color="violet", marker="+")
+    ts = np.linspace(0.0, 2 * interp.dt, 2 * n + 1)
+    plt.style.use("seaborn")
+    for i in range(3):
+        plt.subplot(3, 2, (i * 2) + 1)
+        plt.title("Position interpolation")
+        plt.plot(ts, [interp.interpolate(t)[0][i] for t in ts])
+        plt.scatter(y=interp.q0[i], x=0.0, color="violet", marker="+")
+        plt.scatter(y=interp.q1[i], x=interp.dt, color="violet", marker="+")
+        if interp.type == 3 and interp.q2 is not None:
+            plt.scatter(y=interp.q2[i], x=2 * interp.dt, color="violet", marker="+")
 
-        plt.show()
+        plt.subplot(3, 2, (i * 2) + 2)
+        plt.title("Velocity interpolation")
+        plt.plot(ts, [interp.interpolate(t)[1][i] for t in ts])
+        plt.scatter(y=interp.v0[i], x=0.0, color="violet", marker="+")
+        plt.scatter(y=interp.v1[i], x=interp.dt, color="violet", marker="+")
+        if interp.type == 3 and interp.v2 is not None:
+            plt.scatter(y=interp.v2[i], x=2 * interp.dt, color="violet", marker="+")
+
+    plt.show()
