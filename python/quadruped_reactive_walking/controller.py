@@ -1,5 +1,6 @@
 import time
 
+import ndcurves
 import numpy as np
 import pinocchio as pin
 
@@ -11,7 +12,6 @@ from .wb_mpc.target import Target, make_footsteps_and_refs
 from .wb_mpc.task_spec import TaskSpec
 from .wbmpc_wrapper_abstract import MPCResult
 from .tools.utils import quaternionToRPY, make_initial_footstep
-from .tools.interpolator import Interpolator
 from typing import Type
 
 
@@ -52,6 +52,12 @@ class DummyDevice:
         def __init__(self):
             self.positions = np.zeros(12)
             self.velocities = np.zeros(12)
+
+
+def get_x_arr_no_base(xs):
+    arr = np.stack(xs[:3]).T
+    x_arr_nobase = np.concatenate([arr[7:19], arr[25:]])
+    return x_arr_nobase
 
 
 class Controller:
@@ -135,12 +141,13 @@ class Controller:
         self.k_result = 0
         self.k_solve = 0
         if self.params.interpolate_mpc:
-            self.interpolator = Interpolator(params, self.task.x0)
-        try:
-            # TODO: reload warm starts here
-            print("Initial guess loaded.\n")
-        except Exception:
-            print("No initial guess found.\n")
+            x_arr_nobase = get_x_arr_no_base([self.task.x0, self.task.x0])
+            q_arr_nobase = x_arr_nobase[:12]
+            self.interpolator_ = ndcurves.exact_cubic(
+                q_arr_nobase,
+                np.array([0.0, params.dt_mpc]),
+            )
+        # TODO: reload warm starts here
 
         self.filter_q = qrw.Filter()
         self.filter_q.initialize(params)
@@ -232,13 +239,17 @@ class Controller:
         return self.error
 
     def interpolate_solution(self, xs):
+        t_wp = np.linspace(0.0, 2 * self.params.dt_mpc, 3)
         if self.params.interpolate_mpc:
             # Use interpolation
             if self.mpc_result.new_result:
                 if self.params.interpolation_type == qrw.INTERP_CUBIC:
-                    self.interpolator.update(xs[0], xs[1], xs[2])
+                    x_arr_nobase = get_x_arr_no_base(xs)
+                    q_arr_nobase = x_arr_nobase[:12]
+                    self.interpolator_ = ndcurves.exact_cubic(q_arr_nobase, t_wp)
             t = (self.k - self.k_solve + 1) * self.params.dt_wbc
-            q, v = self.interpolator.interpolate(t)
+            q = self.interpolator_(t)
+            v = self.interpolator_.derivate(t, 1)
         else:
             # use integration
             q, v = self.integrate_x()
