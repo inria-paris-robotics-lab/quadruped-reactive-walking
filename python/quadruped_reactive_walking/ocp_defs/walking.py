@@ -10,6 +10,7 @@ from ..tools.utils import no_copy_roll, no_copy_roll_insert
 from .common import OCPBuilder
 from crocoddyl import (
     ActivationBounds,
+    ActivationModelWeightedQuad,
     StateMultibody,
     CostModelResidual,
     CostModelSum,
@@ -233,9 +234,7 @@ class WalkingOCPBuilder(OCPBuilder):
         model = self._create_standard_model(support_feet)
         nu = model.differential.actuation.nu
         residual = ResidualModelState(self.state, self.task.xref, nu)
-        activation = crocoddyl.ActivationModelWeightedQuad(
-            self.task.terminal_velocity_w**2
-        )
+        activation = ActivationModelWeightedQuad(self.task.terminal_velocity_w**2)
         state_cost = CostModelResidual(self.state, activation, residual)
         model.differential.costs.addCost("terminal_velocity", state_cost, 1)
         return model

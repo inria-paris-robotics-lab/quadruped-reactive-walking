@@ -4,22 +4,11 @@ Construct an OCP for jumping.
 import crocoddyl
 import numpy as np
 import pinocchio as pin
-import yaml
 
 from quadruped_reactive_walking import Params
 from crocoddyl import CostModelSum
-from pathlib import Path
 from . import walking
 from ..tools.utils import make_initial_footstep
-
-
-def read_jump_yaml():
-    # fdir = Path.home() / "git-repos/quadruped-reactive-walking/config"
-    fdir = Path.cwd() / "config"
-    fp = fdir / "jump_task.yaml"
-    with fp.open() as f:
-        spec = yaml.safe_load(f)["task"]
-        return spec
 
 
 class JumpOCPBuilder:
@@ -31,7 +20,7 @@ class JumpOCPBuilder:
         self.rdata = self._base_builder.rdata
 
         self.x0 = self.task.x0
-        self.jump_spec = read_jump_yaml()
+        self.jump_spec = params.task["jump"]
         feet_pos = make_initial_footstep(params.q_init)
         self.ground_models_1 = self.create_ground_models(feet_pos)
         jump_vel = np.asarray(self.jump_spec["jump_velocity"])

@@ -62,20 +62,28 @@ robot:
   # Parameters fro solo3D simulation
   solo3D: false  # Activation of the 3D environment, and corresponding planner blocks
 task:
-  friction_mu: 0.4
-  fly_high_slope: 50.
-  fly_high_w: 50000.
-  ground_collision_w: 1000.
-  vertical_velocity_reg_w: 1000.
-  base_velocity_tracking_w: 800000.
-  foot_tracking_w: 0.
-  impact_altitude_w: 1000000.
-  impact_velocity_w: 10000.
-  friction_cone_w: 0.
-  control_bound_w: 10000.
-  control_reg_w: 10000.
-  force_reg_w: 100.
-  uref: [-0.02615051, -0.25848605, 0.51696646, 0.0285894, -0.25720605, 0.51441775,
-    -0.02614404, 0.25848271, -0.51697107, 0.02859587, 0.25720939, -0.51441314]
+  walk: &base_task_pms
+    friction_mu: 0.4
+    fly_high_slope: 50.
+    fly_high_w: 50000.
+    ground_collision_w: 1000.
+    vertical_velocity_reg_w: 1000.
+    base_velocity_tracking_w: 800000.
+    foot_tracking_w: 0.
+    impact_altitude_w: 1000000.
+    impact_velocity_w: 10000.
+    friction_cone_w: 0.
+    control_bound_w: 10000.
+    control_reg_w: 10000.
+    force_reg_w: 100.
+    terminal_velocity_w: 1000.
+    uref: [-0.02615051, -0.25848605, 0.51696646, 0.0285894, -0.25720605, 0.51441775,
+      -0.02614404, 0.25848271, -0.51697107, 0.02859587, 0.25720939, -0.51441314]
+  jump:
+    <<: *base_task_pms
+    jump_height_w: 10000.
+    jump_velocity: [0.6, 0., 0.0, 0., 0., 0.]
+    t_jump: 0.18
+    t_land: 0.4
 sim:
   record_video: false

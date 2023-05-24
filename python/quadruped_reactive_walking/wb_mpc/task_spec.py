@@ -72,19 +72,10 @@ class TaskSpec(TaskSpecBase):
             [np.full(18, np.inf), np.zeros(6), np.ones(12) * 800]
         )
 
-        task_pms = params.task
+        task_pms = params.task["walk"]
 
         # Cost function weights
         self.friction_mu = task_pms["friction_mu"]
-
-        # if params.movement == "step":
-        #     self.foot_tracking_w = 2.0 * 1e3
-        # else:
-        #     self.foot_tracking_w = 1e4
-        # self.base_tracking_w = 0.
-        # self.friction_cone_w = 0.0  # 1e4
-        # self.control_bound_w = 0.
-
         self.fly_high_slope = task_pms["fly_high_slope"]
         self.fly_high_w = task_pms["fly_high_w"]
         self.ground_collision_w = task_pms["ground_collision_w"]
@@ -103,7 +94,8 @@ class TaskSpec(TaskSpecBase):
             [0] * 3 + [0] * 3 + [1e2 * 3] * 12 + [0] * 6 + [1e1 * 2] * 12
         )
         self.state_bound_w = np.array([0] * 18 + [0] * 6 + [0] * 12)
-        self.terminal_velocity_w = np.array([0] * self.nv + [1e3] * self.nv)
+        self.terminal_velocity_w = np.zeros(2 * self.nv)
+        self.terminal_velocity_w[self.nv :] = task_pms["terminal_velocity_w"]
         self.force_reg_w = task_pms["force_reg_w"]
 
         self.xref = self.x0
