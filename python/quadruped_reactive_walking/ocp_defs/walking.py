@@ -152,7 +152,7 @@ class WalkingOCPBuilder(OCPBuilder):
 
         costs = CostModelSum(self.state, nu)
         residual = ResidualModelState(self.state, self.task.xref, nu)
-        activation = crocoddyl.ActivationModelWeightedQuad(self.task.state_reg_w**2)
+        activation = ActivationModelWeightedQuad(self.task.state_reg_w**2)
         state_cost = CostModelResidual(self.state, activation, residual)
         costs.addCost("state_reg", state_cost, 1)
 
@@ -338,7 +338,7 @@ class WalkingOCPBuilder(OCPBuilder):
             pin.ReferenceFrame.WORLD,
             nu,
         )
-        vertical_velocity_activation = crocoddyl.ActivationModelWeightedQuad(
+        vertical_velocity_activation = ActivationModelWeightedQuad(
             np.array([0, 0, 1, 0, 0, 0])
         )
 
@@ -365,7 +365,7 @@ class WalkingOCPBuilder(OCPBuilder):
     def _add_impact_costs(self, i: int, costs: CostModelSum, start_pos):
         nu = costs.nu
         if self.has_impact_alt_cost:
-            impact_activ = crocoddyl.ActivationModelWeightedQuad(np.array([0, 0, 1]))
+            impact_activ = ActivationModelWeightedQuad(np.array([0, 0, 1]))
             impact_alt_cost = CostModelResidual(
                 self.state,
                 impact_activ,
