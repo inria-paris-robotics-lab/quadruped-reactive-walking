@@ -39,7 +39,7 @@ class TaskSpecBase:
         pin.centerOfMass(self.robot.model, self.robot.data, self.q0, np.zeros((18, 1)))
         self.u0 = np.array([0.0, 0.0, 9.81 * self.robot.data.mass[0] / 4.0] * 4)
 
-        self.baumgarte_gains = np.array([0, 100])
+        self.baumgarte_gains = np.array([0.0, 100.0])
 
         self.feet_names = ["FL_FOOT", "FR_FOOT", "HL_FOOT", "HR_FOOT"]
         self.feet_ids = [self.model.getFrameId(f) for f in self.feet_names]
