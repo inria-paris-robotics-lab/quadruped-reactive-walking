@@ -20,16 +20,18 @@ class TaskSpecBase:
         )
 
         self.frozen_names = frozen_names
-        if frozen_names != []:
-            self.frozen_idxs = [self.model.getJointId(id) for id in frozen_names]
-            self.freeze()
+        self.frozen_idxs = [self.model.getJointId(id) for id in frozen_names]
+        self.freeze()
+        nu_frozen = sum([self.model.joints[jid].nv for jid in self.frozen_idxs])
 
         self.nq = self.model.nq
         self.nv = self.model.nv
         self.nx = self.nq + self.nv
         self.ndx = 2 * self.nv
         # -1 to take into account the freeflyer
-        self.nu = 12 - (len(frozen_names) - 1) if len(frozen_names) != 0 else 12
+        self.nu = 12 - nu_frozen
+        if len(frozen_names) == 0:
+            assert self.nu == 12
 
         self.effort_limit = np.ones(self.nu) * 2.5
 
