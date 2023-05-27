@@ -1,14 +1,16 @@
 import pprint
-import crocoddyl
+import crocoddyl  # noqa
+import proxddp
 import numpy as np
 import matplotlib.pyplot as plt
 
 from quadruped_reactive_walking import Params
 from quadruped_reactive_walking.ocp_defs import jump
 from quadruped_reactive_walking.wb_mpc.target import Target, make_footsteps_and_refs
-from crocoddyl import SolverFDDP, ShootingProblem
+from crocoddyl import ShootingProblem
 from quadruped_reactive_walking.tools.kinematics_utils import get_translation_array
 from quadruped_reactive_walking.tools.meshcat_viewer import make_meshcat_viz
+from proxddp.croc import convertCrocoddylProblem
 
 
 params = Params.create_from_file()
@@ -22,7 +24,6 @@ rmodel = robot.model
 pprint.pprint(ocp_spec.jump_spec)
 
 problem: ShootingProblem = ocp_spec.problem
-solver = SolverFDDP(problem)
 nsteps = params.N_gait
 dt = params.dt_mpc
 x0 = ocp_spec.x0
@@ -30,10 +31,19 @@ xs_init = [x0 for _ in range(params.N_gait + 1)]
 us_init = problem.quasiStatic(xs_init[:nsteps])
 
 
-solver.setCallbacks([crocoddyl.CallbackVerbose()])
-solver.solve(xs_init, us_init)
-xs = solver.xs
-us = solver.us
+# solver = crocoddyl.SolverFDDP(problem)
+# solver.setCallbacks([crocoddyl.CallbackVerbose()])
+# solver.solve(xs_init, us_init)
+# xs = solver.xs
+# us = solver.us
+
+problem_cv = convertCrocoddylProblem(problem)
+solver = proxddp.SolverProxDDP(1e-3, 1e-5, verbose=proxddp.VERBOSE)
+solver.setup(problem_cv)
+solver.run(problem_cv, xs_init, us_init)
+xs = solver.results.xs
+us = solver.results.us
+
 qs = [x[: rmodel.nq] for x in xs]
 
 ROOT_JOINT_ID = rmodel.getFrameId("base_link")

@@ -13,7 +13,6 @@ def make_meshcat_viz(
     plane = hppfcl.Plane(np.array([0, 0, 1]), 0.0)
     geobj = pin.GeometryObject("ground", 0, pin.SE3.Identity(), plane)
     geobj.meshColor[:] = meshColor
-    geobj.meshScale *= 2.0
 
     vmodel = robot.visual_model
     vmodel.addGeometryObject(geobj)
