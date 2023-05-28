@@ -3,7 +3,7 @@
 #include "qrw/Joystick.hpp"
 #endif
 
-#include "bindings/visitors.hpp"
+#include "qrw/bindings/visitors.hpp"
 
 namespace qrw {
 void exposeKeyboard();

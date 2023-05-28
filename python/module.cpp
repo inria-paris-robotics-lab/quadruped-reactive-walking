@@ -1,5 +1,5 @@
-#include "bindings/python.hpp"
-#include "bindings/yaml-node.hpp"
+#include "qrw/bindings/python.hpp"
+#include "qrw/bindings/yaml-node.hpp"
 #include "qrw/Types.h"
 #include <eigenpy/std-vector.hpp>
 

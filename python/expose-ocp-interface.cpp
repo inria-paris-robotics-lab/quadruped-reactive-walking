@@ -1,6 +1,6 @@
 #include "qrw/IOCPAbstract.hpp"
 
-#include "bindings/python.hpp"
+#include "qrw/bindings/python.hpp"
 #include <eigenpy/optional.hpp>
 
 namespace qrw {

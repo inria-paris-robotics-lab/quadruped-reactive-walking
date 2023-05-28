@@ -1,7 +1,7 @@
 #include "qrw/MPCResult.hpp"
 
-#include "bindings/python.hpp"
-#include "bindings/custom-members.hpp"
+#include "qrw/bindings/python.hpp"
+#include "qrw/bindings/custom-members.hpp"
 
 namespace qrw {
 

@@ -1,4 +1,4 @@
-#include "bindings/python.hpp"
+#include "qrw/bindings/python.hpp"
 
 #include "qrw/Animator.hpp"
 
