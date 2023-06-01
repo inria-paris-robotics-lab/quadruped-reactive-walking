@@ -85,14 +85,14 @@ set(${PROJECT_NAME}_HEADERS
     include/qrw/yaml-eigen.hpp
     include/qrw/Animator.hpp
     include/qrw/Estimator.hpp
-    include/qrw/Filter.hpp
+    include/qrw/LowPassFilter.hpp
     include/qrw/ComplementaryFilter.hpp
     include/qrw/IOCPAbstract.hpp
     include/qrw/IMPCWrapper.hpp
     include/qrw/utils.hpp)
 
 set(${PROJECT_NAME}_SOURCES
-    src/Params.cpp src/Animator.cpp src/Estimator.cpp src/Filter.cpp
+    src/Params.cpp src/Animator.cpp src/Estimator.cpp src/LowPassFilter.cpp
     src/ComplementaryFilter.cpp src/IOCPAbstract.cpp)
 
 if(BUILD_JOYSTICK)

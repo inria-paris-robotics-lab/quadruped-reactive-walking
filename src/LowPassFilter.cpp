@@ -1,16 +1,16 @@
-#include "qrw/Filter.hpp"
+#include "qrw/LowPassFilter.hpp"
 
-Filter::Filter()
+LowPassFilter::LowPassFilter(Params const &params)
     : b_(0.),
       a_(Vector2::Zero()),
       x_(Vector6::Zero()),
       y_(VectorN::Zero(6, 1)),
       accum_(Vector6::Zero()),
       init_(false) {
-  // Empty
+  initialize(params);
 }
 
-void Filter::initialize(Params &params) {
+void LowPassFilter::initialize(Params const &params) {
   const double fc = 15.0;
   b_ = (2 * M_PI * params.dt_wbc * fc) / (2 * M_PI * params.dt_wbc * fc + 1.0);
 
@@ -20,7 +20,7 @@ void Filter::initialize(Params &params) {
   y_queue_.resize((std::size_t)a_.rows() - 1, Vector6::Zero());
 }
 
-VectorN Filter::filter(Vector6 const &x, bool check_modulo) {
+VectorN LowPassFilter::filter(Vector6 const &x, bool check_modulo) {
   // Retrieve measurement
   x_ = x;
 
@@ -64,7 +64,7 @@ VectorN Filter::filter(Vector6 const &x, bool check_modulo) {
   return y_;
 }
 
-void Filter::handle_modulo(int a, bool dir) {
+void LowPassFilter::handle_modulo(int a, bool dir) {
   // Add or remove 2 PI to all elements in the queues
   x_queue_[0](a, 0) += dir ? 2.0 * M_PI : -2.0 * M_PI;
   for (int i = 1; i < a_.rows(); i++) {

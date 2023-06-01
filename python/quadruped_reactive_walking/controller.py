@@ -149,10 +149,8 @@ class Controller:
             )
         # TODO: reload warm starts here
 
-        self.filter_q = qrw.Filter()
-        self.filter_q.initialize(params)
-        self.filter_v = qrw.Filter()
-        self.filter_v.initialize(params)
+        self.filter_q = qrw.LowPassFilter(params)
+        self.filter_v = qrw.LowPassFilter(params)
 
         device = DummyDevice(params.h_ref)
         device.joints.positions = q_init

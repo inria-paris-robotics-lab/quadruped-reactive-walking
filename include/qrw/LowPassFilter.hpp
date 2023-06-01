@@ -15,18 +15,13 @@
 
 #include "qrw/Params.hpp"
 
-class Filter {
+class LowPassFilter {
  public:
   /// \brief Constructor
-  Filter();
-
-  /// \brief Initialize with given data
-  ///
-  /// \param[in] params Object that stores parameters
-  void initialize(Params& params);
+  LowPassFilter(Params const& params);
 
   /// \brief Destructor.
-  ~Filter() {}  // Empty destructor
+  ~LowPassFilter() {}  // Empty destructor
 
   /// \brief Run one iteration of the filter and return the filtered measurement
   ///
@@ -45,6 +40,10 @@ class Filter {
   VectorN getFilt() { return y_; }
 
  private:
+  /// \brief Initialize with given data
+  /// \param[in] params Object that stores parameters
+  void initialize(Params const& params);
+
   double b_;       // Denominator coefficients of the filter transfer function
   Vector2 a_;      // Numerator coefficients of the filter transfer function
   Vector6 x_;      // Latest measurement
