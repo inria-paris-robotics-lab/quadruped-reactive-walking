@@ -5,20 +5,10 @@ import quadruped_reactive_walking as qrw
 from pathlib import Path
 from pinocchio.visualize import MeshcatVisualizer
 
-import pprint
 import example_robot_data as erd
 import hppfcl
 import imageio
 import pinocchio as pin
-
-params = qrw.Params.create_from_file()
-
-TMPDIR = Path.home() / ".tmp"
-LOGDIR = TMPDIR / "logs"
-ALLLOGS = list(LOGDIR.glob("*"))
-pprint.pprint(ALLLOGS)
-
-robot = erd.load("solo12")
 
 
 def parse_args():
@@ -31,6 +21,9 @@ def parse_args():
 
 
 args = parse_args()
+params = qrw.Params.create_from_file()
+
+robot = erd.load("solo12")
 
 logfile = open(args.logfile / "data.npz", "rb")
 data = np.load(logfile)
