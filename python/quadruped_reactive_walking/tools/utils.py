@@ -1,4 +1,3 @@
-from example_robot_data import load
 import numpy as np
 import pinocchio as pin
 import copy
@@ -10,8 +9,10 @@ except ImportError:
 
 
 def make_initial_footstep(q_init):
+    import example_robot_data as erd
+
     # Load robot model and data
-    solo = load("solo12")
+    solo = erd.load("solo12")
     q = solo.q0.reshape((-1, 1))
     q[7:, 0] = q_init
 
