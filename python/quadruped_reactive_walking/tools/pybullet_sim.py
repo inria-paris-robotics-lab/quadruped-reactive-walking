@@ -263,40 +263,27 @@ class PybulletWrapper:
             forces=jointTorques,
         )
 
-        # Get position of feet in world frame with base at (0, 0, 0)
-        feetLinksID = [3, 7, 11, 15]
-        linkStates = pyb.getLinkStates(self.robotId, feetLinksID)
+        # adjuste the robot Z position to be barely in contact with the ground
+        z_offset = 0
+        while True:
+            closest_points = pyb.getClosestPoints(self.robotId, self.planeId, distance=0.1)
+            lowest_dist = 1e10
+            for pair in closest_points:
+                robot_point = pair[5]
+                plane_point = pair[6]
+                z_dist = robot_point[2] - plane_point[2]
+                lowest_dist = min(z_dist, lowest_dist)
 
-        # Get minimum height of feet (they are in the ground since base is at 0, 0, 0)
-        z_min = linkStates[0][4][2]
-        i_min = 0
-        i = 1
-        for link in linkStates[1:]:
-            if link[4][2] < z_min:
-                z_min = link[4][2]
-                i_min = i
-            i += 1
+            if(lowest_dist >= 0.001):
+                break #Robot is above ground already
 
-        # Set base at (0, 0, -z_min) so that the lowest foot is at z = 0
-        pyb.resetBasePositionAndOrientation(
-            self.robotId,
-            [0.0, 0.0, -z_min],
-            pin.Quaternion(pin.rpy.rpyToMatrix(p_roll, p_pitch, 0.0)).coeffs(),
-        )
+            z_offset += -lowest_dist # raise the robot start pos
+            z_offset += 0.01 # give an extra centimeter margin
 
-        # Progressively raise the base to achieve proper contact (take into account radius of the foot)
-        while (
-            pyb.getClosestPoints(
-                self.robotId,
-                self.planeId,
-                distance=0.005,
-                linkIndexA=feetLinksID[i_min],
-            )
-        )[0][8] < -0.001:
-            z_min -= 0.001
+            # Set base pose
             pyb.resetBasePositionAndOrientation(
                 self.robotId,
-                [0.0, 0.0, -z_min],
+                [0.0, 0.0, z_offset],
                 pin.Quaternion(pin.rpy.rpyToMatrix(p_roll, p_pitch, 0.0)).coeffs(),
             )
 
