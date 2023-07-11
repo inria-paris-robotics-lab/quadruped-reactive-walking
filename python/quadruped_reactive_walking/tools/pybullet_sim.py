@@ -238,53 +238,6 @@ class PybulletWrapper:
             self.flag_sphere1 = True
             self.flag_sphere2 = True
 
-        # Create blue spheres without collision box for debug purpose
-        mesh_scale = [0.015, 0.015, 0.015]
-        visualShapeId = pyb.createVisualShape(
-            shapeType=pyb.GEOM_MESH,
-            fileName="sphere_smooth.obj",
-            halfExtents=[0.5, 0.5, 0.1],
-            rgbaColor=[0.0, 0.0, 1.0, 1.0],
-            specularColor=[0.4, 0.4, 0],
-            visualFramePosition=[0.0, 0.0, 0.0],
-            meshScale=mesh_scale,
-        )
-
-        self.ftps_Ids = np.zeros((4, 5), dtype=int)
-        for i in range(4):
-            for j in range(5):
-                self.ftps_Ids[i, j] = pyb.createMultiBody(
-                    baseMass=0.0,
-                    baseInertialFramePosition=[0, 0, 0],
-                    baseVisualShapeIndex=visualShapeId,
-                    basePosition=[0.0, 0.0, -0.1],
-                    useMaximalCoordinates=True,
-                )
-
-        # Create green spheres without collision box for debug purpose
-        visualShapeId = pyb.createVisualShape(
-            shapeType=pyb.GEOM_MESH,
-            fileName="sphere_smooth.obj",
-            halfExtents=[0.5, 0.5, 0.1],
-            rgbaColor=[0.0, 1.0, 0.0, 1.0],
-            specularColor=[0.4, 0.4, 0],
-            visualFramePosition=[0.0, 0.0, 0.0],
-            meshScale=mesh_scale,
-        )
-        self.ftps_Ids_deb = [0] * 4
-        for i in range(4):
-            self.ftps_Ids_deb[i] = pyb.createMultiBody(
-                baseMass=0.0,
-                baseInertialFramePosition=[0, 0, 0],
-                baseVisualShapeIndex=visualShapeId,
-                basePosition=[0.0, 0.0, -0.1],
-                useMaximalCoordinates=True,
-            )
-
-        # Create a red and blue lines for debug purpose
-        self.lineId_red = []
-        self.lineId_blue = []
-
         pyb.setGravity(0, 0, -9.81)
 
         # Load Quadruped robot
