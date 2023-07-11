@@ -5,13 +5,14 @@ _OCP_TYPES = [CrocOCP]
 
 try:
     from .ocp_proxddp import AlgtrOCPAbstract, AlgtrOCPProx, AlgtrOCPFDDP
+
+    _OCP_TYPES.extend([AlgtrOCPProx, AlgtrOCPFDDP])
 except ImportError:
     import warnings
 
     warnings.warn(
         "ProxDDP is not installed. The corresponding solvers will not be available."
     )
-    _OCP_TYPES.extend([AlgtrOCPProx, AlgtrOCPFDDP])
 
 
 def get_ocp_from_str(type_str):
