@@ -10,6 +10,7 @@ set(PROJECT_CUSTOM_HEADER_EXTENSION "hpp")
 
 # JRL-cmakemodule setup
 include(cmake/base.cmake)
+include(cmake/python.cmake)
 include(cmake/boost.cmake)
 include(cmake/apple.cmake)
 include(CMakeDependentOption)
