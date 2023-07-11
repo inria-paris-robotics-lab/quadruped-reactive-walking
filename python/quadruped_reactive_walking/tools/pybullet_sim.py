@@ -79,34 +79,24 @@ class PybulletWrapper:
             import random
 
             random.seed(41)
-            # p.configureDebugVisualizer(p.COV_ENABLE_RENDERING,0)
-            heightPerturbationRange = 0.05
+            #pyb.configureDebugVisualizer(pyb.COV_ENABLE_RENDERING,0)
+            terrainSize = 10 # meters
+            terrain_resolution = 0.1 # meters
+            heightPerturbationRange = 0.07
 
-            numHeightfieldRows = 256 * 2
-            numHeightfieldColumns = 256 * 2
+            numHeightfieldRows = int(terrainSize / terrain_resolution)
+            numHeightfieldColumns = int(terrainSize / terrain_resolution)
             heightfieldData = [0] * numHeightfieldRows * numHeightfieldColumns
-            height_prev = 0.0
-            for j in range(int(numHeightfieldColumns / 2)):
-                for i in range(int(numHeightfieldRows / 2)):
-                    height = random.uniform(0, heightPerturbationRange)
-                    # height = 0.25*np.sin(2*np.pi*(i-128)/46)  # sinus pattern
-                    heightfieldData[2 * i + 2 * j * numHeightfieldRows] = (
-                        height + height_prev
-                    ) * 0.5
-                    heightfieldData[2 * i + 1 + 2 * j * numHeightfieldRows] = height
-                    heightfieldData[2 * i + (2 * j + 1) * numHeightfieldRows] = (
-                        height + height_prev
-                    ) * 0.5
-                    heightfieldData[
-                        2 * i + 1 + (2 * j + 1) * numHeightfieldRows
-                    ] = height
-                    height_prev = height
+            for j in range(int(numHeightfieldColumns)):
+                for i in range(int(numHeightfieldRows)):
+                    height = random.uniform(0, 1.0)
+                    heightfieldData[i + j * numHeightfieldRows] = height
 
             # Create the collision shape based on the height field
             terrainShape = pyb.createCollisionShape(
                 shapeType=pyb.GEOM_HEIGHTFIELD,
-                meshScale=[0.05, 0.05, 1],
-                heightfieldTextureScaling=(numHeightfieldRows - 1) / 2,
+                meshScale=[terrain_resolution, terrain_resolution, heightPerturbationRange],
+                heightfieldTextureScaling=terrainSize,
                 heightfieldData=heightfieldData,
                 numHeightfieldRows=numHeightfieldRows,
                 numHeightfieldColumns=numHeightfieldColumns,
