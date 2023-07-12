@@ -79,9 +79,9 @@ class PybulletWrapper:
             import random
 
             random.seed(41)
-            #pyb.configureDebugVisualizer(pyb.COV_ENABLE_RENDERING,0)
-            terrainSize = 10 # meters
-            terrain_resolution = 0.1 # meters
+            # pyb.configureDebugVisualizer(pyb.COV_ENABLE_RENDERING,0)
+            terrainSize = 10  # meters
+            terrain_resolution = 0.1  # meters
             heightPerturbationRange = 0.07
 
             numHeightfieldRows = int(terrainSize / terrain_resolution)
@@ -95,7 +95,11 @@ class PybulletWrapper:
             # Create the collision shape based on the height field
             terrainShape = pyb.createCollisionShape(
                 shapeType=pyb.GEOM_HEIGHTFIELD,
-                meshScale=[terrain_resolution, terrain_resolution, heightPerturbationRange],
+                meshScale=[
+                    terrain_resolution,
+                    terrain_resolution,
+                    heightPerturbationRange,
+                ],
                 heightfieldTextureScaling=terrainSize,
                 heightfieldData=heightfieldData,
                 numHeightfieldRows=numHeightfieldRows,
@@ -266,7 +270,9 @@ class PybulletWrapper:
         # adjuste the robot Z position to be barely in contact with the ground
         z_offset = 0
         while True:
-            closest_points = pyb.getClosestPoints(self.robotId, self.planeId, distance=0.1)
+            closest_points = pyb.getClosestPoints(
+                self.robotId, self.planeId, distance=0.1
+            )
             lowest_dist = 1e10
             for pair in closest_points:
                 robot_point = pair[5]
@@ -274,11 +280,11 @@ class PybulletWrapper:
                 z_dist = robot_point[2] - plane_point[2]
                 lowest_dist = min(z_dist, lowest_dist)
 
-            if(lowest_dist >= 0.001):
-                break #Robot is above ground already
+            if lowest_dist >= 0.001:
+                break  # Robot is above ground already
 
-            z_offset += -lowest_dist # raise the robot start pos
-            z_offset += 0.01 # give an extra centimeter margin
+            z_offset += -lowest_dist  # raise the robot start pos
+            z_offset += 0.01  # give an extra centimeter margin
 
             # Set base pose
             pyb.resetBasePositionAndOrientation(
