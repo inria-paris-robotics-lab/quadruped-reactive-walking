@@ -56,8 +56,7 @@ class DummyDevice:
 
 def get_x_arr_no_base(xs):
     arr = np.stack(xs[:3]).T
-    x_arr_nobase = np.concatenate([arr[7:19], arr[25:]])
-    return x_arr_nobase
+    return np.concatenate([arr[7:19], arr[25:]])
 
 
 class Controller:
@@ -141,11 +140,11 @@ class Controller:
         self.k_result = 0
         self.k_solve = 0
         if self.params.interpolate_mpc:
-            x_arr_nobase = get_x_arr_no_base([self.task.x0, self.task.x0])
+            x_arr_nobase = get_x_arr_no_base([self.task.x0, self.task.x0, self.task.x0])
             q_arr_nobase = x_arr_nobase[:12]
             self.interpolator_ = ndcurves.exact_cubic(
                 q_arr_nobase,
-                np.array([0.0, params.dt_mpc]),
+                np.array([0.0, params.dt_mpc, 2 * params.dt_mpc]),
             )
         # TODO: reload warm starts here
 
