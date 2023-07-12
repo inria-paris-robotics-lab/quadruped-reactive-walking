@@ -106,34 +106,8 @@ class Controller:
         self.target_base = pin.Motion.Zero()
         self.target_footstep = np.zeros((3, 4))
 
-        self.mpc = None
-        if params.mpc_in_rosnode:
-            if params.asynchronous_mpc:
-                from .wbmpc_wrapper_ros_mp import ROSMPCAsyncClient
-
-                self.mpc = ROSMPCAsyncClient(
-                    params, self.footsteps, self.base_refs, solver_cls
-                )
-            else:
-                from .wbmpc_wrapper_ros import ROSMPCWrapperClient
-
-                self.mpc = ROSMPCWrapperClient(
-                    params, self.footsteps, self.base_refs, solver_cls, True
-                )
-        else:
-            if params.asynchronous_mpc:
-                from .wbmpc_wrapper_multiprocess import (
-                    MultiprocessMPCWrapper as MPCWrapper,
-                )
-            else:
-                from .wbmpc_wrapper_sync import SyncMPCWrapper as MPCWrapper
-            self.mpc = MPCWrapper(
-                params,
-                self.footsteps,
-                self.base_refs,
-                solver_cls=solver_cls,
-            )
-        assert self.mpc is not None, "Error while nistanciating MPCWrapper"
+        self.mpc = self._create_mpc(solver_cls=solver_cls)
+        assert self.mpc is not None, "Error while instanciating MPCWrapper"
 
         self.gait = np.array([[1, 1, 1, 1]] * (params.N_gait + 1))
         self.mpc_solved = False
@@ -154,6 +128,37 @@ class Controller:
         device = DummyDevice(params.h_ref)
         device.joints.positions = q_init
         self.compute(device)
+
+    def _create_mpc(self, solver_cls):
+        if self.params.mpc_in_rosnode:
+            if self.params.asynchronous_mpc:
+                from .wbmpc_wrapper_ros_mp import ROSMPCAsyncClient
+
+                return ROSMPCAsyncClient(
+                    self.params, self.footsteps, self.base_refs, solver_cls
+                )
+            else:
+                from .wbmpc_wrapper_ros import ROSMPCWrapperClient
+
+                return ROSMPCWrapperClient(
+                    self.params, self.footsteps, self.base_refs, solver_cls, True
+                )
+        else:
+            if self.params.asynchronous_mpc:
+                from .wbmpc_wrapper_multiprocess import (
+                    MultiprocessMPCWrapper as MPCWrapper,
+                )
+            else:
+                from .wbmpc_wrapper_sync import SyncMPCWrapper as MPCWrapper
+            return MPCWrapper(
+                self.params,
+                self.footsteps,
+                self.base_refs,
+                solver_cls=solver_cls,
+            )
+
+    def warmup(self):
+        pass
 
     def compute(self, device, qc=None):
         """
