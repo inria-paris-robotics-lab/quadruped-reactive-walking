@@ -13,7 +13,7 @@ Estimator::Estimator()
       dt_(0.0),
       initialized_(false),
       feetFrames_(Vector4i::Zero()),
-      footRadius_(0.155),
+      footRadius_(0.0155),
       alphaPos_({0.995, 0.995, 0.9}),
       alphaVelMax_(1.),
       alphaVelMin_(0.97),
