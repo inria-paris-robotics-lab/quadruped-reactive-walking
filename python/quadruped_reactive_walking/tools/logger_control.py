@@ -9,7 +9,7 @@ from ..wb_mpc.task_spec import TaskSpec
 
 FIG_DPI = 100
 TEMP_DIRNAME = pathlib.Path.home() / ".tmp"
-DATE_STRFORMAT = "%Y_%m_%d_%H_%m_%S"
+DATE_STRFORMAT = "%Y_%m_%d_%H_%M_%S"
 
 
 class LoggerControl:
