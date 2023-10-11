@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v16.0.4
+    rev: v17.0.2
     hooks:
     -   id: clang-format
         args: ['--style={BasedOnStyle: Google, SortIncludes: false}']
@@ -9,7 +9,7 @@ repos:
     -   id: check-useless-excludes
     -   id: check-hooks-apply
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
     -   id: check-added-large-files
     -   id: check-ast
@@ -24,12 +24,12 @@ repos:
     -   id: mixed-line-ending
     -   id: trailing-whitespace
 -   repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 23.9.1
     hooks:
     -   id: black
 -   repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
-    rev: v0.0.269
+    rev: v0.0.292
     hooks:
     -   id: ruff
         args: [--fix, --exit-non-zero-on-fix]
