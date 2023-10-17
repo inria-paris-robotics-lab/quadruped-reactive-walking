@@ -1,3 +1,6 @@
+#
+# Copyright (C) 2020-2023 LAAS-CNRS, INRIA
+#
 cmake_minimum_required(VERSION 3.14)
 
 # Project properties
