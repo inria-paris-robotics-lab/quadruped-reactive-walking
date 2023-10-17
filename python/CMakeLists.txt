@@ -1,4 +1,3 @@
-include(${PROJECT_SOURCE_DIR}/cmake/python-helpers.cmake)
 if(GENERATE_PYTHON_STUBS)
   include(${PROJECT_SOURCE_DIR}/cmake/stubs.cmake)
 endif(GENERATE_PYTHON_STUBS)

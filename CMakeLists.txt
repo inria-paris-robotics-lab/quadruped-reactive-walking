@@ -11,12 +11,23 @@ set(PROJECT_URL https://gitlab.laas.fr/${PROJECT_NAMESPACE}/${PROJECT_NAME})
 set(CUSTOM_HEADER_DIR "qrw")
 set(PROJECT_CUSTOM_HEADER_EXTENSION "hpp")
 
+# Disable -Werror on Unix.
+set(CXX_DISABLE_WERROR True)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # JRL-cmakemodule setup
 include(cmake/base.cmake)
 include(cmake/python.cmake)
 include(cmake/boost.cmake)
 include(cmake/apple.cmake)
 include(CMakeDependentOption)
+
+# Project definition
+compute_project_args(PROJECT_ARGS LANGUAGES CXX)
+project(${PROJECT_NAME} ${PROJECT_ARGS})
+set(CMAKE_VERBOSE_MAKEFILE OFF)
+apply_default_apple_configuration()
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to 'Release' as none was specified.")
@@ -45,15 +56,6 @@ option(BUILD_WITH_ROS_SUPPORT "Add support for running MPC on a separate rosnode
 if(NOT INSTALL_PYTHON_INTERFACE_ONLY)
   set(PROJECT_USE_CMAKE_EXPORT TRUE)
 endif()
-
-# Disable -Werror on Unix.
-set(CXX_DISABLE_WERROR True)
-
-# Project definition
-compute_project_args(PROJECT_ARGS LANGUAGES CXX)
-project(${PROJECT_NAME} ${PROJECT_ARGS})
-check_minimal_cxx_standard(11 REQUIRED)
-apply_default_apple_configuration()
 
 if(BUILD_WITH_ROS_SUPPORT)
   find_package(catkin REQUIRED message_generation std_msgs)
@@ -109,13 +111,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include/qrw>)
 target_link_libraries(${PROJECT_NAME} PUBLIC example-robot-data::example-robot-data)
 
-# Include Eigen3 directories
-target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
+target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
 
-# Find pinocchio library
 add_project_dependency(pinocchio REQUIRED)
-
-# Link pinocchio library
 target_link_libraries(${PROJECT_NAME} PUBLIC pinocchio::pinocchio)
 
 # Link odri_control_interface library
@@ -127,7 +125,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC pinocchio::pinocchio)
 # target_link_libraries(${PROJECT_NAME} PUBLIC master_board_sdk::master_board_sdk)
 
 add_project_dependency(yaml-cpp CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp)
+target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp::yaml-cpp)
 
 if(SUFFIX_SO_VERSION)
   set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION ${PROJECT_VERSION})
