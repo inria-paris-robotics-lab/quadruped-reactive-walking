@@ -5,7 +5,7 @@ Author:
     Wilson Jallet
 """
 import time
-import proxddp
+import aligator
 import crocoddyl
 import numpy as np
 
@@ -20,7 +20,7 @@ def infNorm(x):
 
 
 class AlgtrOCPAbstract(CrocOCP):
-    """Solve the OCP using proxddp."""
+    """Solve the OCP using aligator."""
 
     # Must be set by child class
     prox_ddp = None  # Solver instance
@@ -37,7 +37,7 @@ class AlgtrOCPAbstract(CrocOCP):
     ):
         super().__init__(params, footsteps, base_refs)
 
-        self.my_problem: proxddp.TrajOptProblem = proxddp.croc.convertCrocoddylProblem(
+        self.my_problem: aligator.TrajOptProblem = aligator.croc.convertCrocoddylProblem(
             self.problem
         )
 
@@ -46,9 +46,9 @@ class AlgtrOCPAbstract(CrocOCP):
             self.problem.num_threads = self.num_threads
         self.my_problem.setNumThreads(self.num_threads)
 
-        self.verbose = proxddp.QUIET
+        self.verbose = aligator.QUIET
         if params.ocp.verbose:
-            self.verbose = proxddp.VERBOSE
+            self.verbose = aligator.VERBOSE
 
         self.prox_ddp.verbose = self.verbose
         self.prox_ddp.max_iters = self.max_iter
@@ -70,7 +70,7 @@ class AlgtrOCPAbstract(CrocOCP):
         self.prox_ddp.max_iters = maxiter
         self.prox_ddp.run(self.my_problem, self.xs_init, self.us_init)
 
-        # compute proxddp's criteria
+        # compute aligator's criteria
         res = self.prox_ddp.results
 
         t_ddp = time.time()
@@ -83,7 +83,7 @@ class AlgtrOCPAbstract(CrocOCP):
         d = action_model.createData()
         self.problem.circularAppend(action_model, d)
 
-        sm = proxddp.croc.ActionModelWrapper(action_model)
+        sm = aligator.croc.ActionModelWrapper(action_model)
         self.my_problem.replaceStageCircular(sm)
         ws = self.prox_ddp.workspace
         ws.cycleAppend(sm.createData())
@@ -117,7 +117,7 @@ class AlgtrOCPFDDP(AlgtrOCPAbstract):
         base_refs,
     ):
         print(Fore.BLUE + "[using SolverFDDP]" + Fore.RESET)
-        self.prox_ddp = proxddp.SolverFDDP(params.ocp.tol)
+        self.prox_ddp = aligator.SolverFDDP(params.ocp.tol)
         super().__init__(params, footsteps, base_refs)
 
     def get_type_str():
@@ -125,7 +125,7 @@ class AlgtrOCPFDDP(AlgtrOCPAbstract):
 
 
 class AlgtrOCPProx(AlgtrOCPAbstract):
-    """Solve the OCP using proxddp."""
+    """Solve the OCP using aligator."""
 
     def __init__(
         self,
@@ -135,10 +135,10 @@ class AlgtrOCPProx(AlgtrOCPAbstract):
     ):
         print(Fore.GREEN + "[using SolverProxDDP]" + Fore.RESET)
         mu_init = 1e-10
-        self.prox_ddp = proxddp.SolverProxDDP(params.ocp.tol, mu_init, 0.0)
+        self.prox_ddp = aligator.SolverProxDDP(params.ocp.tol, mu_init, 0.0)
         self.prox_ddp.mu_min = 1e-12
         self.prox_ddp.reg_init = 1e-9
-        self.prox_ddp.ldlt_algo_choice = proxddp.LDLT_DENSE
+        self.prox_ddp.ldlt_algo_choice = aligator.LDLT_DENSE
         self.prox_ddp.max_refinement_steps = 0
         super().__init__(params, footsteps, base_refs)
 

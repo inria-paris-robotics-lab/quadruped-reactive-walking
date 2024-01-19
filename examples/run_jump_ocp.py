@@ -1,6 +1,6 @@
 import pprint
 import crocoddyl  # noqa
-import proxddp
+import aligator
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -10,7 +10,7 @@ from quadruped_reactive_walking.wb_mpc.target import Target, make_footsteps_and_
 from crocoddyl import ShootingProblem
 from quadruped_reactive_walking.tools.kinematics_utils import get_translation_array
 from quadruped_reactive_walking.tools.meshcat_viewer import make_meshcat_viz
-from proxddp.croc import convertCrocoddylProblem
+from aligator.croc import convertCrocoddylProblem
 
 
 params = Params.create_from_file()
@@ -38,7 +38,7 @@ us_init = problem.quasiStatic(xs_init[:nsteps])
 # us = solver.us
 
 problem_cv = convertCrocoddylProblem(problem)
-solver = proxddp.SolverProxDDP(1e-3, 1e-5, verbose=proxddp.VERBOSE)
+solver = aligator.SolverProxDDP(1e-3, 1e-5, verbose=aligator.VERBOSE)
 solver.setup(problem_cv)
 solver.run(problem_cv, xs_init, us_init)
 xs = solver.results.xs
