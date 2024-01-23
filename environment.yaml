@@ -1,0 +1,26 @@
+name: qrw
+channels:
+  - conda-forge
+  - simple-robotics
+dependencies:
+  - ccache
+  - cmake
+  - colorama
+  - compilers
+  - gitpython
+  - imageio-ffmpeg
+  - inputs
+  - ipython
+  - matplotlib
+  - pip
+  - pypdb
+  - scipy
+  - tqdm
+  - vcstool
+  - yaml-cpp
+  - pybullet
+  - eigenpy
+  - pinocchio
+  - crocoddyl
+  - aligator
+  - example-robot-data

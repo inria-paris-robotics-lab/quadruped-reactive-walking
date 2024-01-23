@@ -22,6 +22,52 @@ This package requires Python 3.8 and above and a C++14 compliant compiler.
 * [odri_control_interface](https://github.com/open-dynamic-robot-initiative/odri_control_interface)
 
 ## Installation
+### For running locally - No _Motion Server_
+
+1. Clone this repo
+```bash
+mkdir ~/qrw_ws/
+cd ~qrw_ws
+git clone --recursive https://github.com/inria-paris-robotics-lab/quadruped-reactive-walking.git
+```
+
+2. Create conda environment.
+(It is recommended to use `mamba` instead of `conda` for faster/better dependencies solving)
+```bash
+mamba env create -f quadruped-reactive-walking/environment.yaml
+mamba activate qrw
+```
+
+3. Download dependencies
+(Some dependencies are not available on conda, or not with adequate versions)
+```bash
+vcs import --recursive < quadruped-reactive-walking/git-deps.yaml
+```
+
+4. Build
+```bash
+for dir in ndcurves sobec quadruped-reactive-walking ; do # loop over each directory
+    mkdir -p $dir/build
+    cd $dir/build
+    cmake .. -DCMAKE_BUILD_TYPE=Release             \
+             -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX   \
+             -DCMAKE_PREFIX_PATH=$CONDA_PREFIX      \
+             -DBUILD_TESTING=OFF                    `# For faster build`             \
+             -DCMAKE_CXX_COMPILER_LAUNCHER='ccache' `# For faster build`             \
+             -DBUILD_PYTHON_INTERFACE=ON            `# Generate py bindings`         \
+             -DPYTHON_EXECUTABLE=$(which python)    `# Generate propper py bindings` \
+             -DGENERATE_PYTHON_STUBS=OFF
+    make install -j
+    cd ../../
+done
+```
+
+5. Source worskpace (Needs to be repeated for every new terminal)
+```bash
+source ~/qrw_catkin_ws/devel/setupb.bash # Linux users
+source ~/qrw_catkin_ws/devel/setupb.zsh  # Mac users
+```
+
 ### With ROS - for _Motion Server_ support
 
 1. Clone this repo
@@ -34,7 +80,7 @@ git clone --recursive https://github.com/inria-paris-robotics-lab/quadruped-reac
 2. Create conda environment.
 (It is recommended to use `mamba` instead of `conda` for faster/better dependencies solving)
 ```bash
-mamba create -f src/quadruped-reactive-walking/ros-environment.yaml
+mamba env create -f src/quadruped-reactive-walking/ros-environment.yaml
 mamba activate qrw-ros
 ```
 
