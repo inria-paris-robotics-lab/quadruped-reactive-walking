@@ -62,12 +62,6 @@ for dir in ndcurves sobec quadruped-reactive-walking ; do # loop over each direc
 done
 ```
 
-5. Source worskpace (Needs to be repeated for every new terminal)
-```bash
-source ~/qrw_catkin_ws/devel/setupb.bash # Linux users
-source ~/qrw_catkin_ws/devel/setupb.zsh  # Mac users
-```
-
 ### With ROS - for _Motion Server_ support
 
 1. Clone this repo
