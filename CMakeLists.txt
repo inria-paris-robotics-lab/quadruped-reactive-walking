@@ -130,7 +130,7 @@ if(TARGET yaml-cpp)
 elseif(TARGET yaml-cpp::yaml-cpp)
   target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp::yaml-cpp)
 else()
-  message( SEND_ERROR "Couldn't link to yaml-cpp" )
+  message(SEND_ERROR "Couldn't link to yaml-cpp")
 endif()
 
 if(SUFFIX_SO_VERSION)
