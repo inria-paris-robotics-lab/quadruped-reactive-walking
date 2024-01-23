@@ -12,7 +12,9 @@
     <depend>pinocchio</depend>
     <depend>sobec</depend>
     <depend>crocoddyl</depend>
+    <depend>aligator</depend>
     <depend>yaml-cpp</depend>
+    <exec_depend>ndcurves</exec_depend>
 
     <buildtool_depend>cmake</buildtool_depend>
     <export>

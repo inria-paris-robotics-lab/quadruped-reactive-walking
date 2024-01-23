@@ -21,14 +21,49 @@ This package requires Python 3.8 and above and a C++14 compliant compiler.
 * Install package that handles the gamepad: `pip install --user inputs`
 * [odri_control_interface](https://github.com/open-dynamic-robot-initiative/odri_control_interface)
 
-## Compilation instructions
+## Installation
+### With ROS - for _Motion Server_ support
 
+1. Clone this repo
 ```bash
-# Initialize cmake submodules:
-git submodule update --init --recursive
-cmake -S . -B build -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=your/install/prefix
-# Compile Python bindings:
-cd build && make install
+mkdir ~/qrw_catkin_ws/src
+cd ~qrw_catkin_ws
+git clone --recursive https://github.com/inria-paris-robotics-lab/quadruped-reactive-walking.git src/quadruped-reactive-walking
+```
+
+2. Create conda environment.
+(It is recommended to use `mamba` instead of `conda` for faster/better dependencies solving)
+```bash
+mamba create -f src/quadruped-reactive-walking/ros-environment.yaml
+mamba activate qrw-ros
+```
+
+3. Download dependencies
+(ROS imposes fixed versions for many packages. Thus most of _qrw_ dependencies need to be built manually, because they are not available on conda for this particular set sub dependencies.)
+```bash
+vcs import --recursive < src/quadruped-reactive-walking/ros-git-deps.yaml
+```
+
+4. Build
+```bash
+catkin build --cmake-args -DBUILD_TESTING=OFF                    `# For faster build`               \
+                          -DBUILD_BENCHMARK=OFF                  `# For faster build`               \
+                          -DBUILD_EXAMPLES=OFF                   `# For faster build`               \
+                          -DCMAKE_CXX_COMPILER_LAUNCHER='ccache' `# For faster build`               \
+                          -DBUILD_WITH_MULTITHREADS=ON           `# Enable parallelization (croc)`  \
+                          -DBUILD_WITH_OPENMP_SUPPORT=ON         `# Enable parallelization (algtr)` \
+                          -DBUILD_CROCODDYL_COMPAT=OFF           `# Aligator compatibility flag`    \
+                          -DBUILD_WITH_COLLISION_SUPPORT=ON      `# Pinocchio flag`                 \
+                          -DPYTHON_EXECUTABLE=$(which python)    `# Generate propper py bindings`   \
+                          -DBUILD_WITH_ROS_SUPPORT=ON            `# Generate QRW custom ros msgs`   \
+                          -DCMAKE_CXX_STANDARD=14                \
+                          -DGENERATE_PYTHON_STUBS=OFF
+```
+
+5. Source worskpace (Needs to be repeated for every new terminal)
+```bash
+source ~/qrw_catkin_ws/devel/setupb.bash # Linux users
+source ~/qrw_catkin_ws/devel/setupb.zsh  # Mac users
 ```
 
 ## Run the simulation

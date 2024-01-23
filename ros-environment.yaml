@@ -1,0 +1,33 @@
+name: qrw-ros
+channels:
+- conda-forge
+- robostack
+dependencies:
+- benchmark
+- catkin_tools
+- ccache
+- cmake
+- colorama
+- compilers
+- fmt[version='>=9']
+- gitpython
+- imageio-ffmpeg
+- inputs
+- ipython
+- llvm-openmp
+- matplotlib
+- octomap
+- pip
+- pypdb
+- ros-noetic-desktop
+- ros-noetic-message-generation
+- ros-noetic-ros-core
+- ros-noetic-roslaunch
+- ros-noetic-std-msgs
+- rosdep
+- scipy
+- tqdm
+- urdfdom
+- vcstool
+- yaml-cpp
+- pybullet
