@@ -12,7 +12,6 @@ This package requires Python 3.8 and above and a C++14 compliant compiler.
 * [Crocoddyl](https://github.com/loco-3d/crocoddyl)
 * [example-robot-data](https://github.com/Gepetto/example-robot-data) | apt: `sudo apt install robotpkg-example-robot-data`
 * Install Scipy, Numpy, Matplotlib, IPython
-* [Sobec](https://github.com/MeMory-of-MOtion/sobec)
 * Bullet: `pip install --user pybullet`
 * [`yaml-cpp`](https://github.com/jbeder/yaml-cpp) | apt: `sudo apt install libyaml-cpp-dev`
 

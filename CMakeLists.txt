@@ -67,6 +67,7 @@ endif()
 set(BOOST_COMPONENTS unit_test_framework)
 add_project_dependency(Eigen3 REQUIRED)
 add_project_dependency(example-robot-data REQUIRED)
+add_project_dependency(crocoddyl REQUIRED)
 
 if(APPLE OR NOT UNIX)
   set(BUILD_JOYSTICK OFF)
@@ -95,6 +96,7 @@ set(${PROJECT_NAME}_HEADERS
     include/qrw/ComplementaryFilter.hpp
     include/qrw/IOCPAbstract.hpp
     include/qrw/IMPCWrapper.hpp
+    include/qrw/ResidualFlyHigh.hpp
     include/qrw/utils.hpp)
 
 set(${PROJECT_NAME}_SOURCES
@@ -115,6 +117,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
 
 add_project_dependency(pinocchio REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC pinocchio::pinocchio)
+target_link_libraries(${PROJECT_NAME} PUBLIC crocoddyl::crocoddyl)
 
 # Link odri_control_interface library
 # find_package(odri_control_interface REQUIRED)
