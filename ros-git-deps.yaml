@@ -35,7 +35,3 @@ repositories:
     type: git
     url: https://github.com/simple-robotics/proxsuite-nlp.git
     version: main
-  src/sobec:
-    type: git
-    url: https://github.com/manifoldfr/sobec.git
-    version: topic/croco-v2
