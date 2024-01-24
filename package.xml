@@ -10,7 +10,6 @@
     <build_depend>git</build_depend>
     <depend>eigenpy</depend>
     <depend>pinocchio</depend>
-    <depend>sobec</depend>
     <depend>crocoddyl</depend>
     <depend>aligator</depend>
     <depend>yaml-cpp</depend>

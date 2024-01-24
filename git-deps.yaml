@@ -3,10 +3,6 @@ repositories:
     type: git
     url: https://github.com/inria-paris-robotics-lab/quadruped-reactive-walking.git
     version: wbmpc/devel
-  sobec:
-    type: git
-    url: https://github.com/manifoldfr/sobec.git
-    version: topic/croco-v2
   ndcurves:
     type: git
     url: git@github.com:loco-3d/ndcurves.git

@@ -13,6 +13,7 @@ void exposeFilter();
 void exposeMPCResult();
 void exposeSolverInterface();
 void exposeMPCInterface();
+void exposeResidualFlyHigh();
 }  // namespace qrw
 
 #endif

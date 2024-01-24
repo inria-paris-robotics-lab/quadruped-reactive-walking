@@ -9,6 +9,7 @@ BOOST_PYTHON_MODULE(quadruped_reactive_walking_pywrap) {
 
   bp::import("warnings");
   bp::import("pinocchio");
+  bp::import("crocoddyl");
 
   eigenpy::enableEigenPySpecific<Vector6>();
   eigenpy::enableEigenPySpecific<RowMatrix6N>();
@@ -26,4 +27,5 @@ BOOST_PYTHON_MODULE(quadruped_reactive_walking_pywrap) {
   qrw::exposeMPCResult();
   qrw::exposeSolverInterface();
   qrw::exposeMPCInterface();
+  qrw::exposeResidualFlyHigh();
 }

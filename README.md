@@ -12,7 +12,6 @@ This package requires Python 3.8 and above and a C++14 compliant compiler.
 * [Crocoddyl](https://github.com/loco-3d/crocoddyl)
 * [example-robot-data](https://github.com/Gepetto/example-robot-data) | apt: `sudo apt install robotpkg-example-robot-data`
 * Install Scipy, Numpy, Matplotlib, IPython
-* [Sobec](https://github.com/MeMory-of-MOtion/sobec)
 * Bullet: `pip install --user pybullet`
 * [`yaml-cpp`](https://github.com/jbeder/yaml-cpp) | apt: `sudo apt install libyaml-cpp-dev`
 
@@ -27,7 +26,7 @@ This package requires Python 3.8 and above and a C++14 compliant compiler.
 1. Clone this repo
 ```bash
 mkdir ~/qrw_ws/
-cd ~qrw_ws
+cd ~/qrw_ws
 git clone --recursive https://github.com/inria-paris-robotics-lab/quadruped-reactive-walking.git
 ```
 
@@ -46,7 +45,7 @@ vcs import --recursive < quadruped-reactive-walking/git-deps.yaml
 
 4. Build
 ```bash
-for dir in ndcurves sobec quadruped-reactive-walking ; do # loop over each directory
+for dir in ndcurves quadruped-reactive-walking ; do # loop over each directory
     mkdir -p $dir/build
     cd $dir/build
     cmake .. -DCMAKE_BUILD_TYPE=Release             \

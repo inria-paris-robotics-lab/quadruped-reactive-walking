@@ -2,9 +2,8 @@ import numpy as np
 import pinocchio as pin
 import crocoddyl
 
-from sobec import ResidualModelFlyHigh
 from typing import List, Optional
-from quadruped_reactive_walking import Params
+from quadruped_reactive_walking import Params, ResidualModelFlyHigh
 from ..wb_mpc import task_spec
 from ..tools.utils import no_copy_roll, no_copy_roll_insert
 from .common import OCPBuilder
