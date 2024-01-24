@@ -49,7 +49,6 @@ cmake_dependent_option(
   BUILD_PYTHON_INTERFACE ON)
 option(SUFFIX_SO_VERSION "Suffix library name with its version" ON)
 set(INSTALL_DOCUMENTATION OFF)
-option(BUILD_WITH_MQTT_SUPPORT "Add support for MQTT interface" OFF)
 option(BUILD_WITH_ROS_SUPPORT "Add support for running MPC on a separate rosnode" OFF)
 
 # Project configuration
@@ -146,15 +145,6 @@ target_compile_definitions(
 target_compile_definitions(
   ${PROJECT_NAME}
   PUBLIC WALK_PARAMETERS_YAML="${PROJECT_SOURCE_DIR}/config/walk_parameters.yaml")
-
-# MQTT Interface
-if(BUILD_WITH_MQTT_SUPPORT)
-  add_subdirectory(paho.mqtt.c)
-  add_library(mqtt-interface SHARED include/qrw/mqtt-interface.hpp src/mqtt-interface.cpp)
-  target_link_libraries(mqtt-interface PRIVATE paho-mqtt3c paho-mqtt3a)
-  target_include_directories(mqtt-interface
-                             PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>)
-endif()
 
 # Python Bindings
 if(BUILD_PYTHON_INTERFACE)
