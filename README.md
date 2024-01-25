@@ -84,13 +84,9 @@ vcs import --recursive < src/quadruped-reactive-walking/ros-git-deps.yaml
 ```
 
 4. Build
-<details>
-  <summary>March native</summary>
-  Before compiling
-```bash
-export CMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS -march=native"
-```
-</details>
+
+(Note for extra performances, export the following variable before building `export CMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS -march=native"`)
+
 ```bash
 catkin build --cmake-args -DBUILD_TESTING=OFF                    `# For faster build`               \
                           -DBUILD_BENCHMARK=OFF                  `# For faster build`               \
