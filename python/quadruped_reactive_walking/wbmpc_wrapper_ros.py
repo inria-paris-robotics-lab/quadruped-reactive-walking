@@ -9,6 +9,7 @@ from .wbmpc_wrapper_abstract import MPCWrapperAbstract, MPCResult
 from typing import Type
 from threading import Lock
 import numpy as np
+import pinocchio as pin
 
 import rospy
 from quadruped_reactive_walking.srv import (
@@ -146,7 +147,7 @@ class ROSMPCWrapperServer:
         self.solver_cls = get_ocp_from_str(msg.solver_type)
 
         footsteps = multiarray_to_numpy_float64(msg.footsteps)
-        base_refs = multiarray_to_numpy_float64(msg.base_refs)
+        base_refs = [pin.Motion(v_ref) for v_ref in multiarray_to_numpy_float64(msg.base_refs)]
 
         self.ocp = self.solver_cls(self.params, footsteps, base_refs)
 
@@ -166,7 +167,7 @@ class ROSMPCWrapperServer:
             msg.k,
             multiarray_to_numpy_float64(msg.x0),
             multiarray_to_numpy_float64(msg.footstep),
-            multiarray_to_numpy_float64(msg.base_ref),
+            pin.Motion(multiarray_to_numpy_float64(msg.base_ref)),
         )
 
         self.ocp.solve(msg.k)
