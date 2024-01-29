@@ -90,6 +90,7 @@ vcs import --recursive < src/quadruped-reactive-walking/ros-git-deps.yaml
 ```bash
 catkin build --cmake-args -DBUILD_TESTING=OFF                    `# For faster build`               \
                           -DBUILD_BENCHMARK=OFF                  `# For faster build`               \
+                          -DBUILD_BENCHMARKS=OFF                 `# For faster build (aligator)`    \
                           -DBUILD_EXAMPLES=OFF                   `# For faster build`               \
                           -DCMAKE_CXX_COMPILER_LAUNCHER='ccache' `# For faster build`               \
                           -DBUILD_WITH_MULTITHREADS=ON           `# Enable parallelization (croc)`  \
@@ -99,8 +100,11 @@ catkin build --cmake-args -DBUILD_TESTING=OFF                    `# For faster b
                           -DBUILD_PYTHON_INTERFACE=ON            `# Generate py bindings`         \
                           -DPYTHON_EXECUTABLE=$(which python)    `# Generate propper py bindings`   \
                           -DBUILD_WITH_ROS_SUPPORT=ON            `# Generate QRW custom ros msgs`   \
-                          -DCMAKE_CXX_STANDARD=14                \
-                          -DGENERATE_PYTHON_STUBS=OFF
+                          -DGENERATE_PYTHON_STUBS=OFF                 \
+                          `# Optionnal flags: `                       \
+                          `## -macrh=native for performances reasons` \
+                          `## ~UNARY_BINAY_FUNCTION for compatibility between old boost (from ros) and modern c++` \
+                          -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS -march=native -D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION"
 ```
 
 5. Source worskpace (Needs to be repeated for every new terminal)
