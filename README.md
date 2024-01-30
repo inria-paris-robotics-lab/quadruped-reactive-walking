@@ -103,8 +103,9 @@ catkin build --cmake-args -DBUILD_TESTING=OFF                    `# For faster b
                           -DGENERATE_PYTHON_STUBS=OFF                 \
                           `# Optionnal flags: `                       \
                           `## -macrh=native for performances reasons` \
-                          `## ~UNARY_BINAY_FUNCTION for compatibility between old boost (from ros) and modern c++` \
-                          -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS -march=native -D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION"
+                          `## -isystem to find library header such as openmp omp.h`                               \
+                          `## UNARY_BINAY_FUNCTION for compatibility between old boost (from ros) and modern c++` \
+                          -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS -march=native -isystem $CONDA_PREFIX/include -D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION"
 ```
 
 5. Source worskpace (Needs to be repeated for every new terminal)
