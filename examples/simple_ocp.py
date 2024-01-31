@@ -43,7 +43,7 @@ elapsed = time.time() - ts
 print("Elapsed time: {}".format(elapsed))
 print("Avg. time   : {}".format(elapsed / n))
 
-ocp2_res = ocp2.prox_ddp.results
+ocp2_res = ocp2.solver.results
 
 dist_x = np.linalg.norm(np.stack(ocp.ddp.xs) - np.stack(ocp2_res.xs))
 print("Dist X:", dist_x)
