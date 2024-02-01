@@ -147,7 +147,9 @@ class ROSMPCWrapperServer:
         self.solver_cls = get_ocp_from_str(msg.solver_type)
 
         footsteps = multiarray_to_numpy_float64(msg.footsteps)
-        base_refs = [pin.Motion(v_ref) for v_ref in multiarray_to_numpy_float64(msg.base_refs)]
+        base_refs = [
+            pin.Motion(v_ref) for v_ref in multiarray_to_numpy_float64(msg.base_refs)
+        ]
 
         self.ocp = self.solver_cls(self.params, footsteps, base_refs)
 
