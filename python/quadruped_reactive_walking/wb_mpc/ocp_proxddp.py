@@ -51,7 +51,10 @@ class AlgtrOCPAbstract(CrocOCP):
             self.verbose = aligator.VERBOSE
 
         self.solver.verbose = self.verbose
+        self.solver.reg_init = 1e-9
+        self.solver.lq_print_detailed = False
         self.solver.max_iters = self.max_iter
+        self.solver.force_initial_condition = True
         self.solver.setup(self.algtr_problem)
 
     def solve(self, k):
@@ -133,9 +136,10 @@ class AlgtrOCPProx(AlgtrOCPAbstract):
         base_refs,
     ):
         print(Fore.GREEN + "[using SolverProxDDP]" + Fore.RESET)
-        mu_init = 1e-8
+        mu_init = 1e-11
         self.solver = aligator.SolverProxDDP(params.ocp.tol, mu_init, 0.0)
-        self.solver.linear_solver_choice = aligator.LQ_SOLVER_SERIAL # PARALLEL / STAGEDENSE / SERIAL
+        self.solver_compare = aligator.SolverProxDDP(params.ocp.tol, mu_init, 0.0)
+        self.solver.linear_solver_choice = aligator.LQ_SOLVER_PARALLEL # PARALLEL / STAGEDENSE / SERIAL
         self.solver.rollout_type = aligator.ROLLOUT_LINEAR
         super().__init__(params, footsteps, base_refs)
 
