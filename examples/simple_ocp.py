@@ -37,7 +37,7 @@ ocp.solve(0)
 
 print("============== PARALLEL ===================")
 
-ocp2 = AlgtrOCPProx(params, footsteps, base_refs, aligator.LQ_SOLVER_PARALLEL)
+ocp2 = AlgtrOCPProx(params, footsteps, base_refs, aligator.LinearSolverChoice.LQ_SOLVER_PARALLEL)
 
 ts = time.time()
 ocp2.solve(0)
@@ -51,7 +51,7 @@ ctrler = Controller(params, params.q_init, CrocOCP)
 
 print("============== SERIAL ===================")
 
-ocp3 = AlgtrOCPProx(params, footsteps, base_refs, aligator.LQ_SOLVER_SERIAL)
+ocp3 = AlgtrOCPProx(params, footsteps, base_refs, aligator.LinearSolverChoice.LQ_SOLVER_SERIAL)
 
 ts = time.time()
 ocp3.solve(0)

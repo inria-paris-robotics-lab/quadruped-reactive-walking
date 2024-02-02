@@ -127,7 +127,7 @@ class AlgtrOCPProx(AlgtrOCPAbstract):
     """Solve the OCP using aligator."""
 
     def __init__(
-        self, params: Params, footsteps, base_refs, lsc=aligator.LQ_SOLVER_PARALLEL
+        self, params: Params, footsteps, base_refs, lsc=aligator.LinearSolverChoice.LQ_SOLVER_PARALLEL
     ):
         print(Fore.GREEN + "[using SolverProxDDP]" + Fore.RESET)
         mu_init = 1e-11
