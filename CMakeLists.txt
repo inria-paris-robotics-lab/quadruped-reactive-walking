@@ -13,7 +13,7 @@ set(PROJECT_CUSTOM_HEADER_EXTENSION "hpp")
 
 # Disable -Werror on Unix.
 set(CXX_DISABLE_WERROR True)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # JRL-cmakemodule setup
