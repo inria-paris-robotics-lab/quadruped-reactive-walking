@@ -51,7 +51,9 @@ void ResidualModelFlyHighTpl<Scalar>::calc(
                                         pinocchio::LOCAL_WORLD_ALIGNED)
                 .linear()
                 .head(2);
-  d->ez = exp(-d->pinocchio->oMf[frame_id].translation()[2] * slope);
+  Scalar z = d->pinocchio->oMf[frame_id].translation()[2];
+  // d->ez = exp(-z* z * slope / 2);
+  d->ez = exp(-z* z * slope / 2);
   data->r *= d->ez;
 }
 
@@ -80,6 +82,7 @@ void ResidualModelFlyHighTpl<Scalar>::calcDiff(
                                                   frame_id, pinocchio::LOCAL)
                           .linear();
   const Matrix3s& R = d->pinocchio->oMf[frame_id].rotation();
+  Scalar z = d->pinocchio->oMf[frame_id].translation()[2];
 
   // First compute LWA derivatives of the velocity
   d->vxJ.noalias() = pinocchio::skew(-v) * d->l_dnu_dv.template bottomRows<3>();
@@ -95,6 +98,7 @@ void ResidualModelFlyHighTpl<Scalar>::calcDiff(
   // Second term with derivative of z
   data->Rx.leftCols(nv).row(0) -= data->r[0] * slope * d->o_dv_dv.row(2);
   data->Rx.leftCols(nv).row(1) -= data->r[1] * slope * d->o_dv_dv.row(2);
+  data->Rx.leftCols(nv).topRows(2) *= z;
 }
 
 template <typename Scalar>
