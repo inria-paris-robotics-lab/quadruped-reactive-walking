@@ -64,14 +64,14 @@ robot:
 task:
   walk: &base_task_pms
     friction_mu: 0.4
-    fly_high_slope: 6000
-    fly_high_w: 100000.
+    fly_high_slope: 2000.
+    fly_high_w: 50000.
     ground_collision_w: 1000.
-    vertical_velocity_reg_w: 50.
-    base_velocity_tracking_w: 8000000.
+    vertical_velocity_reg_w: 1.
+    base_velocity_tracking_w: 800000.
     foot_tracking_w: 0.
     impact_altitude_w: 1000000.
-    impact_velocity_w: 10000.
+    impact_velocity_w: 100000.
     friction_cone_w: 0.
     control_bound_w: 10000.
     control_reg_w: 10000.
