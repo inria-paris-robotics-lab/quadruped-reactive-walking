@@ -34,8 +34,8 @@ class CrocOCP(OCPAbstract):
 
         self.x0 = self.task.x0
 
-        self.problem = self._builder.problem
-        self.ddp = crocoddyl.SolverFDDP(self.problem)
+        self.croc_problem = self._builder.problem
+        self.ddp = crocoddyl.SolverFDDP(self.croc_problem)
         if params.ocp.verbose:
             self.ddp.setCallbacks([crocoddyl.CallbackVerbose()])
         if self.warm_start_empty():
@@ -87,7 +87,7 @@ class CrocOCP(OCPAbstract):
         pin.forwardKinematics(self.rmodel, self.rdata, self.x0[: self.task.nq])
         pin.updateFramePlacements(self.rmodel, self.rdata)
 
-        self.problem.x0 = self.x0
+        self.croc_problem.x0 = self.x0
 
         if k == 0:
             return
@@ -102,7 +102,7 @@ class CrocOCP(OCPAbstract):
 
     def circular_append(self, m):
         d = m.createData()
-        self.problem.circularAppend(m, d)
+        self.croc_problem.circularAppend(m, d)
 
     def get_results(self, window_size=None):
         self.xs_init = self.ddp.xs

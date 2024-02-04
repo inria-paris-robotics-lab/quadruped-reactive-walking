@@ -85,7 +85,7 @@ vcs import --recursive < src/quadruped-reactive-walking/ros-git-deps.yaml
 
 4. Build
 
-(Note for extra performances, export the following variable before building `export CMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS -march=native"`)
+(Note for extra performances, export the following variable before building `export CMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS -march=native"`, but might cause Segmentation Faults with certain boost versions)
 
 ```bash
 catkin build --cmake-args -DBUILD_TESTING=OFF                    `# For faster build`               \
@@ -105,7 +105,7 @@ catkin build --cmake-args -DBUILD_TESTING=OFF                    `# For faster b
                           `## -macrh=native for performances reasons` \
                           `## -isystem to find library header such as openmp omp.h`                               \
                           `## UNARY_BINAY_FUNCTION for compatibility between old boost (from ros) and modern c++` \
-                          -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS -march=native -isystem $CONDA_PREFIX/include -D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION"
+                          -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS -isystem $CONDA_PREFIX/include -D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION"
 ```
 
 5. Source worskpace (Needs to be repeated for every new terminal)
