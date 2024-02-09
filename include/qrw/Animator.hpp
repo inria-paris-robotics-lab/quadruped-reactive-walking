@@ -19,18 +19,21 @@ struct AnimatorBase {
 
   Params const* params_;
 
-  Vector6 A3_;  // Third order coefficient of the polynomial that generates the
-                // velocity profile
-  Vector6 A2_;  // Second order coefficient of the polynomial that generates the
-                // velocity profile
+  /// 3rd order coefficient of the velocity profile polynomial
+  Vector6 A3_;
+  /// 2nd order coefficient of the velocity profile polynomial
+  Vector6 A2_;
   /// Desired reference position.
   Vector6 p_ref_;
   /// Desired reference velocity.
   Vector6 v_ref_;
 
-  double dt_mpc = 0.0;  // Time step of the MPC
-  double dt_wbc = 0.0;  // Time step of the whole-body controller
-  int k_mpc = 0;        // Number of WBC time steps for one MPC time step
+  /// Time step of the MPC
+  double dt_mpc = 0.0;
+  /// Time step of the whole-body controller
+  double dt_wbc = 0.0;
+  /// Number of WBC time steps for one MPC time step
+  int k_mpc = 0;
 
   /// Time for switches in the predefined velocity
   VectorN t_switch;
