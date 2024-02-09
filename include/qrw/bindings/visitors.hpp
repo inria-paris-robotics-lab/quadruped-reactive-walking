@@ -5,7 +5,7 @@
 namespace qrw {
 
 template <typename Class>
-struct AnimatorVisitor : public bp::def_visitor<AnimatorVisitor<Class>> {
+struct AnimatorVisitor : bp::def_visitor<AnimatorVisitor<Class>> {
   template <class PyClass>
   void visit(PyClass& cl) const {
     cl.def(
@@ -13,10 +13,8 @@ struct AnimatorVisitor : public bp::def_visitor<AnimatorVisitor<Class>> {
 
         .def("update_v_ref", &Class::update_v_ref,
              bp::args("self", "k", "gait_is_static"), "Update joystick values.")
-        .def("get_p_ref", &Class::get_p_ref, bp::args("self"),
-             "Get Reference Position")
-        .def("get_v_ref", &Class::get_v_ref, bp::args("self"),
-             "Get Reference Velocity");
+        .def_readonly("p_ref", &Class::p_ref_, "Get Reference Position")
+        .def_readonly("v_ref", &Class::v_ref_, "Get Reference Velocity");
   }
 };
 

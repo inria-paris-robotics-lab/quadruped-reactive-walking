@@ -15,10 +15,6 @@ struct AnimatorBase {
   /// \param[in] k Numero of the current loop
   virtual void update_v_ref(int k, bool gait_is_static);
 
-  inline Eigen::Ref<const Vector6> get_p_ref() const { return p_ref_; }
-  /// \brief Get current velocity reference.
-  inline Eigen::Ref<const Vector6> get_v_ref() const { return v_ref_; }
-
   //// Data
 
   Params const* params_;

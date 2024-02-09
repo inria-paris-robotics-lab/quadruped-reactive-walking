@@ -392,7 +392,7 @@ class Controller:
             b_baseVel_perfect,
         )
 
-        self.estimator.update_reference_state(self.joystick.get_v_ref())
+        self.estimator.update_reference_state(self.joystick.v_ref)
 
         oRh = self.estimator.get_oRh()
         hRb = self.estimator.get_hRb()

@@ -16,10 +16,9 @@ void exposeAnimators() {
       .def(AnimatorVisitor<AnimatorBase>());
 
 #ifdef QRW_JOYSTICK_SUPPORT
-  bp::class_<Joystick>("Joystick",
-                       "Animator using an external joystick peripheral.",
-                       bp::no_init)
-      .def(AnimatorVisitor<Joystick>())
+  bp::class_<Joystick, bp::bases<AnimatorBase>>(
+      "Joystick", "Animator using an external joystick peripheral.",
+      bp::no_init)
       .def("get_joystick_code", &Joystick::getJoystickCode, bp::args("self"),
            "Get Joystick Code")
       .def("get_start", &Joystick::getStart, bp::args("self"),
