@@ -1,4 +1,4 @@
-name: proxsuite-nlp
+name: qrw
 channels:
   - conda-forge
 dependencies:
@@ -10,8 +10,7 @@ dependencies:
   - ccache
   - eigenpy>=3.2
   - pinocchio
-  - eigen
-  - fmt
-  - example-robot-data
+  - crocoddyl
+  - yaml-cpp
+  - aligator
   - pytest
-  - casadi
