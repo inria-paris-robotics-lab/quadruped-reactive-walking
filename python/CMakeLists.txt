@@ -8,16 +8,7 @@ set(PY_HEADERS
     ${PROJECT_SOURCE_DIR}/include/qrw/bindings/custom-members.hpp
     ${PROJECT_SOURCE_DIR}/include/qrw/bindings/yaml-node.hpp)
 
-set(PY_SOURCES
-    module.cpp
-    expose-animator.cpp
-    expose-estimator.cpp
-    expose-filter.cpp
-    expose-mpc-interface.cpp
-    expose-mpc-result.cpp
-    expose-ocp-interface.cpp
-    expose-params.cpp
-    expose-ResidualFlyHigh.cpp)
+file(GLOB PY_SOURCES CONFIGURE_DEPENDS *.cpp)
 
 set(PY_LIB ${${PY_NAME}_LIB})
 add_library(${PY_LIB} SHARED ${PY_SOURCES} ${PY_HEADERS})
