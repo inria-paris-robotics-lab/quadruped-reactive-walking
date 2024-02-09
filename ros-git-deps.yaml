@@ -18,7 +18,7 @@ repositories:
   src/hpp-fcl:
     type: git
     url: https://github.com/humanoid-path-planner/hpp-fcl.git
-    version: hppfcl3x
+    version: devel
   src/ndcurves:
     type: git
     url: https://github.com/loco-3d/ndcurves.git
