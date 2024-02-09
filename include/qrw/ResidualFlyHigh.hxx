@@ -63,7 +63,7 @@ void ResidualModelFlyHighTpl<Scalar>::calcDiff(
     const Eigen::Ref<const VectorXs>& /*x*/,
     const Eigen::Ref<const VectorXs>&) {
   Data* d = static_cast<Data*>(data.get());
-  const std::size_t nv = state_->get_nv();
+  const long nv = (long)state_->get_nv();
 
   /* Let' s do a little bit of maths ...
    * r = v/e    with e=exp(z/2)
