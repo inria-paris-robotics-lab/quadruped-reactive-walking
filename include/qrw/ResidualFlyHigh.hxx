@@ -53,7 +53,7 @@ void ResidualModelFlyHighTpl<Scalar>::calc(
                 .head(2);
   Scalar z = d->pinocchio->oMf[frame_id].translation()[2];
   // d->ez = exp(-z* z * slope / 2);
-  d->ez = exp(-z* z * slope / 2);
+  d->ez = exp(-z * z * slope / 2);
   data->r *= d->ez;
 }
 
