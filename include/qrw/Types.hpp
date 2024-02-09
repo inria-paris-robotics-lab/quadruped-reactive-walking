@@ -24,6 +24,7 @@ using Vector18 = Eigen::Matrix<Scalar, 18, 1>;
 using Vector19 = Eigen::Matrix<Scalar, 19, 1>;
 using Vector24 = Eigen::Matrix<Scalar, 24, 1>;
 using VectorN = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+using ConstVecRefN = Eigen::Ref<const VectorN>;
 using VectorNi = Eigen::Matrix<int, Eigen::Dynamic, 1>;
 
 using RowVector4 = Eigen::Matrix<Scalar, 1, 4>;

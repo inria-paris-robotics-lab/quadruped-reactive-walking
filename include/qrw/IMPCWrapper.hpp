@@ -7,7 +7,6 @@
 namespace qrw {
 
 struct IMPCWrapper {
-  using ConstVecRefN = Eigen::Ref<const VectorN>;
   using StdVecVecN = std::vector<VectorN>;
 
   IMPCWrapper(Params const &params) : params_(params) {}

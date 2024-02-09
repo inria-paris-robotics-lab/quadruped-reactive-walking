@@ -11,7 +11,6 @@ using Motion = pinocchio::MotionTpl<Scalar>;
 
 class IOCPAbstract {
  public:
-  using ConstVecRefN = Eigen::Ref<const VectorN>;
   IOCPAbstract(Params const& params);
   virtual ~IOCPAbstract() = default;
 

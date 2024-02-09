@@ -6,7 +6,6 @@ namespace qrw {
 template <class MPCDerived = IMPCWrapper>
 struct PyMPCWrapper : MPCDerived, bp::wrapper<MPCDerived> {
   using MPCDerived::MPCDerived;
-  using ConstVecRefN = Eigen::Ref<const VectorN>;
   using StdVecVecN = std::vector<VectorN>;
 
   void solve(uint k, const ConstVecRefN &x0, Vector4 footstep,
