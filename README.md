@@ -85,7 +85,7 @@ vcs import --recursive < src/quadruped-reactive-walking/ros-git-deps.yaml
 
 4. Build
 
-(Note for extra performances, export the following variable before building `export CMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS -march=native"`, but might cause Segmentation Faults with certain boost versions)
+(Note for extra performances, export the following variable before building `export CXXFLAGS="$CXXFLAGS -march=native"`, but might cause Segmentation Faults with certain boost versions)
 
 ```bash
 catkin build --cmake-args -DBUILD_TESTING=OFF                    `# For faster build`               \
@@ -97,15 +97,11 @@ catkin build --cmake-args -DBUILD_TESTING=OFF                    `# For faster b
                           -DBUILD_WITH_OPENMP_SUPPORT=ON         `# Enable parallelization (algtr)` \
                           -DBUILD_CROCODDYL_COMPAT=ON            `# Aligator compatibility flag`    \
                           -DBUILD_WITH_COLLISION_SUPPORT=ON      `# Pinocchio flag`                 \
-                          -DBUILD_PYTHON_INTERFACE=ON            `# Generate py bindings`         \
+                          -DBUILD_PYTHON_INTERFACE=ON            `# Generate py bindings`           \
                           -DPYTHON_EXECUTABLE=$(which python)    `# Generate propper py bindings`   \
                           -DBUILD_WITH_ROS_SUPPORT=ON            `# Generate QRW custom ros msgs`   \
-                          -DGENERATE_PYTHON_STUBS=OFF                 \
-                          `# Optionnal flags: `                       \
-                          `## -macrh=native for performances reasons` \
-                          `## -isystem to find library header such as openmp omp.h`                               \
-                          `## UNARY_BINAY_FUNCTION for compatibility between old boost (from ros) and modern c++` \
-                          -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS -isystem $CONDA_PREFIX/include -D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION"
+                          -DGENERATE_PYTHON_STUBS=OFF            \
+                          -DCMAKE_CXX_FLAGS="$CXXFLAGS -D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION" `# for compatibility between old boost (from ros) and modern c++`
 ```
 
 5. Source worskpace (Needs to be repeated for every new terminal)
