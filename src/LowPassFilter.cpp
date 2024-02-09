@@ -20,7 +20,7 @@ void LowPassFilter::initialize(Params const &params) {
   y_queue_.resize((std::size_t)a_.rows() - 1, Vector6::Zero());
 }
 
-VectorN LowPassFilter::filter(Vector6 const &x, bool check_modulo) {
+ConstVecRefN LowPassFilter::filter(Vector6 const &x, bool check_modulo) {
   // Retrieve measurement
   x_ = x;
 
@@ -61,7 +61,7 @@ VectorN LowPassFilter::filter(Vector6 const &x, bool check_modulo) {
   // Assigned to dynamic-sized vector for binding purpose
   y_ = y_queue_.front();
 
-  return y_;
+  return getFilt();
 }
 
 void LowPassFilter::handle_modulo(int a, bool dir) {

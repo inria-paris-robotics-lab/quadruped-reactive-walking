@@ -20,14 +20,11 @@ class LowPassFilter {
   /// \brief Constructor
   LowPassFilter(Params const& params);
 
-  /// \brief Destructor.
-  ~LowPassFilter() {}  // Empty destructor
-
   /// \brief Run one iteration of the filter and return the filtered measurement
   ///
   /// \param[in] x Quantity to filter
   /// \param[in] check_modulo Check for the +-pi modulo of orientation if true
-  VectorN filter(Vector6 const& x, bool check_modulo);
+  ConstVecRefN filter(Vector6 const& x, bool check_modulo);
 
   /// \brief Add or remove 2 PI to all elements in the queues to handle +- pi
   /// modulo
@@ -37,7 +34,7 @@ class LowPassFilter {
   /// +pi)
   void handle_modulo(int a, bool dir);
 
-  VectorN getFilt() { return y_; }
+  ConstVecRefN getFilt() const { return y_; }
 
  private:
   /// \brief Initialize with given data
