@@ -1,6 +1,6 @@
 #include "qrw/bindings/python.hpp"
 #include "qrw/bindings/yaml-node.hpp"
-#include "qrw/Types.h"
+#include "qrw/Types.hpp"
 #include <eigenpy/std-vector.hpp>
 
 BOOST_PYTHON_MODULE(quadruped_reactive_walking_pywrap) {

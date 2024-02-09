@@ -10,7 +10,7 @@
 #ifndef COMPLEMENTARY_FILTER_H_INCLUDED
 #define COMPLEMENTARY_FILTER_H_INCLUDED
 
-#include "qrw/Types.h"
+#include "qrw/Types.hpp"
 
 class ComplementaryFilter {
  public:

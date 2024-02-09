@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "qrw/Types.h"
+#include "qrw/Types.hpp"
 
 static constexpr uint NUM_GAIT_COLS = 4;
 

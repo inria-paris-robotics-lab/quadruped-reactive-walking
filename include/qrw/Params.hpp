@@ -20,7 +20,7 @@
 #include <string>
 #include <regex>
 
-#include "qrw/Types.h"
+#include "qrw/Types.hpp"
 #include "qrw/utils.hpp"
 
 #ifndef WALK_PARAMETERS_YAML

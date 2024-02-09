@@ -85,7 +85,7 @@ endif()
 
 # Main Library
 set(${PROJECT_NAME}_HEADERS
-    include/qrw/Types.h
+    include/qrw/Types.hpp
     include/qrw/Params.hpp
     include/qrw/MPCResult.hpp
     include/qrw/yaml-eigen.hpp
