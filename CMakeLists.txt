@@ -57,9 +57,21 @@ if(NOT INSTALL_PYTHON_INTERFACE_ONLY)
 endif()
 
 if(BUILD_WITH_ROS_SUPPORT)
+  # ROS macros temper with some variables (that affect add_executable for tests), save it
+  if(DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set(REMEMBER_CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+  endif(DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+
   find_package(catkin REQUIRED message_generation std_msgs)
   add_service_files(DIRECTORY ros_qrw_msgs FILES MPCInit.srv MPCSolve.srv MPCStop.srv)
   generate_messages(DEPENDENCIES std_msgs)
+
+  # Restore saved variable to previous state
+  if(DEFINED REMEMBER_CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${REMEMBER_CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+  else(DEFINED REMEMBER_CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    unset(CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+  endif(DEFINED REMEMBER_CMAKE_RUNTIME_OUTPUT_DIRECTORY)
 endif()
 
 # Project dependencies
@@ -125,6 +137,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC crocoddyl::crocoddyl)
 
 # Link master board library
 # target_link_libraries(${PROJECT_NAME} PUBLIC master_board_sdk::master_board_sdk)
+
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()
 
 add_project_dependency(yaml-cpp CONFIG REQUIRED)
 if(TARGET yaml-cpp)
