@@ -3,7 +3,7 @@ repos:
     rev: v17.0.2
     hooks:
     -   id: clang-format
-        args: ['--style={BasedOnStyle: Google, SortIncludes: false}']
+        args: ['--style={BasedOnStyle: Google, SortIncludes: false, ColumnLimit: 120, BinPackParameters: false, BinPackArguments: false}']
 -   repo: meta
     hooks:
     -   id: check-useless-excludes
@@ -27,6 +27,7 @@ repos:
     rev: 23.9.1
     hooks:
     -   id: black
+        args: ["--line-length", "120"]
 -   repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
     rev: v0.0.292
