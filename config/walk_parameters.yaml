@@ -4,17 +4,17 @@ robot:
   interface: enp2s0  # Name of the communication interface (check with ifconfig)
   LOGGING: false  # Enable/disable logging during the experiment
   PLOTTING: true  # Enable/disable automatic plotting at the end of the experiment
-  DEMONSTRATION: false  # Enable/disable demonstration functionalities
+  DEMONSTRATION: true  # Enable/disable demonstration functionalities
   SIMULATION: true  # Enable/disable PyBullet simulation or running on real robot
   enable_pyb_GUI: true  # Enable/disable PyBullet GUI
   env_id: 0  # Identifier of the environment to choose in which one the simulation will happen
   use_flat_plane: true  # If True the ground is flat, otherwise it has bumps
-  predefined_vel: true  # If we are using a predefined reference velocity (True) or a joystick (False)
+  predefined_vel: false  # If we are using a predefined reference velocity (True) or a joystick (False)
   N_SIMULATION: 12000  # Number of simulated wbc time steps
   perfect_estimator: false  # Enable/disable perfect estimator by using data directly from PyBullet
   use_qualisys: false
   ocp:
-    num_threads: 2  # number of threads allowed for the ocp solver
+    num_threads: 18  # number of threads allowed for the ocp solver
     max_iter: 1  # maximum number of solver iterations
     init_max_iters: 5  # initial max_iter
     verbose: false  # solver verbosity
@@ -26,8 +26,8 @@ robot:
   # q_init: [ 0.00208551,  0.97841023, -1.77335038,  0.0020868,   0.97951833, -1.77534163, 0.00208551,  0.97841023, -1.77335038,  0.0020868,   0.97951833, -1.77534163]
   # q_init: [0.0, 0.865, -1.583, 0.0, 0.865, -1.583, 0.0, 0.865, -1.583, 0.0, 0.865, -1.583]  # h_com = 0.2
   # q_init: [0.0, 0.764, -1.407, 0.0, 0.76407, -1.4, 0.0, 0.76407, -1.407, 0.0, 0.764, -1.407]  # h_com = 0.218
-  q_init: [0.0, 0.7, -1.4, 0.0, 0.7, -1.4, 0.0, -0.7, 1.4, 0.0, -0.7, 1.4]  # Initial articular positions
-  pose_init: [0.0, 0.0, 0.260748, 0.0, 0.0, 0.0, 1.0]  # Initiel base pose
+  q_init: [0., -0.87, -1.4,  0., -0.87, -1.4, 0., -2.27, 1.4, 0., -2.27, 1.4 ]  # Initial articular positions
+  pose_init: [0., 0., 0.5, 0.0, -.707, 0.0, -.707]  # Initiel base pose
   window_size: 2  # MPC window size
   dt_wbc: 0.001  # Time step of the whole body control
   dt_mpc: 0.012  # Time step of the model predictive control
@@ -42,9 +42,12 @@ robot:
 
   # Parameters of Gait
   N_periods: 1
-  starting_nodes: 40
-  ending_nodes: 40
-  gait: [20, 1, 0, 0, 1, 20, 0, 1, 1, 0]
+  starting_nodes: 80
+  ending_nodes: 80
+  gait: [20, 1, 0, 0, 0,
+         20, 0, 1, 0, 0,
+         20, 1, 0, 0, 0,
+         20, 0, 1, 0, 0,] # "FL_FOOT", "FR_FOOT", "HL_FOOT", "HR_FOOT"
   gait_repetitions: 200
 
   # Parameters of Joystick
@@ -64,21 +67,20 @@ robot:
 task:
   walk: &base_task_pms
     friction_mu: 0.4
-    fly_high_sigma_height: 0.03 # m
+    fly_high_sigma_height: 0.01 # m
     fly_high_w: 50000.
-    ground_collision_w: 1000.
-    vertical_velocity_reg_w: 1.
+    ground_collision_w: 10.
+    vertical_velocity_reg_w: 0
     base_velocity_tracking_w: 800000.
     foot_tracking_w: 0.
-    impact_altitude_w: 1000000.
-    impact_velocity_w: 100000.
+    impact_altitude_w: 0.
+    impact_velocity_w: 0.
     friction_cone_w: 0.
     control_bound_w: 10000.
     control_reg_w: 10000.
     force_reg_w: 100.
     terminal_velocity_w: 1000.
-    uref: [-0.02615051, -0.25848605, 0.51696646, 0.0285894, -0.25720605, 0.51441775,
-      -0.02614404, 0.25848271, -0.51697107, 0.02859587, 0.25720939, -0.51441314]
+    uref: [1.87e-04, 2.61e+00, 1.24e+00,-1.87e-04, 2.61e+00, 1.24e+00, 2.57e-05,-8.75e-02, 2.43e-02,-2.57e-05,-8.75e-02, 2.43e-02]
   jump:
     <<: *base_task_pms
     jump_height_w: 10000.

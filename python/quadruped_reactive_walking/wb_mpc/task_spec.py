@@ -118,4 +118,7 @@ class TaskSpecFull(TaskSpecBase):
         self.x0_reduced = np.concatenate([self.q0_reduced, self.v0_reduced])
 
         self.xref = self.x0_reduced
-        self.uref = self.u0
+        # self.uref = self.u0
+        self.u0 = self.uref
+
+

@@ -30,8 +30,8 @@ class WalkingOCPBuilder(OCPBuilder):
         self.rdata = self.rmodel.createData()
 
         self.life_gait = params.gait
-        self.starting_gait = np.ones((params.starting_nodes, 4), dtype=np.int32)
-        self.ending_gait = np.ones((params.ending_nodes, 4), dtype=np.int32)
+        self.starting_gait = np.array([[1,1,0,0]] * params.starting_nodes, dtype=np.int32)
+        self.ending_gait = np.array([[1,1,0,0]] * params.starting_nodes, dtype=np.int32)
         self.current_gait = np.append(
             self.starting_gait,
             self.ending_gait[0].reshape(1, -1),

@@ -58,7 +58,7 @@ def get_x_arr_no_base(xs):
 
 class Controller:
     t_mpc = 0.0
-    q_security = np.array([1.2, 2.1, 3.14] * 4)
+    q_security = np.array([3.14, 3.14, 3.14] * 4)
 
     def __init__(self, params: qrw.Params, q_init, solver_cls: Type[wb_mpc.OCPAbstract]):
         """
@@ -187,7 +187,6 @@ class Controller:
                 self.mpc.solve(self.k, x, self.target_footstep.copy(), self.target_base.copy())
             except ValueError:
                 import traceback
-
                 self.error = True
                 traceback.print_exc()
 
