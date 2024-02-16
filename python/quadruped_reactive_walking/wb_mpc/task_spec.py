@@ -120,5 +120,3 @@ class TaskSpecFull(TaskSpecBase):
         self.xref = self.x0_reduced
         # self.uref = self.u0
         self.u0 = self.uref
-
-

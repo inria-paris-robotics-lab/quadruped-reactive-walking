@@ -187,6 +187,7 @@ class Controller:
                 self.mpc.solve(self.k, x, self.target_footstep.copy(), self.target_base.copy())
             except ValueError:
                 import traceback
+
                 self.error = True
                 traceback.print_exc()
 
