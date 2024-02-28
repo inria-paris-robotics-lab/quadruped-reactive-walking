@@ -85,7 +85,6 @@ class LoggerControl:
         self.MPC_equivalent_Kp = np.zeros([size, self.pd.nu])
         self.MPC_equivalent_Kd = np.zeros([size, self.pd.nu])
 
-        self.target = np.zeros([size, 3])
         self.target_base_linear = np.zeros([size, 3])
         self.target_base_angular = np.zeros([size, 3])
 
@@ -160,11 +159,9 @@ class LoggerControl:
 
         if self.i == 0:
             for i in range(self.params.N_gait * self.params.mpc_wbc_ratio):
-                self.target[i] = controller.footsteps[i // self.params.mpc_wbc_ratio][:, 1]
-                self.target_base_linear[i] = controller.base_refs[i // self.params.mpc_wbc_ratio].linear
-                self.target_base_angular[i] = controller.base_refs[i // self.params.mpc_wbc_ratio].angular
+                self.target_base_linear[i] = controller.base_vel_refs[i // self.params.mpc_wbc_ratio].linear
+                self.target_base_angular[i] = controller.base_vel_refs[i // self.params.mpc_wbc_ratio].angular
         if self.i + self.params.N_gait * self.params.mpc_wbc_ratio < self.log_size:
-            self.target[self.i + self.params.N_gait * self.params.mpc_wbc_ratio] = controller.target_footstep[:, 1]
             self.target_base_linear[self.i + self.params.N_gait * self.params.mpc_wbc_ratio] = controller.v_ref[:][:3]
 
             self.target_base_angular[self.i + self.params.N_gait * self.params.mpc_wbc_ratio] = controller.v_ref[:][3:]
@@ -403,7 +400,6 @@ class LoggerControl:
         np.savez_compressed(
             name,
             solver_cls=self.solver_cls,
-            target=self.target,
             target_base_linear=self.target_base_linear,
             target_base_angular=self.target_base_angular,
             q_estimate_rpy=self.q_estimate_rpy,
@@ -457,7 +453,6 @@ class LoggerControl:
 
         self.solver_cls = self.data["solver_cls"]
         # Load sensors arrays
-        self.target = self.data["target"]
         self.target_base_linear = self.data["target_base_linear"]
         self.target_base_angular = self.data["target_base_angular"]
         self.q_estimate_rpy = self.data["q_estimate_rpy"]
